@@ -1,13 +1,17 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import request from 'supertest'
 import { app } from '../index.js'
 import { initDb, getDb } from '../db.js'
 
 let token
-beforeEach(async () => {
+beforeAll(async () => {
   initDb(':memory:')
   const res = await request(app).post('/api/login').send({ username: 'admin', password: 'admin123' })
   token = res.body.token
+})
+
+beforeEach(() => {
+  initDb(':memory:')
 })
 
 const auth = () => ({ Authorization: `Bearer ${token}` })
@@ -54,17 +58,25 @@ describe('DELETE /api/agencies/:id', () => {
 
 describe('POST /api/agencies/:id/tvs', () => {
   it('adds a TV to an agency', async () => {
+    const created = await request(app)
+      .post('/api/agencies').set(auth()).send({ name: 'TV Test Agency', city: 'Cluj' })
+    const agencyId = created.body.id
+
     const res = await request(app)
-      .post('/api/agencies/1/tvs')
+      .post(`/api/agencies/${agencyId}/tvs`)
       .set(auth())
       .send({ label: 'TV-Recepție' })
     expect(res.status).toBe(201)
     expect(res.body.label).toBe('TV-Recepție')
-    expect(res.body.agency_id).toBe(1)
+    expect(res.body.agency_id).toBe(agencyId)
   })
 
   it('returns 400 when label missing', async () => {
-    const res = await request(app).post('/api/agencies/1/tvs').set(auth()).send({})
+    const created = await request(app)
+      .post('/api/agencies').set(auth()).send({ name: 'TV Test Agency 2', city: 'Iași' })
+    const agencyId = created.body.id
+
+    const res = await request(app).post(`/api/agencies/${agencyId}/tvs`).set(auth()).send({})
     expect(res.status).toBe(400)
   })
 })
@@ -103,8 +115,17 @@ describe('POST /api/agencies/:id/playlist', () => {
 
 describe('GET /api/agencies/:id/playlist', () => {
   it('returns empty array when no playlist set', async () => {
-    const res = await request(app).get('/api/agencies/1/playlist').set(auth())
+    const created = await request(app)
+      .post('/api/agencies').set(auth()).send({ name: 'Playlist Test Agency', city: 'București' })
+    const agencyId = created.body.id
+
+    const res = await request(app).get(`/api/agencies/${agencyId}/playlist`).set(auth())
     expect(res.status).toBe(200)
     expect(res.body).toEqual([])
+  })
+
+  it('returns 404 for non-existent agency', async () => {
+    const res = await request(app).get('/api/agencies/99999/playlist').set(auth())
+    expect(res.status).toBe(404)
   })
 })
