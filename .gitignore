@@ -1,0 +1,5 @@
+server/uploads/
+server/signage.db
+node_modules/
+dist/
+.env
