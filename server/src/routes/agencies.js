@@ -33,14 +33,17 @@ router.post('/', (req, res) => {
 
 router.delete('/:id', (req, res) => {
   try {
+    const id = parseInt(req.params.id, 10)
+    if (isNaN(id)) return res.status(400).json({ error: 'Invalid agency id' })
+
     const db = getDb()
-    const agency = db.prepare('SELECT id FROM agencies WHERE id = ?').get(req.params.id)
+    const agency = db.prepare('SELECT id FROM agencies WHERE id = ?').get(id)
     if (!agency) return res.status(404).json({ error: 'Not found' })
 
     db.transaction(() => {
-      db.prepare('DELETE FROM playlist_items WHERE agency_id = ?').run(agency.id)
-      db.prepare('DELETE FROM tvs WHERE agency_id = ?').run(agency.id)
-      db.prepare('DELETE FROM agencies WHERE id = ?').run(agency.id)
+      db.prepare('DELETE FROM playlist_items WHERE agency_id = ?').run(id)
+      db.prepare('DELETE FROM tvs WHERE agency_id = ?').run(id)
+      db.prepare('DELETE FROM agencies WHERE id = ?').run(id)
     })()
 
     res.status(204).end()

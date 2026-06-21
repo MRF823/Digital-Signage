@@ -34,6 +34,8 @@ router.post('/:id/playlist', (req, res) => {
     const agencyId = parseInt(req.params.id, 10)
     if (isNaN(agencyId)) return res.status(400).json({ error: 'Invalid agency id' })
 
+    const db = getDb()
+
     for (const item of items) {
       if (!Number.isInteger(item.media_id) || item.media_id <= 0) {
         return res.status(400).json({ error: 'Each item must have a valid media_id' })
@@ -45,7 +47,13 @@ router.post('/:id/playlist', (req, res) => {
       }
     }
 
-    const db = getDb()
+    // Validate that each media_id exists in the database
+    for (const item of items) {
+      const media = db.prepare('SELECT id FROM media WHERE id = ?').get(item.media_id)
+      if (!media) {
+        return res.status(400).json({ error: `media_id ${item.media_id} not found` })
+      }
+    }
     const agency = db.prepare('SELECT id FROM agencies WHERE id = ?').get(agencyId)
     if (!agency) return res.status(404).json({ error: 'Agency not found' })
 

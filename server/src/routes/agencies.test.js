@@ -98,12 +98,16 @@ describe('DELETE /api/tvs/:tvId', () => {
 describe('POST /api/agencies/:id/playlist', () => {
   it('sets playlist and returns items', async () => {
     const db = getDb()
+    const created = await request(app)
+      .post('/api/agencies').set(auth()).send({ name: 'Playlist Agency', city: 'Test' })
+    const agencyId = created.body.id
+
     const media = db.prepare(
       `INSERT INTO media (filename, original_name, type, size_bytes) VALUES ('f.mp4','orig.mp4','video',1000)`
     ).run()
 
     const res = await request(app)
-      .post('/api/agencies/1/playlist')
+      .post(`/api/agencies/${agencyId}/playlist`)
       .set(auth())
       .send({ items: [{ media_id: media.lastInsertRowid, display_duration_seconds: null }] })
 
