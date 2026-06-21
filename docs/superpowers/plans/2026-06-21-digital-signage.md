@@ -594,14 +594,16 @@ git commit -m "feat: media upload, list, delete, serve routes"
 
 ---
 
-## Task 5: Agency + Playlist routes
+## Task 5: Agency, TV, and Playlist routes
 
 **Files:**
 - Create: `server/src/routes/agencies.js`
+- Create: `server/src/routes/tvs.js`
 - Create: `server/src/routes/playlists.js`
 - Create: `server/src/routes/agencies.test.js`
+- Modify: `server/src/index.js` (mount tvs router)
 
-- [ ] **Step 1: Write failing test**
+- [ ] **Step 1: Write failing tests**
 
 ```js
 // server/src/routes/agencies.test.js
@@ -620,7 +622,7 @@ beforeEach(async () => {
 const auth = () => ({ Authorization: `Bearer ${token}` })
 
 describe('GET /api/agencies', () => {
-  it('returns 10 seeded agencies', async () => {
+  it('returns 10 seeded agencies each with tvs array', async () => {
     const res = await request(app).get('/api/agencies').set(auth())
     expect(res.status).toBe(200)
     expect(res.body).toHaveLength(10)
@@ -628,9 +630,71 @@ describe('GET /api/agencies', () => {
   })
 })
 
+describe('POST /api/agencies', () => {
+  it('creates a new agency with no TVs', async () => {
+    const res = await request(app)
+      .post('/api/agencies')
+      .set(auth())
+      .send({ name: 'Agenția Test', city: 'Cluj' })
+    expect(res.status).toBe(201)
+    expect(res.body.name).toBe('Agenția Test')
+    expect(res.body.tvs).toEqual([])
+  })
+
+  it('returns 400 when name or city missing', async () => {
+    const res = await request(app).post('/api/agencies').set(auth()).send({ name: 'X' })
+    expect(res.status).toBe(400)
+  })
+})
+
+describe('DELETE /api/agencies/:id', () => {
+  it('deletes agency and its TVs and playlist', async () => {
+    // create a new agency to delete
+    const created = await request(app)
+      .post('/api/agencies').set(auth()).send({ name: 'Del', city: 'Y' })
+    const id = created.body.id
+
+    const res = await request(app).delete(`/api/agencies/${id}`).set(auth())
+    expect(res.status).toBe(204)
+
+    const check = await request(app).get('/api/agencies').set(auth())
+    expect(check.body.find(a => a.id === id)).toBeUndefined()
+  })
+})
+
+describe('POST /api/agencies/:id/tvs', () => {
+  it('adds a TV to an agency', async () => {
+    const res = await request(app)
+      .post('/api/agencies/1/tvs')
+      .set(auth())
+      .send({ label: 'TV-Recepție' })
+    expect(res.status).toBe(201)
+    expect(res.body.label).toBe('TV-Recepție')
+    expect(res.body.agency_id).toBe(1)
+  })
+
+  it('returns 400 when label missing', async () => {
+    const res = await request(app).post('/api/agencies/1/tvs').set(auth()).send({})
+    expect(res.status).toBe(400)
+  })
+})
+
+describe('DELETE /api/tvs/:tvId', () => {
+  it('deletes a TV', async () => {
+    const db = getDb()
+    const tv = db.prepare('SELECT id FROM tvs LIMIT 1').get()
+    const res = await request(app).delete(`/api/tvs/${tv.id}`).set(auth())
+    expect(res.status).toBe(204)
+  })
+
+  it('returns 404 for non-existent TV', async () => {
+    const res = await request(app).delete('/api/tvs/99999').set(auth())
+    expect(res.status).toBe(404)
+  })
+})
+
 describe('POST /api/agencies/:id/playlist', () => {
   it('sets playlist and returns items', async () => {
-    // insert a media record directly
     const db = getDb()
     const media = db.prepare(
       `INSERT INTO media (filename, original_name, type, size_bytes) VALUES ('f.mp4','orig.mp4','video',1000)`
@@ -674,19 +738,73 @@ const router = Router()
 router.get('/', (req, res) => {
   const db = getDb()
   const agencies = db.prepare('SELECT * FROM agencies ORDER BY city').all()
-
-  const result = agencies.map(agency => {
-    const tvs = db.prepare('SELECT * FROM tvs WHERE agency_id = ?').all(agency.id)
-    return { ...agency, tvs }
-  })
-
+  const result = agencies.map(agency => ({
+    ...agency,
+    tvs: db.prepare('SELECT * FROM tvs WHERE agency_id = ?').all(agency.id),
+  }))
   res.json(result)
+})
+
+router.post('/', (req, res) => {
+  const { name, city } = req.body
+  if (!name?.trim() || !city?.trim()) return res.status(400).json({ error: 'name and city required' })
+
+  const db = getDb()
+  const result = db.prepare('INSERT INTO agencies (name, city) VALUES (?, ?)').run(name.trim(), city.trim())
+  const agency = db.prepare('SELECT * FROM agencies WHERE id = ?').get(result.lastInsertRowid)
+  res.status(201).json({ ...agency, tvs: [] })
+})
+
+router.delete('/:id', (req, res) => {
+  const db = getDb()
+  const agency = db.prepare('SELECT id FROM agencies WHERE id = ?').get(req.params.id)
+  if (!agency) return res.status(404).json({ error: 'Not found' })
+
+  db.transaction(() => {
+    db.prepare('DELETE FROM playlist_items WHERE agency_id = ?').run(agency.id)
+    db.prepare('DELETE FROM tvs WHERE agency_id = ?').run(agency.id)
+    db.prepare('DELETE FROM agencies WHERE id = ?').run(agency.id)
+  })()
+
+  res.status(204).end()
+})
+
+router.post('/:id/tvs', (req, res) => {
+  const { label } = req.body
+  if (!label?.trim()) return res.status(400).json({ error: 'label required' })
+
+  const db = getDb()
+  const agency = db.prepare('SELECT id FROM agencies WHERE id = ?').get(req.params.id)
+  if (!agency) return res.status(404).json({ error: 'Agency not found' })
+
+  const result = db.prepare('INSERT INTO tvs (agency_id, label) VALUES (?, ?)').run(agency.id, label.trim())
+  const tv = db.prepare('SELECT * FROM tvs WHERE id = ?').get(result.lastInsertRowid)
+  res.status(201).json(tv)
 })
 
 export default router
 ```
 
-- [ ] **Step 4: Write `server/src/routes/playlists.js`**
+- [ ] **Step 4: Write `server/src/routes/tvs.js`**
+
+```js
+import { Router } from 'express'
+import { getDb } from '../db.js'
+
+const router = Router()
+
+router.delete('/:tvId', (req, res) => {
+  const db = getDb()
+  const tv = db.prepare('SELECT id FROM tvs WHERE id = ?').get(req.params.tvId)
+  if (!tv) return res.status(404).json({ error: 'TV not found' })
+  db.prepare('DELETE FROM tvs WHERE id = ?').run(tv.id)
+  res.status(204).end()
+})
+
+export default router
+```
+
+- [ ] **Step 5: Write `server/src/routes/playlists.js`**
 
 ```js
 import { Router } from 'express'
@@ -712,7 +830,6 @@ router.post('/:id/playlist', (req, res) => {
 
   const db = getDb()
   const agencyId = parseInt(req.params.id)
-
   const agency = db.prepare('SELECT id FROM agencies WHERE id = ?').get(agencyId)
   if (!agency) return res.status(404).json({ error: 'Agency not found' })
 
@@ -735,27 +852,36 @@ router.post('/:id/playlist', (req, res) => {
     ORDER BY pi.position
   `).all(agencyId)
 
-  // Push to connected TVs for this agency
   pushPlaylist(String(agencyId), saved)
-
   res.json(saved)
 })
 
 export default router
 ```
 
-- [ ] **Step 5: Run test — expect PASS**
+- [ ] **Step 6: Mount tvs router in `server/src/index.js`**
+
+Add after the existing `import playlistRoutes` line:
+
+```js
+import tvsRoutes from './routes/tvs.js'
+// ...
+app.use('/api/tvs', requireAuth, tvsRoutes)
+```
+
+- [ ] **Step 7: Run test — expect PASS**
 
 ```bash
 cd server && npx vitest run src/routes/agencies.test.js
 ```
-Expected: `3 tests passed`
+Expected: `8 tests passed`
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
-git add server/src/routes/agencies.js server/src/routes/playlists.js server/src/routes/agencies.test.js
-git commit -m "feat: agency list and playlist get/set routes"
+git add server/src/routes/agencies.js server/src/routes/tvs.js server/src/routes/playlists.js \
+        server/src/routes/agencies.test.js server/src/index.js
+git commit -m "feat: agency and TV CRUD routes, playlist get/set"
 ```
 
 ---
@@ -927,6 +1053,10 @@ export const uploadMedia = (file, onProgress) =>
 export const deleteMedia = (id) => api.delete(`/api/media/${id}`)
 
 export const getAgencies = () => api.get('/api/agencies').then(r => r.data)
+export const createAgency = (name, city) => api.post('/api/agencies', { name, city }).then(r => r.data)
+export const deleteAgency = (id) => api.delete(`/api/agencies/${id}`)
+export const addTv = (agencyId, label) => api.post(`/api/agencies/${agencyId}/tvs`, { label }).then(r => r.data)
+export const deleteTv = (tvId) => api.delete(`/api/tvs/${tvId}`)
 export const getPlaylist = (agencyId) => api.get(`/api/agencies/${agencyId}/playlist`).then(r => r.data)
 export const setPlaylist = (agencyId, items) =>
   api.post(`/api/agencies/${agencyId}/playlist`, { items }).then(r => r.data)
@@ -1196,7 +1326,7 @@ git commit -m "feat: content page with upload and media library"
 
 ---
 
-## Task 9: Dashboard — Agencies page + PlaylistModal
+## Task 9: Dashboard — Agencies page + PlaylistModal + TV management
 
 **Files:**
 - Create: `dashboard/src/pages/Agencies.jsx`
@@ -1319,43 +1449,114 @@ export default function PlaylistModal({ agency, current, onClose, onSaved }) {
 ```jsx
 import { useState } from 'react'
 import PlaylistModal from './PlaylistModal'
+import { addTv, deleteTv, deleteAgency } from '../api'
 
 function tvStatus(tv) {
   if (!tv.last_seen_at) return { online: false, label: 'Niciodată conectat' }
   const diff = Date.now() - new Date(tv.last_seen_at + 'Z').getTime()
   return diff < 60_000
     ? { online: true, label: 'Online' }
-    : { online: false, label: `Offline · ${Math.round(diff / 60000)}m` }
+    : { online: false, label: `Offline · ${Math.round(diff / 60_000)}m` }
 }
 
-export default function AgencyCard({ agency, onPlaylistSaved }) {
+export default function AgencyCard({ agency, onPlaylistSaved, onDeleted }) {
   const [showModal, setShowModal] = useState(false)
+  const [addingTv, setAddingTv] = useState(false)
+  const [tvLabel, setTvLabel] = useState('')
+  const [tvError, setTvError] = useState('')
+
+  const handleAddTv = async (e) => {
+    e.preventDefault()
+    setTvError('')
+    if (!tvLabel.trim()) return setTvError('Introdu un nume pentru TV.')
+    try {
+      await addTv(agency.id, tvLabel.trim())
+      setTvLabel('')
+      setAddingTv(false)
+      onPlaylistSaved() // reload
+    } catch {
+      setTvError('Eroare la adăugare TV.')
+    }
+  }
+
+  const handleDeleteTv = async (tv) => {
+    const { online } = tvStatus(tv)
+    if (online) return alert('Nu poți șterge un TV care e online.')
+    if (!confirm(`Ștergi ${tv.label}?`)) return
+    await deleteTv(tv.id)
+    onPlaylistSaved()
+  }
+
+  const handleDeleteAgency = async () => {
+    if (!confirm(`Ștergi agenția "${agency.name}" și toate TV-urile și playlistul ei?`)) return
+    await deleteAgency(agency.id)
+    onDeleted()
+  }
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-start justify-between mb-3">
         <div>
           <h3 className="font-semibold text-gray-800">{agency.name}</h3>
           <p className="text-xs text-gray-400">{agency.city}</p>
         </div>
-        <button onClick={() => setShowModal(true)}
-          className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-lg">
-          Modifică playlist
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => setShowModal(true)}
+            className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-lg">
+            Modifică playlist
+          </button>
+          <button onClick={handleDeleteAgency}
+            className="text-xs text-red-400 hover:text-red-600 border border-red-100 hover:border-red-300 px-2 py-1.5 rounded-lg">
+            Șterge
+          </button>
+        </div>
       </div>
 
       {/* TV status */}
-      <div className="flex gap-2 mb-3">
+      <div className="flex flex-wrap gap-2 mb-3">
+        {agency.tvs.length === 0 && (
+          <span className="text-xs text-gray-400">Niciun TV adăugat.</span>
+        )}
         {agency.tvs.map(tv => {
           const { online, label } = tvStatus(tv)
           return (
             <span key={tv.id}
-              className={`text-xs px-2 py-1 rounded-full ${online ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+              className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full
+                ${online ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
               {online ? '●' : '○'} {tv.label} — {label}
+              {!online && (
+                <button onClick={() => handleDeleteTv(tv)}
+                  className="ml-1 text-gray-400 hover:text-red-500 leading-none">✕</button>
+              )}
             </span>
           )
         })}
+        <button onClick={() => setAddingTv(v => !v)}
+          className="text-xs text-blue-500 hover:text-blue-700 border border-dashed border-blue-300 px-2 py-1 rounded-full">
+          + TV
+        </button>
       </div>
+
+      {/* Add TV form */}
+      {addingTv && (
+        <form onSubmit={handleAddTv} className="flex gap-2 mb-3 items-center">
+          <input
+            value={tvLabel}
+            onChange={e => setTvLabel(e.target.value)}
+            placeholder='ex: "TV-1" sau "TV-Recepție"'
+            className="flex-1 text-xs border rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          />
+          <button type="submit"
+            className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700">
+            Adaugă
+          </button>
+          <button type="button" onClick={() => setAddingTv(false)}
+            className="text-xs text-gray-400 hover:text-gray-600">
+            Anulează
+          </button>
+        </form>
+      )}
+      {tvError && <p className="text-xs text-red-500 mb-2">{tvError}</p>}
 
       {/* Current playlist */}
       <div className="flex flex-wrap gap-2">
@@ -1386,11 +1587,15 @@ export default function AgencyCard({ agency, onPlaylistSaved }) {
 
 ```jsx
 import { useState, useEffect } from 'react'
-import { getAgencies, getPlaylist } from '../api'
+import { getAgencies, getPlaylist, createAgency } from '../api'
 import AgencyCard from '../components/AgencyCard'
 
 export default function Agencies() {
   const [agencies, setAgencies] = useState([])
+  const [showForm, setShowForm] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [newCity, setNewCity] = useState('')
+  const [formError, setFormError] = useState('')
 
   const load = async () => {
     const list = await getAgencies()
@@ -1402,12 +1607,66 @@ export default function Agencies() {
 
   useEffect(() => { load() }, [])
 
+  const handleCreate = async (e) => {
+    e.preventDefault()
+    setFormError('')
+    if (!newName.trim() || !newCity.trim()) return setFormError('Completează numele și orașul.')
+    try {
+      await createAgency(newName.trim(), newCity.trim())
+      setNewName('')
+      setNewCity('')
+      setShowForm(false)
+      await load()
+    } catch {
+      setFormError('Eroare la creare agenție.')
+    }
+  }
+
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-800 mb-4">Agenții</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold text-gray-800">Agenții ({agencies.length})</h2>
+        <button onClick={() => setShowForm(v => !v)}
+          className="bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold px-4 py-2 rounded-lg">
+          + Agenție nouă
+        </button>
+      </div>
+
+      {showForm && (
+        <form onSubmit={handleCreate}
+          className="bg-white border border-blue-100 rounded-xl p-4 mb-4 flex flex-wrap gap-3 items-end shadow-sm">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Nume agenție</label>
+            <input value={newName} onChange={e => setNewName(e.target.value)}
+              placeholder='ex: "Agenția Floreasca"'
+              className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-56" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Oraș</label>
+            <input value={newCity} onChange={e => setNewCity(e.target.value)}
+              placeholder='ex: "București"'
+              className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-40" />
+          </div>
+          <button type="submit"
+            className="bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-blue-800">
+            Creează
+          </button>
+          <button type="button" onClick={() => setShowForm(false)}
+            className="text-sm text-gray-400 hover:text-gray-600">
+            Anulează
+          </button>
+          {formError && <p className="text-xs text-red-500 w-full">{formError}</p>}
+        </form>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {agencies.map(agency => (
-          <AgencyCard key={agency.id} agency={agency} onPlaylistSaved={load} />
+          <AgencyCard
+            key={agency.id}
+            agency={agency}
+            onPlaylistSaved={load}
+            onDeleted={load}
+          />
         ))}
       </div>
     </div>
@@ -1417,13 +1676,18 @@ export default function Agencies() {
 
 - [ ] **Step 4: Manual test**
 
-Navigate to `/agencies`. See 10 agency cards. Click "Modifică playlist" on one. Add 2 media items. Drag to reorder. Save. Confirm playlist shows on card.
+Navigate to `/agencies`. Confirm 10 agency cards. Test:
+1. Click "+ Agenție nouă" → fill name + city → Creează → card nou apare
+2. Click "+ TV" pe un card → scrie "TV-Recepție" → Adaugă → apare în lista TV-urilor
+3. Click "✕" pe un TV offline → confirmare → TV dispare
+4. Click "Modifică playlist" → adaugă fișiere → drag reordonare → Salvează → playlist apare pe card
+5. Click "Șterge" pe agenția nou creată → confirmare → dispare din listă
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add dashboard/src/pages/Agencies.jsx dashboard/src/components/AgencyCard.jsx dashboard/src/components/PlaylistModal.jsx
-git commit -m "feat: agencies page with playlist management"
+git commit -m "feat: agencies page with create/delete agency, TV management, playlist editor"
 ```
 
 ---
@@ -1986,6 +2250,11 @@ After writing the plan, verify:
 - [x] Upload video + image → Task 4
 - [x] List/delete media → Task 4
 - [x] Per-agency playlist → Task 5
+- [x] Create agency → Task 5 (POST /api/agencies) + Task 9 (UI)
+- [x] Delete agency (with TVs + playlist cascade) → Task 5 + Task 9
+- [x] Add TV to agency → Task 5 (POST /api/agencies/:id/tvs) + Task 9
+- [x] Delete TV → Task 5 (DELETE /api/tvs/:tvId) + Task 9
+- [x] No fixed limit on TVs per agency → handled by dynamic add/delete
 - [x] WebSocket push on playlist change → Task 6 + Task 5 (`pushPlaylist`)
 - [x] TV registration + last_seen_at → Task 6
 - [x] Heartbeat / ping-pong → Task 6

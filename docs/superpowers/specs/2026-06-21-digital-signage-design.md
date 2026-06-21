@@ -39,10 +39,14 @@ Trei componente independente care comunică prin rețea:
 | POST | `/api/media/upload` | Uploadează fișier (video/imagine) |
 | GET | `/api/media` | Listă toate fișierele din librărie |
 | DELETE | `/api/media/:id` | Șterge un fișier |
-| GET | `/api/agencies` | Listă agenții cu statusul TV-urilor |
+| GET | `/api/media/:filename` | Servire fișier media (pentru Pi) |
+| GET | `/api/agencies` | Listă agenții cu TV-urile aferente |
+| POST | `/api/agencies` | Creează agenție nouă |
+| DELETE | `/api/agencies/:id` | Șterge agenție (și TV-urile + playlistul ei) |
+| POST | `/api/agencies/:id/tvs` | Adaugă TV nou la agenție |
+| DELETE | `/api/tvs/:tvId` | Șterge un TV |
 | POST | `/api/agencies/:id/playlist` | Setează playlistul unei agenții |
 | GET | `/api/agencies/:id/playlist` | Returnează playlistul curent |
-| GET | `/api/media/:filename` | Servire fișier media (pentru Pi) |
 
 ### WebSocket
 - Serverul menține o conexiune deschisă cu fiecare Pi
@@ -93,11 +97,16 @@ id, agency_id, media_id, position, display_duration_seconds
 - Buton de ștergere per fișier
 
 **Pagina „Agenții"**
+- Buton „Agenție nouă" → formular simplu (nume, oraș)
 - Card per agenție cu:
   - Statusul TV-urilor (online/offline, ultima conexiune)
+  - Buton „+ Adaugă TV" → formular inline (label, ex: "TV-1", "TV-Recepție")
+  - Buton ștergere per TV (dacă TV-ul e offline)
+  - Buton ștergere agenție (cu confirmare; șterge și TV-urile și playlistul)
   - Playlistul curent (fișiere în ordine)
   - Buton „Modifică playlist" → modal cu drag & drop pentru reordonare și adăugare/eliminare fișiere
 - Modificarea playlistului se trimite instant la TV-urile online
+- Nu există limită fixă de TV-uri per agenție (1, 2, 3 sau mai multe)
 
 **Pagina „TV-uri"**
 - Tabel cu toate cele 20 de TV-uri
