@@ -58,7 +58,14 @@ router.delete('/:id', (req, res) => {
 
 // Serve media file with Range support for video streaming
 router.get('/:filename', (req, res) => {
-  const filePath = path.join(UPLOADS_DIR, req.params.filename)
+  const basename = path.basename(req.params.filename)
+  if (basename !== req.params.filename) return res.status(400).json({ error: 'Invalid filename' })
+  const filePath = path.join(UPLOADS_DIR, basename)
+
+  const ext = path.extname(basename).toLowerCase()
+  const MIME = { '.mp4': 'video/mp4', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png' }
+  const contentType = MIME[ext] || 'application/octet-stream'
+
   try {
     const stat = statSync(filePath)
     const range = req.headers.range
@@ -73,11 +80,11 @@ router.get('/:filename', (req, res) => {
         'Content-Range': `bytes ${start}-${end}/${stat.size}`,
         'Accept-Ranges': 'bytes',
         'Content-Length': chunkSize,
-        'Content-Type': 'video/mp4',
+        'Content-Type': contentType,
       })
       createReadStream(filePath, { start, end }).pipe(res)
     } else {
-      res.writeHead(200, { 'Content-Length': stat.size })
+      res.writeHead(200, { 'Content-Length': stat.size, 'Content-Type': contentType })
       createReadStream(filePath).pipe(res)
     }
   } catch {
