@@ -22,30 +22,38 @@ export function initWebSocket(httpServer) {
         if (!clients.has(agencyId)) clients.set(agencyId, new Set())
         clients.get(agencyId).add(ws)
 
-        // Update TV last_seen_at and ip_address
-        const ip = req.socket.remoteAddress
-        getDb().prepare(`
-          UPDATE tvs SET last_seen_at = datetime('now'), ip_address = ?
-          WHERE agency_id = ? AND label = ?
-        `).run(ip, agencyId, tvId)
+        try {
+          // Update TV last_seen_at and ip_address
+          const ip = req.socket.remoteAddress
+          getDb().prepare(`
+            UPDATE tvs SET last_seen_at = datetime('now'), ip_address = ?
+            WHERE agency_id = ? AND label = ?
+          `).run(ip, agencyId, tvId)
 
-        // Send current playlist immediately on connect
-        const playlist = getDb().prepare(`
-          SELECT pi.*, m.filename, m.original_name, m.type, m.duration_seconds
-          FROM playlist_items pi
-          JOIN media m ON m.id = pi.media_id
-          WHERE pi.agency_id = ?
-          ORDER BY pi.position
-        `).all(agencyId)
+          // Send current playlist immediately on connect
+          const playlist = getDb().prepare(`
+            SELECT pi.*, m.filename, m.original_name, m.type, m.duration_seconds
+            FROM playlist_items pi
+            JOIN media m ON m.id = pi.media_id
+            WHERE pi.agency_id = ?
+            ORDER BY pi.position
+          `).all(agencyId)
 
-        ws.send(JSON.stringify({ type: 'playlist_update', items: playlist }))
+          if (ws.readyState === 1) {
+            ws.send(JSON.stringify({ type: 'playlist_update', items: playlist }))
+          }
+        } catch {}
       }
 
       if (msg.type === 'ping') {
-        ws.send(JSON.stringify({ type: 'pong' }))
         if (agencyId && tvId) {
-          getDb().prepare(`UPDATE tvs SET last_seen_at = datetime('now') WHERE agency_id = ? AND label = ?`)
-            .run(agencyId, tvId)
+          try {
+            getDb().prepare(`UPDATE tvs SET last_seen_at = datetime('now') WHERE agency_id = ? AND label = ?`)
+              .run(agencyId, tvId)
+          } catch {}
+        }
+        if (ws.readyState === 1) {
+          ws.send(JSON.stringify({ type: 'pong' }))
         }
       }
     })
@@ -53,6 +61,7 @@ export function initWebSocket(httpServer) {
     ws.on('close', () => {
       if (agencyId && clients.has(agencyId)) {
         clients.get(agencyId).delete(ws)
+        if (clients.get(agencyId).size === 0) clients.delete(agencyId)
       }
     })
   })
