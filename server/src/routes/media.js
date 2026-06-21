@@ -56,8 +56,8 @@ router.delete('/:id', (req, res) => {
   res.status(204).end()
 })
 
-// Serve media file with Range support for video streaming
-router.get('/:filename', (req, res) => {
+// Serve media file with Range support for video streaming (public — no auth needed)
+export function serveFile(req, res) {
   const basename = path.basename(req.params.filename)
   if (basename !== req.params.filename) return res.status(400).json({ error: 'Invalid filename' })
   const filePath = path.join(UPLOADS_DIR, basename)
@@ -90,6 +90,6 @@ router.get('/:filename', (req, res) => {
   } catch {
     res.status(404).json({ error: 'File not found' })
   }
-})
+}
 
 export default router

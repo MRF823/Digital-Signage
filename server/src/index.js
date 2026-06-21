@@ -3,7 +3,7 @@ import cors from 'cors'
 import { createServer } from 'http'
 import { initDb } from './db.js'
 import { initWebSocket } from './websocket.js'
-import mediaRoutes from './routes/media.js'
+import mediaRoutes, { serveFile } from './routes/media.js'
 import agencyRoutes from './routes/agencies.js'
 import playlistRoutes from './routes/playlists.js'
 import tvsRoutes from './routes/tvs.js'
@@ -23,6 +23,8 @@ initDb()
 initWebSocket(httpServer)
 
 app.post('/api/login', loginRateLimit, loginHandler)
+// File serving is public — filenames are random UUIDs, not guessable; needed for <video> elements
+app.get('/api/media/:filename', serveFile)
 app.use('/api/media', requireAuth, mediaRoutes)
 app.use('/api/agencies', requireAuth, agencyRoutes)
 app.use('/api/agencies', requireAuth, playlistRoutes)
