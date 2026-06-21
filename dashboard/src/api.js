@@ -40,6 +40,18 @@ export const getPlaylist = (agencyId) => api.get(`/api/agencies/${agencyId}/play
 export const setPlaylist = (agencyId, items) =>
   api.post(`/api/agencies/${agencyId}/playlist`, { items }).then(r => r.data)
 
+export const getGroups = () => api.get('/api/groups').then(r => r.data)
+export const createGroup = (name) => api.post('/api/groups', { name }).then(r => r.data)
+export const deleteGroup = (id) => api.delete(`/api/groups/${id}`)
+export const addAgencyToGroup = (groupId, agencyId) =>
+  api.post(`/api/groups/${groupId}/agencies`, { agency_id: agencyId }).then(r => r.data)
+export const removeAgencyFromGroup = (groupId, agencyId) =>
+  api.delete(`/api/groups/${groupId}/agencies/${agencyId}`)
+export const getGroupPlaylist = (groupId) =>
+  api.get(`/api/groups/${groupId}/playlist`).then(r => r.data)
+export const setGroupPlaylist = (groupId, items) =>
+  api.post(`/api/groups/${groupId}/playlist`, { items }).then(r => r.data)
+
 export const mediaUrl = (filename) => `${BASE}/api/media/${filename}`
 
 export default api

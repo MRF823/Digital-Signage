@@ -1,5 +1,9 @@
 server/uploads/
 server/signage.db
+server/signage.db-shm
+server/signage.db-wal
 node_modules/
 dist/
 .env
+.claude/
+.superpowers/

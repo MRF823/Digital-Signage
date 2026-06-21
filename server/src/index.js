@@ -7,6 +7,7 @@ import mediaRoutes, { serveFile } from './routes/media.js'
 import agencyRoutes from './routes/agencies.js'
 import playlistRoutes from './routes/playlists.js'
 import tvsRoutes from './routes/tvs.js'
+import groupRoutes from './routes/groups.js'
 import { loginHandler, requireAuth } from './auth.js'
 import rateLimit from 'express-rate-limit'
 
@@ -29,6 +30,7 @@ app.use('/api/media', requireAuth, mediaRoutes)
 app.use('/api/agencies', requireAuth, agencyRoutes)
 app.use('/api/agencies', requireAuth, playlistRoutes)
 app.use('/api/tvs', requireAuth, tvsRoutes)
+app.use('/api/groups', requireAuth, groupRoutes)
 
 export { app, httpServer }
 

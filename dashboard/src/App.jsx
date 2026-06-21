@@ -3,6 +3,7 @@ import Login from './pages/Login'
 import Content from './pages/Content'
 import Agencies from './pages/Agencies'
 import TVs from './pages/TVs'
+import Groups from './pages/Groups'
 
 function Layout({ children }) {
   const navigate = useNavigate()
@@ -11,7 +12,7 @@ function Layout({ children }) {
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-blue-900 text-white px-6 py-3 flex items-center gap-8">
         <span className="font-bold text-blue-300 text-lg">BancaSign</span>
-        {[['/', 'Conținut'], ['/agencies', 'Agenții'], ['/tvs', 'TV-uri']].map(([to, label]) => (
+        {[['/', 'Conținut'], ['/agencies', 'Agenții'], ['/tvs', 'TV-uri'], ['/groups', 'Grupuri']].map(([to, label]) => (
           <NavLink key={to} to={to} end={to === '/'}
             className={({ isActive }) => isActive ? 'text-white border-b-2 border-blue-400 pb-1' : 'text-blue-200 hover:text-white'}>
             {label}
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="/" element={<AuthGuard><Layout><Content /></Layout></AuthGuard>} />
         <Route path="/agencies" element={<AuthGuard><Layout><Agencies /></Layout></AuthGuard>} />
         <Route path="/tvs" element={<AuthGuard><Layout><TVs /></Layout></AuthGuard>} />
+        <Route path="/groups" element={<AuthGuard><Layout><Groups /></Layout></AuthGuard>} />
       </Routes>
     </BrowserRouter>
   )

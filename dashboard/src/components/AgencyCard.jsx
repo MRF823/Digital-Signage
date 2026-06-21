@@ -10,7 +10,7 @@ function tvStatus(tv) {
     : { online: false, label: `Offline · ${Math.round(diff / 60_000)}m` }
 }
 
-export default function AgencyCard({ agency, onPlaylistSaved, onDeleted }) {
+export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDeleted }) {
   const [showModal, setShowModal] = useState(false)
   const [addingTv, setAddingTv] = useState(false)
   const [tvLabel, setTvLabel] = useState('')
@@ -50,17 +50,25 @@ export default function AgencyCard({ agency, onPlaylistSaved, onDeleted }) {
         <div>
           <h3 className="font-semibold text-gray-800">{agency.name}</h3>
           <p className="text-xs text-gray-400">{agency.city}</p>
+          {groupName && (
+            <span className="inline-block mt-1 text-xs bg-purple-100 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full">
+              Grup: {groupName}
+            </span>
+          )}
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setShowModal(true)}
-            className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-lg">
-            Modifică playlist
-          </button>
+          {!groupName && (
+            <button onClick={() => setShowModal(true)}
+              className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-lg">
+              Modifică playlist
+            </button>
+          )}
           <button onClick={handleDeleteAgency}
             className="text-xs text-red-400 hover:text-red-600 border border-red-100 hover:border-red-300 px-2 py-1.5 rounded-lg">
             Șterge
           </button>
         </div>
+
       </div>
 
       <div className="flex flex-wrap gap-2 mb-3">

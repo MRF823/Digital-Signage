@@ -1,20 +1,28 @@
 import { useState, useEffect } from 'react'
-import { getAgencies, getPlaylist, createAgency } from '../api'
+import { getAgencies, getPlaylist, createAgency, getGroups } from '../api'
 import AgencyCard from '../components/AgencyCard'
 
 export default function Agencies() {
   const [agencies, setAgencies] = useState([])
+  const [agencyGroupMap, setAgencyGroupMap] = useState({})
   const [showForm, setShowForm] = useState(false)
   const [newName, setNewName] = useState('')
   const [newCity, setNewCity] = useState('')
   const [formError, setFormError] = useState('')
 
   const load = async () => {
-    const list = await getAgencies()
+    const [list, groups] = await Promise.all([getAgencies(), getGroups()])
     const withPlaylists = await Promise.all(
       list.map(async a => ({ ...a, playlist: await getPlaylist(a.id) }))
     )
     setAgencies(withPlaylists)
+    const map = {}
+    for (const g of groups) {
+      for (const a of g.agencies) {
+        map[a.id] = g.name
+      }
+    }
+    setAgencyGroupMap(map)
   }
 
   useEffect(() => { load() }, [])
@@ -76,6 +84,7 @@ export default function Agencies() {
           <AgencyCard
             key={agency.id}
             agency={agency}
+            groupName={agencyGroupMap[agency.id] || null}
             onPlaylistSaved={load}
             onDeleted={load}
           />

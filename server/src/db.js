@@ -42,6 +42,16 @@ export function initDb(path = './signage.db') {
       position INTEGER NOT NULL,
       display_duration_seconds REAL
     );
+    CREATE TABLE IF NOT EXISTS groups (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS group_members (
+      group_id INTEGER NOT NULL REFERENCES groups(id),
+      agency_id INTEGER NOT NULL REFERENCES agencies(id),
+      UNIQUE(agency_id)
+    );
   `)
 
   const adminExists = db.prepare('SELECT id FROM admin LIMIT 1').get()
