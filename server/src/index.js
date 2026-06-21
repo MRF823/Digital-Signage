@@ -10,17 +10,19 @@ import tvsRoutes from './routes/tvs.js'
 import { loginHandler, requireAuth } from './auth.js'
 import rateLimit from 'express-rate-limit'
 
+const loginRateLimit = rateLimit({ windowMs: 15 * 60_000, max: 10 })
+
 const app = express()
 const httpServer = createServer(app)
 
-app.use(cors())
+app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173' }))
 app.use(express.json())
 app.use(rateLimit({ windowMs: 60_000, max: 100 }))
 
 initDb()
 initWebSocket(httpServer)
 
-app.post('/api/login', loginHandler)
+app.post('/api/login', loginRateLimit, loginHandler)
 app.use('/api/media', requireAuth, mediaRoutes)
 app.use('/api/agencies', requireAuth, agencyRoutes)
 app.use('/api/agencies', requireAuth, playlistRoutes)
