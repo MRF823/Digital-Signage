@@ -16,35 +16,40 @@ export function useWebSocket(onMessage) {
   const connect = useCallback(() => {
     if (ws.current?.readyState === WebSocket.OPEN || ws.current?.readyState === WebSocket.CONNECTING) return
 
-    ws.current = new WebSocket(SERVER_URL)
+    const socket = new WebSocket(SERVER_URL)
+    ws.current = socket
 
-    ws.current.onopen = () => {
-      ws.current.send(JSON.stringify({ type: 'register', agencyId: AGENCY_ID, tvId: TV_ID }))
+    socket.onopen = () => {
+      if (ws.current !== socket) { socket.close(); return }
+      socket.send(JSON.stringify({ type: 'register', agencyId: AGENCY_ID, tvId: TV_ID }))
       pingTimer.current = setInterval(() => {
-        if (ws.current?.readyState === WebSocket.OPEN) {
-          ws.current.send(JSON.stringify({ type: 'ping' }))
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({ type: 'ping' }))
         }
       }, PING_MS)
     }
 
-    ws.current.onmessage = (e) => {
+    socket.onmessage = (e) => {
       try { onMessageRef.current(JSON.parse(e.data)) } catch {}
     }
 
-    ws.current.onclose = () => {
+    socket.onclose = () => {
+      if (ws.current !== socket) return
       clearInterval(pingTimer.current)
       reconnectTimer.current = setTimeout(connect, RECONNECT_MS)
     }
 
-    ws.current.onerror = () => ws.current?.close()
+    socket.onerror = () => socket.close()
   }, [])
 
   useEffect(() => {
     connect()
     return () => {
+      const socket = ws.current
+      ws.current = null
       clearTimeout(reconnectTimer.current)
       clearInterval(pingTimer.current)
-      ws.current?.close()
+      socket?.close()
     }
   }, [connect])
 }
