@@ -14,7 +14,7 @@ export function useWebSocket(onMessage) {
   onMessageRef.current = onMessage
 
   const connect = useCallback(() => {
-    if (ws.current?.readyState === WebSocket.OPEN) return
+    if (ws.current?.readyState === WebSocket.OPEN || ws.current?.readyState === WebSocket.CONNECTING) return
 
     ws.current = new WebSocket(SERVER_URL)
 
