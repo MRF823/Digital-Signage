@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react'
 
-const SERVER_URL = import.meta.env.VITE_SERVER_WS || 'ws://localhost:4000'
+const SERVER_URL = import.meta.env.VITE_SERVER_WS || `ws://${window.location.hostname}:4000`
 const AGENCY_ID = import.meta.env.VITE_AGENCY_ID || '1'
 const TV_ID = import.meta.env.VITE_TV_ID || 'TV-1'
 const RECONNECT_MS = 10_000
