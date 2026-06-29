@@ -38,18 +38,11 @@ export default function App() {
   const current = playlist[index % playlist.length]
   const src = urls[current?.filename]
 
-  if (!src) {
-    next()
-    return null
-  }
-
   return (
     <div style={{ width: '100vw', height: '100vh', background: 'black' }}>
-      {current.type === 'video' ? (
-        <VideoPlayer src={src} onEnded={next} />
-      ) : (
-        <ImageDisplay src={src} duration={current.display_duration_seconds} onEnded={next} />
-      )}
+      {src && current.type === 'video' && <VideoPlayer key={src} src={src} onEnded={next} />}
+      {src && current.type === 'image' && <ImageDisplay key={src} src={src} duration={current.display_duration_seconds} onEnded={next} />}
+      {!src && null}
     </div>
   )
 }
