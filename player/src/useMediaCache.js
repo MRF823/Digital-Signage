@@ -45,13 +45,15 @@ export function useMediaCache() {
         result[item.filename] = URL.createObjectURL(cached)
       } else {
         try {
-          const res = await fetch(`${SERVER_URL}/api/media/${item.filename}`)
+          const res = await fetch(`${SERVER_URL}/api/media/${item.filename}`, {
+            signal: AbortSignal.timeout(5_000),
+          })
           if (!res.ok) continue
           const blob = await res.blob()
           await putCached(db, item.filename, blob)
           result[item.filename] = URL.createObjectURL(blob)
         } catch {
-          // offline or fetch failed — item skipped this cycle
+          // offline sau timeout — item omis, va fi reîncercat la reconectare
         }
       }
     }

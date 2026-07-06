@@ -52,6 +52,19 @@ router.delete('/:id', (req, res) => {
   }
 })
 
+router.patch('/:id/coords', (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    const { lat, lng } = req.body
+    if (isNaN(id) || lat == null || lng == null) return res.status(400).json({ error: 'lat and lng required' })
+    const db = getDb()
+    db.prepare('UPDATE agencies SET lat = ?, lng = ? WHERE id = ?').run(lat, lng, id)
+    res.json({ ok: true })
+  } catch {
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 router.post('/:id/tvs', (req, res) => {
   try {
     const { label } = req.body

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 const SERVER_URL = import.meta.env.VITE_SERVER_WS || `ws://${window.location.hostname}:4000`
 const AGENCY_ID = import.meta.env.VITE_AGENCY_ID || '1'
@@ -12,6 +12,7 @@ export function useWebSocket(onMessage) {
   const reconnectTimer = useRef(null)
   const onMessageRef = useRef(onMessage)
   onMessageRef.current = onMessage
+  const [connected, setConnected] = useState(false)
 
   const connect = useCallback(() => {
     if (ws.current?.readyState === WebSocket.OPEN || ws.current?.readyState === WebSocket.CONNECTING) return
@@ -21,6 +22,7 @@ export function useWebSocket(onMessage) {
 
     socket.onopen = () => {
       if (ws.current !== socket) { socket.close(); return }
+      setConnected(true)
       socket.send(JSON.stringify({ type: 'register', agencyId: AGENCY_ID, tvId: TV_ID }))
       pingTimer.current = setInterval(() => {
         if (socket.readyState === WebSocket.OPEN) {
@@ -35,6 +37,7 @@ export function useWebSocket(onMessage) {
 
     socket.onclose = () => {
       if (ws.current !== socket) return
+      setConnected(false)
       clearInterval(pingTimer.current)
       reconnectTimer.current = setTimeout(connect, RECONNECT_MS)
     }
@@ -52,4 +55,12 @@ export function useWebSocket(onMessage) {
       socket?.close()
     }
   }, [connect])
+
+  const send = useCallback((data) => {
+    if (ws.current?.readyState === WebSocket.OPEN) {
+      ws.current.send(JSON.stringify(data))
+    }
+  }, [])
+
+  return { connected, send }
 }

@@ -37,6 +37,31 @@ router.get('/', (req, res) => {
   }
 })
 
+// PATCH /api/groups/:id — update group settings (transition, power schedule)
+router.patch('/:id', (req, res) => {
+  const id = parseInt(req.params.id, 10)
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid id' })
+  const db = getDb()
+  if (!db.prepare('SELECT id FROM groups WHERE id = ?').get(id))
+    return res.status(404).json({ error: 'Group not found' })
+
+  const { transition, power_on_time, power_off_time } = req.body
+
+  if (transition !== undefined) {
+    if (!['none', 'fade', 'slide', 'zoom'].includes(transition))
+      return res.status(400).json({ error: 'Invalid transition' })
+    db.prepare('UPDATE groups SET transition = ? WHERE id = ?').run(transition, id)
+  }
+
+  if (power_on_time !== undefined || power_off_time !== undefined) {
+    const onTime = power_on_time || null
+    const offTime = power_off_time || null
+    db.prepare('UPDATE groups SET power_on_time = ?, power_off_time = ? WHERE id = ?').run(onTime, offTime, id)
+  }
+
+  res.json({ ok: true })
+})
+
 // POST /api/groups — create group
 router.post('/', (req, res) => {
   try {
@@ -160,9 +185,11 @@ router.post('/:id/playlist', (req, res) => {
       ORDER BY pi.position
     `).all(members[0].agency_id)
 
-    // Push to all TVs of all agencies in group
+    // Push to all TVs of all agencies in group (include transition setting)
+    const groupData = db.prepare('SELECT transition FROM groups WHERE id = ?').get(groupId)
+    const transition = groupData?.transition || 'fade'
     for (const { agency_id } of members) {
-      pushPlaylist(String(agency_id), saved)
+      pushPlaylist(String(agency_id), saved, transition)
     }
 
     res.json(saved)

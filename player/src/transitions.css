@@ -1,0 +1,15 @@
+.t-exit-fade  { animation: tExitFade  0.35s ease forwards; }
+.t-enter-fade  { animation: tEnterFade  0.35s ease forwards; }
+.t-exit-slide  { animation: tExitSlide 0.35s ease forwards; }
+.t-enter-slide { animation: tEnterSlide 0.35s ease forwards; }
+.t-exit-zoom   { animation: tExitZoom  0.3s  ease forwards; }
+.t-enter-zoom  { animation: tEnterZoom  0.3s  ease forwards; }
+
+@keyframes tExitFade  { to   { opacity: 0; } }
+@keyframes tEnterFade { from { opacity: 0; } to { opacity: 1; } }
+
+@keyframes tExitSlide  { to   { opacity: 0; transform: translateX(-5%); } }
+@keyframes tEnterSlide { from { opacity: 0; transform: translateX(5%);  } to { opacity: 1; transform: translateX(0); } }
+
+@keyframes tExitZoom  { to   { opacity: 0; transform: scale(1.05); } }
+@keyframes tEnterZoom { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }

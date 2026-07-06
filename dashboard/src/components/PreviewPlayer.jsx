@@ -1,12 +1,86 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { mediaUrl } from '../api'
+import { mediaUrl, getRates } from '../api'
+
+const CURRENCIES = ['EUR', 'USD', 'CHF', 'GBP']
+
+function Ticker({ rates, updatedAt }) {
+  if (!rates) return null
+
+  const time = updatedAt
+    ? new Date(updatedAt).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })
+    : null
+
+  const s = {
+    wrap: {
+      background: '#fff', borderTop: '1px solid rgba(0,0,0,0.08)',
+      fontFamily: 'system-ui, -apple-system, sans-serif', flexShrink: 0,
+    },
+    row: (bg) => ({
+      display: 'flex', alignItems: 'center', padding: '7px 20px',
+      background: bg,
+      borderBottom: bg === '#fff' ? '1px solid rgba(0,0,0,0.06)' : 'none',
+    }),
+    label: (color) => ({ fontSize: 11, fontWeight: 600, color, width: 72, flexShrink: 0, letterSpacing: '0.05em' }),
+    cell: { display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderLeft: '1px solid rgba(0,0,0,0.06)' },
+    cur: { fontSize: 12, fontWeight: 600, color: '#374151', width: 26 },
+    tag: { fontSize: 10, color: '#9ca3af' },
+    val: () => ({ fontSize: 15, fontWeight: 600, color: '#111827', fontVariantNumeric: 'tabular-nums' }),
+    dash: { fontSize: 15, color: '#d1d5db' },
+  }
+
+  return (
+    <div style={s.wrap}>
+      <div style={s.row('#fff')}>
+        <span style={{ ...s.label('#16a34a'), fontSize: 13 }}>CEC BANK</span>
+        {CURRENCIES.map(c => {
+          const r = rates[c]
+          const hasBuySell = r?.buy != null || r?.sell != null
+          return (
+            <div key={c} style={s.cell}>
+              <span style={s.cur}>{c}</span>
+              {hasBuySell ? (
+                <>
+                  <span style={s.tag}>cmp</span>
+                  <span style={s.val('#0F6E56')}>{r.buy?.toFixed(4) ?? '—'}</span>
+                  <span style={{ fontSize: 12, color: '#d1d5db' }}>/</span>
+                  <span style={s.tag}>vnd</span>
+                  <span style={s.val('#993C1D')}>{r.sell?.toFixed(4) ?? '—'}</span>
+                </>
+              ) : (
+                <span style={s.dash}>—</span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+      <div style={s.row('#fafaf9')}>
+        <span style={s.label('#854F0B')}>BNR REF.</span>
+        {CURRENCIES.map(c => (
+          <div key={c} style={s.cell}>
+            <span style={s.cur}>{c}</span>
+            {rates[c]?.reference != null
+              ? <span style={s.val('#854F0B')}>{rates[c].reference.toFixed(4)}</span>
+              : <span style={s.dash}>—</span>
+            }
+          </div>
+        ))}
+        {time && <span style={{ marginLeft: 'auto', fontSize: 10, color: '#9ca3af' }}>{time}</span>}
+      </div>
+    </div>
+  )
+}
 
 export default function PreviewPlayer({ items, onClose }) {
   const [current, setCurrent] = useState(0)
   const [timeLeft, setTimeLeft] = useState(null)
   const [playing, setPlaying] = useState(true)
+  const [ratesData, setRatesData] = useState(null)
   const videoRef = useRef(null)
   const timerRef = useRef(null)
+
+  useEffect(() => {
+    getRates().then(data => { if (data?.rates) setRatesData(data) }).catch(() => {})
+  }, [])
 
   const item = items[current]
 
@@ -19,6 +93,12 @@ export default function PreviewPlayer({ items, onClose }) {
     clearInterval(timerRef.current)
     setCurrent(prev => (prev - 1 + items.length) % items.length)
   }
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   useEffect(() => {
     clearInterval(timerRef.current)
@@ -55,7 +135,7 @@ export default function PreviewPlayer({ items, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black z-[60] flex flex-col">
-      <div className="flex-1 flex items-center justify-center relative">
+      <div className="flex-1 flex items-center justify-center relative" style={{ minHeight: 0 }}>
         {item.type === 'video' ? (
           <video
             ref={videoRef}
@@ -80,6 +160,8 @@ export default function PreviewPlayer({ items, onClose }) {
         )}
       </div>
 
+      <Ticker rates={ratesData?.rates} updatedAt={ratesData?.updatedAt} />
+
       <div className="bg-black/80 px-6 py-4 flex items-center gap-4">
         <button onClick={goPrev} className="text-white hover:text-blue-400 text-xl px-2">⏮</button>
         <button onClick={togglePlay} className="text-white hover:text-blue-400 text-2xl px-2">
@@ -101,7 +183,7 @@ export default function PreviewPlayer({ items, onClose }) {
 
         <button onClick={onClose}
           className="text-white/60 hover:text-white text-sm border border-white/30 px-3 py-1.5 rounded-lg ml-2">
-          Închide
+          ESC / Închide
         </button>
       </div>
     </div>

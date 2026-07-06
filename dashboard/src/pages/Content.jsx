@@ -2,11 +2,13 @@ import { useState, useEffect, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { getMedia, uploadMedia, deleteMedia } from '../api'
 import MediaCard from '../components/MediaCard'
+import PreviewPlayer from '../components/PreviewPlayer'
 
 export default function Content() {
   const [media, setMedia] = useState([])
   const [progress, setProgress] = useState(null)
   const [error, setError] = useState('')
+  const [previewing, setPreviewing] = useState(false)
 
   const load = () => getMedia().then(setMedia)
   useEffect(() => { load() }, [])
@@ -39,7 +41,18 @@ export default function Content() {
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-800 mb-4">Conținut Media</h2>
+      {previewing && <PreviewPlayer items={media} onClose={() => setPreviewing(false)} />}
+
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold text-gray-800">Conținut Media</h2>
+        {media.length > 0 && (
+          <button onClick={() => setPreviewing(true)}
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-4 py-2 rounded-lg">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Previzualizare
+          </button>
+        )}
+      </div>
 
       <div {...getRootProps()}
         className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer mb-6 transition-colors

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import PlaylistModal from './PlaylistModal'
+import PreviewPlayer from './PreviewPlayer'
 import { addTv, deleteTv, deleteAgency } from '../api'
 
 function tvStatus(tv) {
@@ -12,6 +13,7 @@ function tvStatus(tv) {
 
 export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDeleted }) {
   const [showModal, setShowModal] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
   const [addingTv, setAddingTv] = useState(false)
   const [tvLabel, setTvLabel] = useState('')
   const [tvError, setTvError] = useState('')
@@ -57,6 +59,13 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
           )}
         </div>
         <div className="flex gap-2">
+          {agency.playlist?.length > 0 && (
+            <button onClick={() => setShowPreview(true)}
+              className="text-xs bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Preview
+            </button>
+          )}
           {!groupName && (
             <button onClick={() => setShowModal(true)}
               className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-lg">
@@ -125,6 +134,10 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
           </span>
         ))}
       </div>
+
+      {showPreview && agency.playlist?.length > 0 && (
+        <PreviewPlayer items={agency.playlist} onClose={() => setShowPreview(false)} />
+      )}
 
       {showModal && (
         <PlaylistModal

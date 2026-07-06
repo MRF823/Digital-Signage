@@ -1,5 +1,7 @@
 import { WebSocketServer } from 'ws'
 import { getDb } from './db.js'
+import { getCurrentRates } from './rates.js'
+import { shouldScreenBeOn } from './scheduler.js'
 
 // Map: agencyId (string) -> Set of WebSocket clients
 const clients = new Map()
@@ -31,7 +33,8 @@ export function initWebSocket(httpServer) {
           `).run(ip, agencyId, tvId)
 
           // Send current playlist immediately on connect
-          const playlist = getDb().prepare(`
+          const db2 = getDb()
+          const playlist = db2.prepare(`
             SELECT pi.*, m.filename, m.original_name, m.type, m.duration_seconds
             FROM playlist_items pi
             JOIN media m ON m.id = pi.media_id
@@ -39,10 +42,51 @@ export function initWebSocket(httpServer) {
             ORDER BY pi.position
           `).all(agencyId)
 
+          const groupRow = db2.prepare(`
+            SELECT g.transition FROM groups g
+            JOIN group_members gm ON gm.group_id = g.id
+            WHERE gm.agency_id = ? LIMIT 1
+          `).get(agencyId)
+          const transition = groupRow?.transition || 'fade'
+
           if (ws.readyState === 1) {
-            ws.send(JSON.stringify({ type: 'playlist_update', items: playlist }))
+            ws.send(JSON.stringify({ type: 'playlist_update', items: playlist, transition }))
+          }
+
+          // Trimite cursul valutar curent imediat la conectare
+          const rates = getCurrentRates()
+          if (rates && ws.readyState === 1) {
+            ws.send(JSON.stringify({ type: 'rates_update', ...rates }))
+          }
+
+          // Dacă ecranul ar trebui să fie off, trimite comanda la conectare
+          const powerRow = db2.prepare(`
+            SELECT g.power_on_time, g.power_off_time FROM groups g
+            JOIN group_members gm ON gm.group_id = g.id
+            WHERE gm.agency_id = ? LIMIT 1
+          `).get(agencyId)
+          if (!shouldScreenBeOn(powerRow?.power_on_time, powerRow?.power_off_time)) {
+            if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'screen_power', on: false }))
           }
         } catch {}
+      }
+
+      if (msg.type === 'play_log' && agencyId && tvId) {
+        try {
+          getDb().prepare(`
+            INSERT INTO play_log (agency_id, tv_label, filename, original_name, media_type, played_at, duration_seconds)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+          `).run(agencyId, tvId, msg.filename, msg.original_name, msg.media_type, msg.played_at, msg.duration_seconds ?? null)
+        } catch {}
+
+        // Sync: broadcast advance to all OTHER TVs in same agency
+        const syncMsg = JSON.stringify({ type: 'sync_advance' })
+        const agencyClients = clients.get(agencyId)
+        if (agencyClients) {
+          for (const client of agencyClients) {
+            if (client !== ws && client.readyState === 1) client.send(syncMsg)
+          }
+        }
       }
 
       if (msg.type === 'ping') {
@@ -67,8 +111,26 @@ export function initWebSocket(httpServer) {
   })
 }
 
-export function pushPlaylist(agencyId, items) {
-  const msg = JSON.stringify({ type: 'playlist_update', items })
+export function pushRatesToAll(data) {
+  const msg = JSON.stringify({ type: 'rates_update', ...data })
+  for (const agencyClients of clients.values()) {
+    for (const client of agencyClients) {
+      if (client.readyState === 1) client.send(msg)
+    }
+  }
+}
+
+export function pushScreenPower(agencyId, on) {
+  const msg = JSON.stringify({ type: 'screen_power', on })
+  const agencyClients = clients.get(String(agencyId))
+  if (!agencyClients) return
+  for (const client of agencyClients) {
+    if (client.readyState === 1) client.send(msg)
+  }
+}
+
+export function pushPlaylist(agencyId, items, transition = 'fade') {
+  const msg = JSON.stringify({ type: 'playlist_update', items, transition })
   const agencyClients = clients.get(String(agencyId))
   if (!agencyClients) return
   for (const client of agencyClients) {

@@ -34,6 +34,7 @@ export const deleteMedia = (id) => api.delete(`/api/media/${id}`)
 export const getAgencies = () => api.get('/api/agencies').then(r => r.data)
 export const createAgency = (name, city) => api.post('/api/agencies', { name, city }).then(r => r.data)
 export const deleteAgency = (id) => api.delete(`/api/agencies/${id}`)
+export const updateAgencyCoords = (agencyId, lat, lng) => api.patch(`/api/agencies/${agencyId}/coords`, { lat, lng }).then(r => r.data)
 export const addTv = (agencyId, label) => api.post(`/api/agencies/${agencyId}/tvs`, { label }).then(r => r.data)
 export const deleteTv = (tvId) => api.delete(`/api/tvs/${tvId}`)
 export const getPlaylist = (agencyId) => api.get(`/api/agencies/${agencyId}/playlist`).then(r => r.data)
@@ -51,6 +52,27 @@ export const getGroupPlaylist = (groupId) =>
   api.get(`/api/groups/${groupId}/playlist`).then(r => r.data)
 export const setGroupPlaylist = (groupId, items) =>
   api.post(`/api/groups/${groupId}/playlist`, { items }).then(r => r.data)
+
+export const updateGroupTransition = (groupId, transition) =>
+  api.patch(`/api/groups/${groupId}`, { transition }).then(r => r.data)
+
+export const updateGroupPower = (groupId, power_on_time, power_off_time) =>
+  api.patch(`/api/groups/${groupId}`, { power_on_time, power_off_time }).then(r => r.data)
+
+export const getSchedules = (groupId) => api.get(`/api/groups/${groupId}/schedules`).then(r => r.data)
+export const createSchedule = (groupId, data) => api.post(`/api/groups/${groupId}/schedules`, data).then(r => r.data)
+export const updateSchedule = (groupId, slotId, data) => api.put(`/api/groups/${groupId}/schedules/${slotId}`, data).then(r => r.data)
+export const deleteSchedule = (groupId, slotId) => api.delete(`/api/groups/${groupId}/schedules/${slotId}`)
+
+export const getCampaigns = () => api.get('/api/campaigns').then(r => r.data)
+export const getCampaignsByAgency = (agencyId) => api.get(`/api/campaigns/${agencyId}`).then(r => r.data)
+export const createCampaign = (data) => api.post('/api/campaigns', data).then(r => r.data)
+export const deleteCampaign = (id) => api.delete(`/api/campaigns/${id}`)
+
+export const getRates = () => api.get('/api/rates').then(r => r.data)
+
+export const getPlayLog = (params = {}) =>
+  api.get('/api/play-log', { params }).then(r => r.data)
 
 export const mediaUrl = (filename) => `${BASE}/api/media/${filename}`
 
