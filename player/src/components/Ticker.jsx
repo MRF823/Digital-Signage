@@ -33,10 +33,12 @@ export default function Ticker({ rates, updatedAt, cecUpdatedAt, bnrUpdatedAt })
 
   const s = {
     wrap: {
-      position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
       fontFamily: 'system-ui, -apple-system, sans-serif',
       background: '#fff',
       borderTop: '1px solid rgba(0,0,0,0.08)',
+      display: 'flex',
+      flexDirection: 'column',
+      flexShrink: 0,
     },
     row: (bg) => ({
       display: 'flex', alignItems: 'center', padding: '7px 20px',
