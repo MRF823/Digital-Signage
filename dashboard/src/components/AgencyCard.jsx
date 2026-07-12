@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import PlaylistModal from './PlaylistModal'
 import PreviewPlayer from './PreviewPlayer'
-import { addTv, deleteTv, deleteAgency } from '../api'
+import { addTv, deleteTv, deleteAgency, updateTvOrientation } from '../api'
 
 function tvStatus(tv) {
   if (!tv.last_seen_at) return { online: false, label: 'Niciodată conectat' }
@@ -16,6 +16,7 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
   const [showPreview, setShowPreview] = useState(false)
   const [addingTv, setAddingTv] = useState(false)
   const [tvLabel, setTvLabel] = useState('')
+  const [tvOrientation, setTvOrientation] = useState('landscape')
   const [tvError, setTvError] = useState('')
 
   const handleAddTv = async (e) => {
@@ -23,13 +24,22 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
     setTvError('')
     if (!tvLabel.trim()) return setTvError('Introdu un nume pentru TV.')
     try {
-      await addTv(agency.id, tvLabel.trim())
+      await addTv(agency.id, tvLabel.trim(), tvOrientation)
       setTvLabel('')
+      setTvOrientation('landscape')
       setAddingTv(false)
       onPlaylistSaved()
     } catch {
       setTvError('Eroare la adăugare TV.')
     }
+  }
+
+  const handleToggleOrientation = async (tv) => {
+    const next = tv.orientation === 'portrait' ? 'landscape' : 'portrait'
+    try {
+      await updateTvOrientation(agency.id, tv.id, next)
+      onPlaylistSaved()
+    } catch {}
   }
 
   const handleDeleteTv = async (tv) => {
@@ -89,11 +99,17 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
         )}
         {agency.tvs.map(tv => {
           const { online, label } = tvStatus(tv)
+          const isPortrait = tv.orientation === 'portrait'
           return (
             <span key={tv.id}
               className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full
                 ${online ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
               {online ? '●' : '○'} {tv.label} — {label}
+              <button
+                onClick={() => handleToggleOrientation(tv)}
+                title={`Orientare: ${isPortrait ? 'Portret' : 'Peisaj'} — click pentru schimbare`}
+                className="ml-1 opacity-60 hover:opacity-100 text-base leading-none"
+              >{isPortrait ? '▯' : '▭'}</button>
               {!online && (
                 <button onClick={() => handleDeleteTv(tv)}
                   className="ml-1 text-gray-400 hover:text-red-500 leading-none">✕</button>
@@ -108,13 +124,25 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
       </div>
 
       {addingTv && (
-        <form onSubmit={handleAddTv} className="flex gap-2 mb-3 items-center">
+        <form onSubmit={handleAddTv} className="flex gap-2 mb-3 items-center flex-wrap">
           <input
             value={tvLabel}
             onChange={e => setTvLabel(e.target.value)}
             placeholder='ex: "TV-1" sau "TV-Recepție"'
-            className="flex-1 text-xs border rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            className="flex-1 min-w-32 text-xs border rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
           />
+          <div className="flex rounded border overflow-hidden text-xs">
+            <button type="button"
+              onClick={() => setTvOrientation('landscape')}
+              className={`px-2 py-1.5 flex items-center gap-1 transition-colors ${tvOrientation === 'landscape' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+              ▭ Peisaj
+            </button>
+            <button type="button"
+              onClick={() => setTvOrientation('portrait')}
+              className={`px-2 py-1.5 flex items-center gap-1 transition-colors ${tvOrientation === 'portrait' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+              ▯ Portret
+            </button>
+          </div>
           <button type="submit"
             className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700">
             Adaugă

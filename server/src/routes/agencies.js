@@ -67,16 +67,31 @@ router.patch('/:id/coords', (req, res) => {
 
 router.post('/:id/tvs', (req, res) => {
   try {
-    const { label } = req.body
+    const { label, orientation = 'landscape' } = req.body
     if (!label?.trim()) return res.status(400).json({ error: 'label required' })
+    const orient = orientation === 'portrait' ? 'portrait' : 'landscape'
 
     const db = getDb()
     const agency = db.prepare('SELECT id FROM agencies WHERE id = ?').get(req.params.id)
     if (!agency) return res.status(404).json({ error: 'Agency not found' })
 
-    const result = db.prepare('INSERT INTO tvs (agency_id, label) VALUES (?, ?)').run(agency.id, label.trim())
+    const result = db.prepare('INSERT INTO tvs (agency_id, label, orientation) VALUES (?, ?, ?)').run(agency.id, label.trim(), orient)
     const tv = db.prepare('SELECT * FROM tvs WHERE id = ?').get(result.lastInsertRowid)
     res.status(201).json(tv)
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+router.patch('/:id/tvs/:tvId', (req, res) => {
+  try {
+    const db = getDb()
+    const tv = db.prepare('SELECT id FROM tvs WHERE id = ? AND agency_id = ?').get(req.params.tvId, req.params.id)
+    if (!tv) return res.status(404).json({ error: 'TV not found' })
+    const { orientation } = req.body
+    const orient = orientation === 'portrait' ? 'portrait' : 'landscape'
+    db.prepare('UPDATE tvs SET orientation = ? WHERE id = ?').run(orient, tv.id)
+    res.json(db.prepare('SELECT * FROM tvs WHERE id = ?').get(tv.id))
   } catch (err) {
     res.status(500).json({ error: 'Internal server error' })
   }

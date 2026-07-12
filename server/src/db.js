@@ -103,6 +103,7 @@ export function initDb(path = './signage.db') {
   try { db.exec("ALTER TABLE groups ADD COLUMN transition TEXT NOT NULL DEFAULT 'fade'") } catch {}
   try { db.exec('ALTER TABLE groups ADD COLUMN power_on_time TEXT') } catch {}
   try { db.exec('ALTER TABLE groups ADD COLUMN power_off_time TEXT') } catch {}
+  try { db.exec("ALTER TABLE tvs ADD COLUMN orientation TEXT NOT NULL DEFAULT 'landscape'") } catch {}
 
   // Coordonate implicite per oraș
   const cityCoords = {
