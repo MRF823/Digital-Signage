@@ -117,7 +117,7 @@ export default function App() {
   const tickerHeight = ratesData ? 88 : 0
 
   return (
-    <div style={{ width: '100vw', height: '100vh', background: 'black' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'black' }}>
       <div style={{
         position: 'fixed', top: 12, left: 12, zIndex: 200,
         background: 'rgba(0,0,0,0.5)', borderRadius: '6px',

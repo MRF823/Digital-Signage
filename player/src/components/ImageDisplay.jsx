@@ -14,7 +14,7 @@ export default function ImageDisplay({ src, duration, onEnded }) {
       key={src}
       src={src}
       alt=""
-      style={{ width: '100%', height: '100%', objectFit: 'contain', background: 'black' }}
+      style={{ width: '100%', height: '100%', objectFit: 'cover', background: 'black' }}
     />
   )
 }

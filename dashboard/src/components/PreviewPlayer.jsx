@@ -6,15 +6,32 @@ const CURRENCIES = ['EUR', 'USD', 'CHF', 'GBP']
 function Ticker({ rates, updatedAt }) {
   if (!rates) return null
 
-  const time = updatedAt
-    ? new Date(updatedAt).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })
+  const ratesDate = updatedAt ? new Date(updatedAt) : null
+  const time = ratesDate
+    ? ratesDate.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })
     : null
+  const date = ratesDate
+    ? ratesDate.toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    : null
+
+  const TimeBlock = () => time ? (
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '0 16px', borderLeft: '1px solid rgba(0,0,0,0.06)',
+      textAlign: 'center', flexShrink: 0, marginLeft: 'auto',
+    }}>
+      <div style={{ fontSize: 18, fontWeight: 700, color: '#111827', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{time}</div>
+      <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>{date}</div>
+    </div>
+  ) : null
 
   const s = {
     wrap: {
       background: '#fff', borderTop: '1px solid rgba(0,0,0,0.08)',
       fontFamily: 'system-ui, -apple-system, sans-serif', flexShrink: 0,
+      display: 'flex',
     },
+    rows: { flex: 1, overflow: 'hidden' },
     row: (bg) => ({
       display: 'flex', alignItems: 'center', padding: '7px 20px',
       background: bg,
@@ -30,42 +47,43 @@ function Ticker({ rates, updatedAt }) {
 
   return (
     <div style={s.wrap}>
-      <div style={s.row('#fff')}>
-        <span style={{ ...s.label('#16a34a'), fontSize: 13 }}>CEC BANK</span>
-        {CURRENCIES.map(c => {
-          const r = rates[c]
-          const hasBuySell = r?.buy != null || r?.sell != null
-          return (
+        <div style={s.row('#fff')}>
+          <span style={{ ...s.label('#16a34a'), fontSize: 13 }}>CEC BANK</span>
+          {CURRENCIES.map(c => {
+            const r = rates[c]
+            const hasBuySell = r?.buy != null || r?.sell != null
+            return (
+              <div key={c} style={s.cell}>
+                <span style={s.cur}>{c}</span>
+                {hasBuySell ? (
+                  <>
+                    <span style={s.tag}>cmp</span>
+                    <span style={s.val('#0F6E56')}>{r.buy?.toFixed(4) ?? '—'}</span>
+                    <span style={{ fontSize: 12, color: '#d1d5db' }}>/</span>
+                    <span style={s.tag}>vnd</span>
+                    <span style={s.val('#993C1D')}>{r.sell?.toFixed(4) ?? '—'}</span>
+                  </>
+                ) : (
+                  <span style={s.dash}>—</span>
+                )}
+              </div>
+            )
+          })}
+          <TimeBlock />
+        </div>
+        <div style={s.row('#fafaf9')}>
+          <span style={s.label('#854F0B')}>BNR REF.</span>
+          {CURRENCIES.map(c => (
             <div key={c} style={s.cell}>
               <span style={s.cur}>{c}</span>
-              {hasBuySell ? (
-                <>
-                  <span style={s.tag}>cmp</span>
-                  <span style={s.val('#0F6E56')}>{r.buy?.toFixed(4) ?? '—'}</span>
-                  <span style={{ fontSize: 12, color: '#d1d5db' }}>/</span>
-                  <span style={s.tag}>vnd</span>
-                  <span style={s.val('#993C1D')}>{r.sell?.toFixed(4) ?? '—'}</span>
-                </>
-              ) : (
-                <span style={s.dash}>—</span>
-              )}
+              {rates[c]?.reference != null
+                ? <span style={s.val('#854F0B')}>{rates[c].reference.toFixed(4)}</span>
+                : <span style={s.dash}>—</span>
+              }
             </div>
-          )
-        })}
-      </div>
-      <div style={s.row('#fafaf9')}>
-        <span style={s.label('#854F0B')}>BNR REF.</span>
-        {CURRENCIES.map(c => (
-          <div key={c} style={s.cell}>
-            <span style={s.cur}>{c}</span>
-            {rates[c]?.reference != null
-              ? <span style={s.val('#854F0B')}>{rates[c].reference.toFixed(4)}</span>
-              : <span style={s.dash}>—</span>
-            }
-          </div>
-        ))}
-        {time && <span style={{ marginLeft: 'auto', fontSize: 10, color: '#9ca3af' }}>{time}</span>}
-      </div>
+          ))}
+          <TimeBlock />
+        </div>
     </div>
   )
 }

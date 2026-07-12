@@ -1,15 +1,35 @@
 const CURRENCIES = ['EUR', 'USD', 'CHF', 'GBP']
 
-export default function Ticker({ rates, updatedAt }) {
+function formatDateTime(dateStr) {
+  if (!dateStr) return { time: null, date: null }
+  const d = new Date(dateStr)
+  return {
+    time: d.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' }),
+    date: d.toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+  }
+}
+
+function TimeBlock({ time, date }) {
+  if (!time) return null
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '0 16px', borderLeft: '1px solid rgba(0,0,0,0.06)',
+      textAlign: 'center', flexShrink: 0, marginLeft: 'auto',
+    }}>
+      <div style={{ fontSize: 18, fontWeight: 700, color: '#111827', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{time}</div>
+      <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>{date}</div>
+    </div>
+  )
+}
+
+export default function Ticker({ rates, updatedAt, cecUpdatedAt, bnrUpdatedAt }) {
   if (!rates) return null
 
-  const ratesDate = updatedAt ? new Date(updatedAt) : null
-  const time = ratesDate
-    ? ratesDate.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })
-    : null
-  const date = ratesDate
-    ? ratesDate.toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' })
-    : null
+  // cecUpdatedAt și bnrUpdatedAt vor fi folosite când avem API-uri separate
+  // deocamdată ambele folosesc updatedAt
+  const cec = formatDateTime(cecUpdatedAt || updatedAt)
+  const bnr = formatDateTime(bnrUpdatedAt || updatedAt)
 
   const s = {
     wrap: {
@@ -29,7 +49,7 @@ export default function Ticker({ rates, updatedAt }) {
     cell: { display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderLeft: '1px solid rgba(0,0,0,0.06)' },
     cur: { fontSize: 12, fontWeight: 600, color: '#374151', width: 26 },
     tag: { fontSize: 10, color: '#9ca3af' },
-    val: () => ({ fontSize: 15, fontWeight: 600, color: '#111827', fontVariantNumeric: 'tabular-nums' }),
+    val: (color) => ({ fontSize: 15, fontWeight: 600, color, fontVariantNumeric: 'tabular-nums' }),
     dash: { fontSize: 15, color: '#d1d5db' },
   }
 
@@ -58,6 +78,7 @@ export default function Ticker({ rates, updatedAt }) {
             </div>
           )
         })}
+        <TimeBlock time={cec.time} date={cec.date} />
       </div>
 
       {/* Rând BNR */}
@@ -72,12 +93,7 @@ export default function Ticker({ rates, updatedAt }) {
             }
           </div>
         ))}
-        {time && (
-          <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-            <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 600 }}>{time}</div>
-            <div style={{ fontSize: 10, color: '#9ca3af' }}>{date}</div>
-          </div>
-        )}
+        <TimeBlock time={bnr.time} date={bnr.date} />
       </div>
     </div>
   )
