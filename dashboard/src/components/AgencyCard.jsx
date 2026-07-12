@@ -109,7 +109,7 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
                 onClick={() => handleToggleOrientation(tv)}
                 title={`Orientare: ${isPortrait ? 'Portret' : 'Peisaj'} — click pentru schimbare`}
                 className={`ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded tracking-wide ${isPortrait ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}
-              >{isPortrait ? 'PORT' : 'LAND'}</button>
+              >{isPortrait ? 'PORT.' : 'LAND.'}</button>
               {!online && (
                 <button onClick={() => handleDeleteTv(tv)}
                   className="ml-1 text-gray-400 hover:text-red-500 leading-none">✕</button>
