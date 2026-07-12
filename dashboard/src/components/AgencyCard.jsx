@@ -106,9 +106,12 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
                 ${online ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
               {online ? '●' : '○'} {tv.label} — {label}
               <button
-                onClick={() => handleToggleOrientation(tv)}
-                title={`Orientare: ${isPortrait ? 'Portret' : 'Peisaj'} — click pentru schimbare`}
-                className={`ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded tracking-wide ${isPortrait ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}
+                onClick={() => !online && handleToggleOrientation(tv)}
+                title={online ? 'Nu poți schimba orientarea cât TV-ul e online' : `Orientare: ${isPortrait ? 'Portret' : 'Peisaj'} — click pentru schimbare`}
+                disabled={online}
+                className={`ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded tracking-wide transition-opacity
+                  ${isPortrait ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}
+                  ${online ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >{isPortrait ? 'PORT.' : 'LAND.'}</button>
               {!online && (
                 <button onClick={() => handleDeleteTv(tv)}
