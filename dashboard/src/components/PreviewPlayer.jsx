@@ -47,6 +47,7 @@ function Ticker({ rates, updatedAt }) {
 
   return (
     <div style={s.wrap}>
+      <div style={s.rows}>
         <div style={s.row('#fff')}>
           <span style={{ ...s.label('#16a34a'), fontSize: 13 }}>CEC BANK</span>
           {CURRENCIES.map(c => {
@@ -84,6 +85,7 @@ function Ticker({ rates, updatedAt }) {
           ))}
           <TimeBlock />
         </div>
+      </div>
     </div>
   )
 }

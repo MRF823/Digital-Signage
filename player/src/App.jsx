@@ -20,6 +20,7 @@ export default function App() {
   const { urls, ready, cachePlaylist } = useMediaCache()
   const [index, setIndex] = useState(0)
   const indexRef = useRef(0)
+  const [playCount, setPlayCount] = useState(0)
   const [ratesData, setRatesData] = useState(null)
   const playedAtRef = useRef(toLocalISO(new Date()))
   const [animClass, setAnimClass] = useState('')
@@ -27,6 +28,7 @@ export default function App() {
   const [screenOn, setScreenOn] = useState(true)
   const fadingRef = useRef(false)
   const sendRef = useRef(() => {})
+  const playCountRef = useRef(0)
 
   const advance = useCallback((sendLog = true) => {
     if (fadingRef.current) return
@@ -44,6 +46,9 @@ export default function App() {
         duration_seconds: durationSeconds,
       })
     }
+
+    playCountRef.current += 1
+    setPlayCount(playCountRef.current)
 
     const type = transitionType
     if (type === 'none') {
@@ -117,7 +122,7 @@ export default function App() {
   const tickerHeight = ratesData ? 88 : 0
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'black' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'black', display: 'flex', flexDirection: 'column' }}>
       <div style={{
         position: 'fixed', top: 12, left: 12, zIndex: 200,
         background: 'rgba(0,0,0,0.5)', borderRadius: '6px',
@@ -136,10 +141,10 @@ export default function App() {
       )}
       <div
         className={animClass}
-        style={{ width: '100%', height: `calc(100vh - ${tickerHeight}px)`, overflow: 'hidden' }}
+        style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}
       >
-        {src && current.type === 'video' && <VideoPlayer key={`${index}-${src}`} src={src} onEnded={next} />}
-        {src && current.type === 'image' && <ImageDisplay key={`${index}-${src}`} src={src} duration={current.display_duration_seconds} onEnded={next} />}
+        {src && current.type === 'video' && <VideoPlayer key={playCount} src={src} onEnded={next} />}
+        {src && current.type === 'image' && <ImageDisplay key={playCount} src={src} duration={current.display_duration_seconds} onEnded={next} />}
       </div>
       {ratesData && <Ticker rates={ratesData?.rates} updatedAt={ratesData?.updatedAt} />}
       {!screenOn && (
