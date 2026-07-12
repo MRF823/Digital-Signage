@@ -35,6 +35,8 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
   }
 
   const handleToggleOrientation = async (tv) => {
+    const { online } = tvStatus(tv)
+    if (online && !confirm(`"${tv.label}" este online. Ești sigur că vrei să schimbi orientarea?`)) return
     const next = tv.orientation === 'portrait' ? 'landscape' : 'portrait'
     try {
       await updateTvOrientation(agency.id, tv.id, next)
@@ -106,12 +108,10 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
                 ${online ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
               {online ? '●' : '○'} {tv.label} — {label}
               <button
-                onClick={() => !online && handleToggleOrientation(tv)}
-                title={online ? 'Nu poți schimba orientarea cât TV-ul e online' : `Orientare: ${isPortrait ? 'Portret' : 'Peisaj'} — click pentru schimbare`}
-                disabled={online}
-                className={`ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded tracking-wide transition-opacity
-                  ${isPortrait ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}
-                  ${online ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                onClick={() => handleToggleOrientation(tv)}
+                title={`Orientare: ${isPortrait ? 'Portret' : 'Peisaj'} — click pentru schimbare`}
+                className={`ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded tracking-wide cursor-pointer
+                  ${isPortrait ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}
               >{isPortrait ? 'PORT.' : 'LAND.'}</button>
               {!online && (
                 <button onClick={() => handleDeleteTv(tv)}
