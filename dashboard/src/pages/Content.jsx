@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { getMedia, uploadMedia, deleteMedia } from '../api'
 import MediaCard from '../components/MediaCard'
@@ -9,6 +9,7 @@ export default function Content() {
   const [progress, setProgress] = useState(null)
   const [error, setError] = useState('')
   const [warning, setWarning] = useState('')
+  const warningTimer = useRef(null)
   const [previewing, setPreviewing] = useState(false)
 
   const load = () => getMedia().then(setMedia)
@@ -31,7 +32,11 @@ export default function Content() {
     setWarning('')
     for (const file of files) {
       const warn = await checkImageAspectRatio(file)
-      if (warn) setWarning(warn)
+      if (warn) {
+        setWarning(warn)
+        clearTimeout(warningTimer.current)
+        warningTimer.current = setTimeout(() => setWarning(''), 6000)
+      }
       setProgress(0)
       try {
         await uploadMedia(file, setProgress)
@@ -88,7 +93,13 @@ export default function Content() {
         </div>
       )}
 
-      {warning && <p className="text-amber-600 text-sm mb-4 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">{warning}</p>}
+      {warning && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-sm bg-amber-50 border border-amber-300 text-amber-800 text-sm rounded-xl px-4 py-3 shadow-lg flex items-start gap-3">
+          <span className="text-lg leading-none mt-0.5">⚠️</span>
+          <span>{warning.replace('⚠️ ', '')}</span>
+          <button onClick={() => setWarning('')} className="ml-auto text-amber-400 hover:text-amber-600 text-lg leading-none">×</button>
+        </div>
+      )}
       {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
 
       {media.length === 0 ? (
