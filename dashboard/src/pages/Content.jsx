@@ -8,14 +8,30 @@ export default function Content() {
   const [media, setMedia] = useState([])
   const [progress, setProgress] = useState(null)
   const [error, setError] = useState('')
+  const [warning, setWarning] = useState('')
   const [previewing, setPreviewing] = useState(false)
 
   const load = () => getMedia().then(setMedia)
   useEffect(() => { load() }, [])
 
+  const checkImageAspectRatio = (file) => new Promise((resolve) => {
+    if (!file.type.startsWith('image/')) return resolve(null)
+    const img = new Image()
+    img.onload = () => {
+      URL.revokeObjectURL(img.src)
+      const ratio = img.width / img.height
+      const is16x9 = Math.abs(ratio - 16 / 9) < 0.05
+      resolve(is16x9 ? null : `⚠️ Imaginea are rezoluția ${img.width}×${img.height}. Pentru afișare optimă pe TV, folosește 1920×1080 (16:9).`)
+    }
+    img.src = URL.createObjectURL(file)
+  })
+
   const onDrop = useCallback(async (files) => {
     setError('')
+    setWarning('')
     for (const file of files) {
+      const warn = await checkImageAspectRatio(file)
+      if (warn) setWarning(warn)
       setProgress(0)
       try {
         await uploadMedia(file, setProgress)
@@ -72,6 +88,7 @@ export default function Content() {
         </div>
       )}
 
+      {warning && <p className="text-amber-600 text-sm mb-4 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">{warning}</p>}
       {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
 
       {media.length === 0 ? (
