@@ -50,7 +50,10 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h3 className="font-semibold text-gray-800">{agency.name}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-gray-800">{agency.name}</h3>
+            <span className="text-xs font-mono bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded">ID:{agency.id}</span>
+          </div>
           <p className="text-xs text-gray-400">{agency.city}</p>
           {groupName && (
             <span className="inline-block mt-1 text-xs bg-purple-100 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full">

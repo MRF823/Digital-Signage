@@ -74,6 +74,8 @@ export const getRates = () => api.get('/api/rates').then(r => r.data)
 export const getPlayLog = (params = {}) =>
   api.get('/api/play-log', { params }).then(r => r.data)
 
+export const getStats = () => api.get('/api/stats').then(r => r.data)
+
 export const mediaUrl = (filename) => `${BASE}/api/media/${filename}`
 
 export default api

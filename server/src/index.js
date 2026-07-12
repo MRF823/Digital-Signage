@@ -31,6 +31,17 @@ initRates()
 
 app.post('/api/login', loginRateLimit, loginHandler)
 app.get('/api/rates', (req, res) => res.json(getCurrentRates() || {}))
+app.get('/api/stats', requireAuth, (req, res) => {
+  try {
+    const db = getDb()
+    const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString().slice(0, 19)
+    const { count } = db.prepare('SELECT COUNT(*) as count FROM play_log WHERE played_at >= ?').get(since)
+    res.json({ plays_24h: count })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 app.get('/api/play-log', requireAuth, (req, res) => {
   const { agency_id, from, to, limit = 200 } = req.query
   let sql = 'SELECT * FROM play_log WHERE 1=1'

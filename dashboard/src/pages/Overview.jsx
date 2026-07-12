@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getAgencies, getGroups, getMedia, getCampaigns, getRates } from '../api'
+import { getAgencies, getGroups, getMedia, getCampaigns, getRates, getStats } from '../api'
 
 function isOnline(tv) {
   if (!tv.last_seen_at) return false
@@ -19,12 +19,66 @@ function isActiveCampaign(c) {
   return new Date(c.start_date) <= now && now <= new Date(c.end_date)
 }
 
-function StatCard({ label, value, sub, color }) {
+const ICONS = {
+  tv_online: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+      <circle cx="17" cy="8" r="1.5" fill="currentColor" stroke="none"/>
+    </svg>
+  ),
+  tv_offline: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+      <line x1="9" y1="8" x2="15" y2="12"/><line x1="15" y1="8" x2="9" y2="12"/>
+    </svg>
+  ),
+  plays: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/>
+    </svg>
+  ),
+  no_content: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M8 15s1.5-2 4-2 4 2 4 2"/>
+      <line x1="9" y1="9" x2="9.01" y2="9" strokeWidth="2.5" strokeLinecap="round"/>
+      <line x1="15" y1="9" x2="15.01" y2="9" strokeWidth="2.5" strokeLinecap="round"/>
+    </svg>
+  ),
+  media: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="2" width="20" height="20" rx="2.5"/>
+      <polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/>
+    </svg>
+  ),
+  campaign: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+      <path d="M8 14h2M14 14h2M8 18h2M14 18h2"/>
+    </svg>
+  ),
+}
+
+function StatCard({ label, value, sub, color, icon, iconBg }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-5">
-      <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1">{label}</p>
-      <p className={`text-3xl font-bold ${color ?? 'text-gray-800'}`}>{value}</p>
-      {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 py-3.5 flex items-center gap-3">
+      {icon && (
+        <div className={`flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${iconBg ?? 'bg-gray-100'}`}>
+          <span className={color ?? 'text-gray-500'}>
+            {/* render icon at 18x18 */}
+            {(() => {
+              const el = ICONS[icon]
+              return el ? { ...el, props: { ...el.props, width: 18, height: 18 } } : null
+            })()}
+          </span>
+        </div>
+      )}
+      <div>
+        <p className="text-[10px] text-gray-400 uppercase tracking-widest font-semibold mb-0.5">{label}</p>
+        <p className={`text-2xl font-bold leading-tight ${color ?? 'text-gray-800'}`}>{value}</p>
+        {sub && <p className="text-[10px] text-gray-400 mt-0.5">{sub}</p>}
+      </div>
     </div>
   )
 }
@@ -57,6 +111,7 @@ export default function Overview() {
   const [groups, setGroups] = useState([])
   const [mediaCount, setMediaCount] = useState(0)
   const [activeCampaigns, setActiveCampaigns] = useState(0)
+  const [plays24h, setPlays24h] = useState(0)
   const [rates, setRates] = useState(null)
   const [ratesTime, setRatesTime] = useState(null)
 
@@ -71,6 +126,7 @@ export default function Overview() {
     setGroups(gr)
     setMediaCount(med.length)
     setActiveCampaigns(camp.filter(isActiveCampaign).length)
+    getStats().then(s => setPlays24h(s.plays_24h ?? 0)).catch(() => {})
   }
 
   const loadRates = () =>
@@ -93,8 +149,23 @@ export default function Overview() {
   const groupedAgencyIds = new Set(groups.flatMap(g => g.agencies.map(a => a.id)))
   const ungrouped = agencies.filter(a => !groupedAgencyIds.has(a.id))
 
-  const time = ratesTime
-    ? new Date(ratesTime).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })
+  // Agenții fără conținut real (fără playlist propriu ȘI fără grup cu playlist)
+  const groupHasPlaylist = {}
+  groups.forEach(g => { groupHasPlaylist[g.id] = (g.playlist?.length ?? 0) > 0 })
+  const groupIdForAgency = {}
+  groups.forEach(g => g.agencies.forEach(a => { groupIdForAgency[a.id] = g.id }))
+  const agenciesNoContent = agencies.filter(a => {
+    const gid = groupIdForAgency[a.id]
+    if (gid) return !groupHasPlaylist[gid]
+    return !(a.playlist?.length > 0)
+  })
+
+  const ratesDate = ratesTime ? new Date(ratesTime) : null
+  const time = ratesDate
+    ? ratesDate.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })
+    : null
+  const date = ratesDate
+    ? ratesDate.toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' })
     : null
 
   return (
@@ -105,16 +176,50 @@ export default function Overview() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
         <StatCard
           label="TV-uri online"
           value={online}
           sub={`din ${allTvs.length} total`}
           color={offline > 0 ? 'text-amber-600' : 'text-green-600'}
+          icon="tv_online"
+          iconBg={offline > 0 ? 'bg-amber-50' : 'bg-green-50'}
         />
-        <StatCard label="TV-uri offline" value={offline} color={offline > 0 ? 'text-red-500' : 'text-gray-400'} />
-        <StatCard label="Fișiere media" value={mediaCount} />
-        <StatCard label="Campanii active" value={activeCampaigns} color="text-blue-600" />
+        <StatCard
+          label="TV-uri offline"
+          value={offline}
+          color={offline > 0 ? 'text-red-500' : 'text-gray-400'}
+          icon="tv_offline"
+          iconBg={offline > 0 ? 'bg-red-50' : 'bg-gray-50'}
+        />
+        <StatCard
+          label="Afișări 24h"
+          value={plays24h.toLocaleString('ro-RO')}
+          color="text-teal-600"
+          icon="plays"
+          iconBg="bg-teal-50"
+        />
+        <StatCard
+          label="Agenții fără conținut"
+          value={agenciesNoContent.length}
+          color={agenciesNoContent.length > 0 ? 'text-red-500' : 'text-gray-400'}
+          icon="no_content"
+          iconBg={agenciesNoContent.length > 0 ? 'bg-red-50' : 'bg-gray-50'}
+        />
+        <StatCard
+          label="Fișiere media"
+          value={mediaCount}
+          icon="media"
+          iconBg="bg-purple-50"
+          color="text-purple-600"
+        />
+        <StatCard
+          label="Campanii active"
+          value={activeCampaigns}
+          color="text-blue-600"
+          icon="campaign"
+          iconBg="bg-blue-50"
+        />
       </div>
 
       <div className="grid grid-cols-3 gap-6">
@@ -173,7 +278,12 @@ export default function Overview() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden h-fit">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <h3 className="font-semibold text-gray-800 text-sm">Curs valutar</h3>
-            {time && <span className="text-xs text-gray-400">{time}</span>}
+            {time && (
+              <div className="text-right">
+                <p className="text-xs text-gray-400">{time}</p>
+                <p className="text-xs text-gray-300">{date}</p>
+              </div>
+            )}
           </div>
 
           {!rates ? (
@@ -208,7 +318,7 @@ export default function Overview() {
               <div className="px-5 py-3">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs font-semibold text-amber-700 uppercase tracking-widest">BNR Referință</p>
-                  {time && <span className="text-xs text-gray-400">{time}</span>}
+                  {time && <span className="text-xs text-gray-400">{date} · {time}</span>}
                 </div>
                 {CURRENCIES.map(c => (
                   <div key={c} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">

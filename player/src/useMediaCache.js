@@ -46,7 +46,7 @@ export function useMediaCache() {
       } else {
         try {
           const res = await fetch(`${SERVER_URL}/api/media/${item.filename}`, {
-            signal: AbortSignal.timeout(5_000),
+            signal: AbortSignal.timeout(120_000),
           })
           if (!res.ok) continue
           const blob = await res.blob()
