@@ -111,7 +111,7 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
                 disabled={online}
                 className={`ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded tracking-wide transition-opacity
                   ${isPortrait ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}
-                  ${online ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  ${online ? 'cursor-not-allowed' : 'cursor-pointer'}`}
               >{isPortrait ? 'PORT.' : 'LAND.'}</button>
               {!online && (
                 <button onClick={() => handleDeleteTv(tv)}
