@@ -3,8 +3,12 @@ const CURRENCIES = ['EUR', 'USD', 'CHF', 'GBP']
 export default function Ticker({ rates, updatedAt }) {
   if (!rates) return null
 
-  const time = updatedAt
-    ? new Date(updatedAt).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })
+  const ratesDate = updatedAt ? new Date(updatedAt) : null
+  const time = ratesDate
+    ? ratesDate.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })
+    : null
+  const date = ratesDate
+    ? ratesDate.toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' })
     : null
 
   const s = {
@@ -68,7 +72,12 @@ export default function Ticker({ rates, updatedAt }) {
             }
           </div>
         ))}
-        {time && <span style={{ marginLeft: 'auto', fontSize: 10, color: '#9ca3af' }}>{time}</span>}
+        {time && (
+          <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+            <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 600 }}>{time}</div>
+            <div style={{ fontSize: 10, color: '#9ca3af' }}>{date}</div>
+          </div>
+        )}
       </div>
     </div>
   )
