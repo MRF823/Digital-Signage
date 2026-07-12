@@ -96,8 +96,8 @@ function AgencyCard({ agency }) {
               <span className={`w-2.5 h-2.5 rounded-full ${on ? 'bg-green-500' : 'bg-red-400'}`} />
               <span className={`font-semibold ${on ? 'text-green-700' : 'text-red-500'}`}>{tv.label}</span>
               <span className={`text-xs ${on ? 'text-green-500' : 'text-red-400'}`}>{timeAgo(tv.last_seen_at)}</span>
-              <span className="text-gray-400" title={tv.orientation === 'portrait' ? 'Portret' : 'Peisaj'}>
-                {tv.orientation === 'portrait' ? '▯' : '▭'}
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded tracking-wide ${tv.orientation === 'portrait' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}>
+                {tv.orientation === 'portrait' ? 'PORT' : 'LAND'}
               </span>
             </div>
           )
