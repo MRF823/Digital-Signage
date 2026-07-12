@@ -153,26 +153,33 @@ export default function PreviewPlayer({ items, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black z-[60] flex flex-col">
-      <div className="flex-1 flex items-center justify-center relative" style={{ minHeight: 0 }}>
+      <div className="flex-1 relative overflow-hidden" style={{ minHeight: 0 }}>
         {item.type === 'video' ? (
           <video
             ref={videoRef}
-            key={item.filename}
+            key={`${current}-${item.filename}`}
             src={mediaUrl(item.filename)}
             autoPlay={playing}
             onEnded={goNext}
-            className="max-h-full max-w-full"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
           />
         ) : (
           <img
-            key={item.filename}
+            key={`${current}-${item.filename}`}
             src={mediaUrl(item.filename)}
             alt={item.original_name}
-            className="max-h-full max-w-full object-contain"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
           />
         )}
+        <div style={{
+          position: 'absolute', top: 12, left: 12, zIndex: 10,
+          background: 'rgba(0,0,0,0.5)', borderRadius: '6px',
+          padding: '3px 8px', fontSize: '11px', color: 'rgba(255,255,255,0.5)',
+          fontFamily: 'monospace',
+        }}>Preview · {current + 1}/{items.length}</div>
         {item.type === 'image' && timeLeft !== null && (
-          <div className="absolute top-4 right-4 bg-black/60 text-white text-sm font-bold px-3 py-1.5 rounded-full">
+          <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 10 }}
+            className="bg-black/60 text-white text-sm font-bold px-3 py-1.5 rounded-full">
             {timeLeft}s
           </div>
         )}

@@ -6,7 +6,7 @@ export default function VideoPlayer({ src, onEnded }) {
       autoPlay
       muted
       onEnded={onEnded}
-      style={{ width: '100%', height: '100%', objectFit: 'contain', background: 'black' }}
+      style={{ width: '100%', height: '100%', objectFit: 'cover', background: 'black' }}
     />
   )
 }

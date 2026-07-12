@@ -138,8 +138,8 @@ export default function App() {
         className={animClass}
         style={{ width: '100%', height: `calc(100vh - ${tickerHeight}px)`, overflow: 'hidden' }}
       >
-        {src && current.type === 'video' && <VideoPlayer key={src} src={src} onEnded={next} />}
-        {src && current.type === 'image' && <ImageDisplay key={src} src={src} duration={current.display_duration_seconds} onEnded={next} />}
+        {src && current.type === 'video' && <VideoPlayer key={`${index}-${src}`} src={src} onEnded={next} />}
+        {src && current.type === 'image' && <ImageDisplay key={`${index}-${src}`} src={src} duration={current.display_duration_seconds} onEnded={next} />}
       </div>
       {ratesData && <Ticker rates={ratesData?.rates} updatedAt={ratesData?.updatedAt} />}
       {!screenOn && (
