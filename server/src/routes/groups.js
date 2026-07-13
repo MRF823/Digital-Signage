@@ -37,6 +37,21 @@ router.get('/', (req, res) => {
   }
 })
 
+// PATCH /api/groups/:id/name — rename group
+router.patch('/:id/name', (req, res) => {
+  const id = parseInt(req.params.id, 10)
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid id' })
+  const { name } = req.body
+  if (!name?.trim()) return res.status(400).json({ error: 'name required' })
+  const db = getDb()
+  if (!db.prepare('SELECT id FROM groups WHERE id = ?').get(id))
+    return res.status(404).json({ error: 'Group not found' })
+  const duplicate = db.prepare('SELECT id FROM groups WHERE LOWER(name) = LOWER(?) AND id != ?').get(name.trim(), id)
+  if (duplicate) return res.status(409).json({ error: 'Există deja un grup cu acest nume' })
+  db.prepare('UPDATE groups SET name = ? WHERE id = ?').run(name.trim(), id)
+  res.json(getGroupWithMembers(db, id))
+})
+
 // PATCH /api/groups/:id — update group settings (transition, power schedule)
 router.patch('/:id', (req, res) => {
   const id = parseInt(req.params.id, 10)

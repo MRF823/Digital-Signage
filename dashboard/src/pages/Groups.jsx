@@ -3,7 +3,7 @@ import { DndContext, closestCenter } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
-  getGroups, createGroup, deleteGroup,
+  getGroups, createGroup, deleteGroup, renameGroup,
   addAgencyToGroup, removeAgencyFromGroup,
   getAgencies, getGroupPlaylist, setGroupPlaylist, getMedia,
   getSchedules, createSchedule, deleteSchedule,
@@ -179,6 +179,22 @@ function GroupCard({ group, ungroupedAgencies, onAddAgency, onRemoveAgency, onDe
   const [powerOn, setPowerOn] = useState(group.power_on_time || '')
   const [powerOff, setPowerOff] = useState(group.power_off_time || '')
   const [powerSaving, setPowerSaving] = useState(false)
+  const [editingName, setEditingName] = useState(false)
+  const [editName, setEditName] = useState(group.name)
+  const [renameError, setRenameError] = useState('')
+
+  const handleRename = async (e) => {
+    e.preventDefault()
+    if (!editName.trim() || editName.trim() === group.name) { setEditingName(false); return }
+    try {
+      await renameGroup(group.id, editName.trim())
+      setEditingName(false)
+      setRenameError('')
+      onTransitionChange?.()
+    } catch (err) {
+      setRenameError(err?.response?.data?.error || 'Eroare la redenumire.')
+    }
+  }
 
   const handleTransition = async (val) => {
     setTransition(val)
@@ -220,7 +236,24 @@ function GroupCard({ group, ungroupedAgencies, onAddAgency, onRemoveAgency, onDe
       )}
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h3 className="font-semibold text-gray-800">{group.name}</h3>
+          {editingName ? (
+            <form onSubmit={handleRename} className="flex items-center gap-2">
+              <input
+                autoFocus
+                value={editName}
+                onChange={e => { setEditName(e.target.value); setRenameError('') }}
+                className="border rounded-lg px-2 py-1 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 w-48"
+              />
+              <button type="submit" className="text-xs bg-blue-700 text-white px-2 py-1 rounded-lg">Salvează</button>
+              <button type="button" onClick={() => { setEditingName(false); setEditName(group.name); setRenameError('') }} className="text-xs text-gray-400 hover:text-gray-600">Anulează</button>
+              {renameError && <p className="text-xs text-red-500">{renameError}</p>}
+            </form>
+          ) : (
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-gray-800">{group.name}</h3>
+              <button onClick={() => { setEditingName(true); setEditName(group.name) }} className="text-xs text-gray-400 hover:text-blue-600" title="Redenumește">✏️</button>
+            </div>
+          )}
           <p className="text-xs text-gray-400">
             {group.agencies.length} {group.agencies.length === 1 ? 'agenție' : 'agenții'}
           </p>

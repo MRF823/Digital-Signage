@@ -45,6 +45,7 @@ export const setPlaylist = (agencyId, items) =>
 export const getGroups = () => api.get('/api/groups').then(r => r.data)
 export const createGroup = (name) => api.post('/api/groups', { name }).then(r => r.data)
 export const deleteGroup = (id) => api.delete(`/api/groups/${id}`)
+export const renameGroup = (id, name) => api.patch(`/api/groups/${id}/name`, { name }).then(r => r.data)
 export const addAgencyToGroup = (groupId, agencyId) =>
   api.post(`/api/groups/${groupId}/agencies`, { agency_id: agencyId }).then(r => r.data)
 export const removeAgencyFromGroup = (groupId, agencyId) =>
