@@ -34,26 +34,6 @@ export default function App() {
     return () => clearInterval(id)
   }, [])
 
-  useEffect(() => {
-    let lastMoveTime = Date.now()
-    let lastX = null, lastY = null
-    const onMove = (e) => {
-      if (lastX !== null && Math.abs(e.clientX - lastX) < 5 && Math.abs(e.clientY - lastY) < 5) return
-      lastX = e.clientX
-      lastY = e.clientY
-      lastMoveTime = Date.now()
-      document.body.classList.remove('hide-cursor')
-    }
-    const interval = setInterval(() => {
-      if (Date.now() - lastMoveTime > 3000) document.body.classList.add('hide-cursor')
-    }, 500)
-    document.addEventListener('mousemove', onMove)
-    return () => {
-      document.removeEventListener('mousemove', onMove)
-      clearInterval(interval)
-      document.body.classList.remove('hide-cursor')
-    }
-  }, [])
 
   const advance = useCallback((sendLog = true) => {
     if (fadingRef.current) return
