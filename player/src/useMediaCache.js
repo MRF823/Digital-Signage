@@ -53,7 +53,8 @@ export function useMediaCache() {
           await putCached(db, item.filename, blob)
           result[item.filename] = URL.createObjectURL(blob)
         } catch {
-          // offline sau timeout — item omis, va fi reîncercat la reconectare
+          // download eșuat — fallback la URL direct pentru streaming
+          result[item.filename] = `${SERVER_URL}/api/media/${item.filename}`
         }
       }
     }

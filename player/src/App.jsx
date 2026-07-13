@@ -34,6 +34,35 @@ export default function App() {
     return () => clearInterval(id)
   }, [])
 
+  useEffect(() => {
+    let lastMoveTime = Date.now()
+    let lastX = null, lastY = null
+    let ignoreUntil = 0
+
+    const onMove = (e) => {
+      if (Date.now() < ignoreUntil) return
+      if (lastX !== null && Math.abs(e.clientX - lastX) < 5 && Math.abs(e.clientY - lastY) < 5) return
+      lastX = e.clientX
+      lastY = e.clientY
+      lastMoveTime = Date.now()
+      document.body.classList.remove('hide-cursor')
+    }
+
+    const interval = setInterval(() => {
+      if (Date.now() - lastMoveTime > 3000 && !document.body.classList.contains('hide-cursor')) {
+        document.body.classList.add('hide-cursor')
+        ignoreUntil = Date.now() + 1000
+      }
+    }, 500)
+
+    document.addEventListener('mousemove', onMove)
+    return () => {
+      document.removeEventListener('mousemove', onMove)
+      clearInterval(interval)
+      document.body.classList.remove('hide-cursor')
+    }
+  }, [])
+
 
   const advance = useCallback((sendLog = true) => {
     if (fadingRef.current) return
@@ -127,6 +156,13 @@ export default function App() {
 
   const current = playlist[index % playlist.length]
   const src = urls[current?.filename]
+
+  useEffect(() => {
+    if (!src && ready && playlist.length > 0) {
+      const t = setTimeout(() => advance(false), 800)
+      return () => clearTimeout(t)
+    }
+  }, [src, ready, playlist.length, advance])
   const tickerHeight = ratesData ? 88 : 0
 
   return (
