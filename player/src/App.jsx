@@ -29,28 +29,24 @@ export default function App() {
   const fadingRef = useRef(false)
   const sendRef = useRef(() => {})
   const playCountRef = useRef(0)
-  const cursorTimerRef = useRef(null)
-
   useEffect(() => {
     const id = setInterval(() => window.location.reload(), 10 * 60 * 1000)
     return () => clearInterval(id)
   }, [])
 
   useEffect(() => {
-    const showCursor = () => {
+    let timer = null
+    const hide = () => { document.body.classList.add('hide-cursor') }
+    const show = () => {
       document.body.classList.remove('hide-cursor')
-      clearTimeout(cursorTimerRef.current)
-      cursorTimerRef.current = setTimeout(() => {
-        document.body.classList.add('hide-cursor')
-      }, 3000)
+      clearTimeout(timer)
+      timer = setTimeout(hide, 3000)
     }
-    document.addEventListener('mousemove', showCursor)
-    cursorTimerRef.current = setTimeout(() => {
-      document.body.classList.add('hide-cursor')
-    }, 3000)
+    document.addEventListener('mousemove', show)
+    timer = setTimeout(hide, 3000)
     return () => {
-      document.removeEventListener('mousemove', showCursor)
-      clearTimeout(cursorTimerRef.current)
+      document.removeEventListener('mousemove', show)
+      clearTimeout(timer)
       document.body.classList.remove('hide-cursor')
     }
   }, [])
