@@ -29,6 +29,26 @@ export default function App() {
   const fadingRef = useRef(false)
   const sendRef = useRef(() => {})
   const playCountRef = useRef(0)
+  const cursorTimerRef = useRef(null)
+
+  useEffect(() => {
+    const showCursor = () => {
+      document.body.classList.remove('hide-cursor')
+      clearTimeout(cursorTimerRef.current)
+      cursorTimerRef.current = setTimeout(() => {
+        document.body.classList.add('hide-cursor')
+      }, 3000)
+    }
+    document.addEventListener('mousemove', showCursor)
+    cursorTimerRef.current = setTimeout(() => {
+      document.body.classList.add('hide-cursor')
+    }, 3000)
+    return () => {
+      document.removeEventListener('mousemove', showCursor)
+      clearTimeout(cursorTimerRef.current)
+      document.body.classList.remove('hide-cursor')
+    }
+  }, [])
 
   const advance = useCallback((sendLog = true) => {
     if (fadingRef.current) return
