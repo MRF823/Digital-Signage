@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, NavLink, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { reloadPlayers } from './api'
 import Login from './pages/Login'
 import Overview from './pages/Overview'
 import Content from './pages/Content'
@@ -69,6 +71,11 @@ const NAV = [
 function Sidebar() {
   const navigate = useNavigate()
   const logout = () => { localStorage.removeItem('token'); navigate('/login') }
+  const [reloading, setReloading] = useState(false)
+  const handleReload = async () => {
+    setReloading(true)
+    try { await reloadPlayers() } finally { setTimeout(() => setReloading(false), 2000) }
+  }
 
   return (
     <aside className="w-60 min-h-screen bg-slate-900 flex flex-col shrink-0">
@@ -104,7 +111,14 @@ function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="px-3 py-4 border-t border-slate-700/60">
+      <div className="px-3 py-4 border-t border-slate-700/60 space-y-1">
+        <button onClick={handleReload} disabled={reloading}
+          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800 transition-colors disabled:opacity-50">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+          {reloading ? 'Se trimite...' : 'Reload playere'}
+        </button>
         <button onClick={logout}
           className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
           <IconLogout />

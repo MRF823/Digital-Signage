@@ -129,6 +129,15 @@ export function pushScreenPower(agencyId, on) {
   }
 }
 
+export function pushReloadToAll() {
+  const msg = JSON.stringify({ type: 'reload' })
+  for (const agencyClients of clients.values()) {
+    for (const client of agencyClients) {
+      if (client.readyState === 1) client.send(msg)
+    }
+  }
+}
+
 export function pushPlaylist(agencyId, items, transition = 'fade') {
   const msg = JSON.stringify({ type: 'playlist_update', items, transition })
   const agencyClients = clients.get(String(agencyId))

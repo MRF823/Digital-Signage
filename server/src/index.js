@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { existsSync } from 'fs'
 import { initDb, getDb } from './db.js'
-import { initWebSocket } from './websocket.js'
+import { initWebSocket, pushReloadToAll } from './websocket.js'
 import mediaRoutes, { serveFile } from './routes/media.js'
 import agencyRoutes from './routes/agencies.js'
 import playlistRoutes from './routes/playlists.js'
@@ -69,6 +69,10 @@ app.use('/api/tvs', requireAuth, tvsRoutes)
 app.use('/api/groups', requireAuth, groupRoutes)
 app.use('/api/groups/:id/schedules', requireAuth, scheduleRoutes)
 app.use('/api/campaigns', requireAuth, campaignRoutes)
+app.post('/api/players/reload', requireAuth, (req, res) => {
+  pushReloadToAll()
+  res.json({ ok: true })
+})
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)

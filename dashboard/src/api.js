@@ -78,6 +78,7 @@ export const getPlayLog = (params = {}) =>
   api.get('/api/play-log', { params }).then(r => r.data)
 
 export const getStats = () => api.get('/api/stats').then(r => r.data)
+export const reloadPlayers = () => api.post('/api/players/reload').then(r => r.data)
 
 export const mediaUrl = (filename) => `${BASE}/api/media/${filename}`
 

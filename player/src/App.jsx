@@ -120,6 +120,9 @@ export default function App() {
     if (msg.type === 'screen_power') {
       setScreenOn(msg.on)
     }
+    if (msg.type === 'reload') {
+      window.location.reload()
+    }
   }, [update, cachePlaylist, advance])
 
   const { connected, send } = useWebSocket(onMessage)
