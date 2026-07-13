@@ -36,8 +36,12 @@ export default function App() {
 
   useEffect(() => {
     let timer = null
+    let lastX = null, lastY = null
     const hide = () => { document.body.classList.add('hide-cursor') }
-    const show = () => {
+    const show = (e) => {
+      if (lastX !== null && Math.abs(e.clientX - lastX) < 5 && Math.abs(e.clientY - lastY) < 5) return
+      lastX = e.clientX
+      lastY = e.clientY
       document.body.classList.remove('hide-cursor')
       clearTimeout(timer)
       timer = setTimeout(hide, 3000)
