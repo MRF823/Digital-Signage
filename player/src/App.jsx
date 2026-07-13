@@ -35,22 +35,22 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    let timer = null
+    let lastMoveTime = Date.now()
     let lastX = null, lastY = null
-    const hide = () => { document.body.classList.add('hide-cursor') }
-    const show = (e) => {
+    const onMove = (e) => {
       if (lastX !== null && Math.abs(e.clientX - lastX) < 5 && Math.abs(e.clientY - lastY) < 5) return
       lastX = e.clientX
       lastY = e.clientY
+      lastMoveTime = Date.now()
       document.body.classList.remove('hide-cursor')
-      clearTimeout(timer)
-      timer = setTimeout(hide, 3000)
     }
-    document.addEventListener('mousemove', show)
-    timer = setTimeout(hide, 3000)
+    const interval = setInterval(() => {
+      if (Date.now() - lastMoveTime > 3000) document.body.classList.add('hide-cursor')
+    }, 500)
+    document.addEventListener('mousemove', onMove)
     return () => {
-      document.removeEventListener('mousemove', show)
-      clearTimeout(timer)
+      document.removeEventListener('mousemove', onMove)
+      clearInterval(interval)
       document.body.classList.remove('hide-cursor')
     }
   }, [])
