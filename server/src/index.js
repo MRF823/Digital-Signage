@@ -1,6 +1,9 @@
 import express from 'express'
 import cors from 'cors'
 import { createServer } from 'http'
+import { fileURLToPath } from 'url'
+import { dirname, join } from 'path'
+import { existsSync } from 'fs'
 import { initDb, getDb } from './db.js'
 import { initWebSocket } from './websocket.js'
 import mediaRoutes, { serveFile } from './routes/media.js'
@@ -66,6 +69,14 @@ app.use('/api/tvs', requireAuth, tvsRoutes)
 app.use('/api/groups', requireAuth, groupRoutes)
 app.use('/api/groups/:id/schedules', requireAuth, scheduleRoutes)
 app.use('/api/campaigns', requireAuth, campaignRoutes)
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const dashDist = join(__dirname, '../../dashboard/dist')
+if (existsSync(dashDist)) {
+  app.use(express.static(dashDist))
+  app.use((req, res) => res.sendFile(join(dashDist, 'index.html')))
+}
 
 export { app, httpServer }
 
