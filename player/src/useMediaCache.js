@@ -2,6 +2,8 @@ import { useState, useCallback } from 'react'
 
 const _urlParams = new URLSearchParams(window.location.search)
 const SERVER_URL = _urlParams.get('mediaServer') || import.meta.env.VITE_SERVER_URL || `http://${window.location.hostname}:4000`
+// Fallback la VPS daca serverul local nu are fisierul inca
+const VPS_URL = import.meta.env.VITE_SERVER_URL || `http://${window.location.hostname}:4000`
 const DB_NAME = 'signage-cache'
 const STORE = 'media'
 
@@ -49,7 +51,13 @@ export function useMediaCache() {
           const res = await fetch(`${SERVER_URL}/api/media/${item.filename}`, {
             signal: AbortSignal.timeout(120_000),
           })
-          if (!res.ok) continue
+          if (!res.ok) {
+            // Fisierul nu e inca pe serverul local — streameaza de pe VPS temporar
+            if (SERVER_URL !== VPS_URL) {
+              result[item.filename] = `${VPS_URL}/api/media/${item.filename}`
+            }
+            continue
+          }
           const blob = await res.blob()
           await putCached(db, item.filename, blob)
           result[item.filename] = URL.createObjectURL(blob)
