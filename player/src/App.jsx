@@ -32,6 +32,11 @@ export default function App() {
   const cursorTimerRef = useRef(null)
 
   useEffect(() => {
+    const id = setInterval(() => window.location.reload(), 10 * 60 * 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  useEffect(() => {
     const showCursor = () => {
       document.body.classList.remove('hide-cursor')
       clearTimeout(cursorTimerRef.current)
