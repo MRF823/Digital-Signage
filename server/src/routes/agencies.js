@@ -33,6 +33,28 @@ router.post('/', (req, res) => {
   }
 })
 
+router.patch('/:id/name', (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    if (isNaN(id)) return res.status(400).json({ error: 'Invalid id' })
+    const { name, city } = req.body
+    if (!name?.trim()) return res.status(400).json({ error: 'name required' })
+    const db = getDb()
+    if (!db.prepare('SELECT id FROM agencies WHERE id = ?').get(id))
+      return res.status(404).json({ error: 'Not found' })
+    const duplicate = db.prepare('SELECT id FROM agencies WHERE LOWER(name) = LOWER(?) AND id != ?').get(name.trim(), id)
+    if (duplicate) return res.status(409).json({ error: 'Există deja o agenție cu acest nume' })
+    db.prepare('UPDATE agencies SET name = ?' + (city ? ', city = ?' : '') + ' WHERE id = ?').run(
+      ...(city ? [name.trim(), city.trim(), id] : [name.trim(), id])
+    )
+    const agency = db.prepare('SELECT * FROM agencies WHERE id = ?').get(id)
+    const tvs = db.prepare('SELECT * FROM tvs WHERE agency_id = ?').all(id)
+    res.json({ ...agency, tvs })
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 router.delete('/:id', (req, res) => {
   try {
     const id = parseInt(req.params.id, 10)

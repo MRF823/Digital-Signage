@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import PlaylistModal from './PlaylistModal'
 import PreviewPlayer from './PreviewPlayer'
-import { addTv, deleteTv, deleteAgency, updateTvOrientation } from '../api'
+import { addTv, deleteTv, deleteAgency, updateTvOrientation, renameAgency } from '../api'
 
 function tvStatus(tv) {
   if (!tv.last_seen_at) return { online: false, label: 'Niciodată conectat' }
@@ -18,6 +18,23 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
   const [tvLabel, setTvLabel] = useState('')
   const [tvOrientation, setTvOrientation] = useState('landscape')
   const [tvError, setTvError] = useState('')
+  const [editingName, setEditingName] = useState(false)
+  const [editName, setEditName] = useState(agency.name)
+  const [editCity, setEditCity] = useState(agency.city)
+  const [renameError, setRenameError] = useState('')
+
+  const handleRename = async (e) => {
+    e.preventDefault()
+    if (!editName.trim()) return
+    try {
+      await renameAgency(agency.id, editName.trim(), editCity.trim())
+      setEditingName(false)
+      setRenameError('')
+      onPlaylistSaved()
+    } catch (err) {
+      setRenameError(err?.response?.data?.error || 'Eroare la redenumire.')
+    }
+  }
 
   const handleAddTv = async (e) => {
     e.preventDefault()
@@ -62,11 +79,32 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
       <div className="flex items-start justify-between mb-3">
         <div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-semibold text-gray-800">{agency.name}</h3>
-            <span className="text-xs font-mono bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded whitespace-nowrap">ID:{agency.id}</span>
-          </div>
-          <p className="text-xs text-gray-400">{agency.city}</p>
+          {editingName ? (
+            <form onSubmit={handleRename} className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <input autoFocus value={editName} onChange={e => { setEditName(e.target.value); setRenameError('') }}
+                  placeholder="Nume agenție"
+                  className="border rounded px-2 py-1 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 w-44" />
+                <input value={editCity} onChange={e => setEditCity(e.target.value)}
+                  placeholder="Oraș"
+                  className="border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400 w-28" />
+              </div>
+              <div className="flex items-center gap-2">
+                <button type="submit" className="text-xs bg-blue-700 text-white px-2 py-1 rounded-lg">Salvează</button>
+                <button type="button" onClick={() => { setEditingName(false); setEditName(agency.name); setEditCity(agency.city); setRenameError('') }} className="text-xs text-gray-400 hover:text-gray-600">Anulează</button>
+                {renameError && <p className="text-xs text-red-500">{renameError}</p>}
+              </div>
+            </form>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-semibold text-gray-800">{agency.name}</h3>
+                <span className="text-xs font-mono bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded whitespace-nowrap">ID:{agency.id}</span>
+                <button onClick={() => { setEditingName(true); setEditName(agency.name); setEditCity(agency.city) }} className="text-xs text-gray-400 hover:text-blue-600" title="Redenumește">✏️</button>
+              </div>
+              <p className="text-xs text-gray-400">{agency.city}</p>
+            </>
+          )}
           {groupName && (
             <span className="inline-block mt-1 text-xs bg-purple-100 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full">
               Grup: {groupName}
