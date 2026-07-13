@@ -398,13 +398,15 @@ function GroupCard({ group, ungroupedAgencies, onAddAgency, onRemoveAgency, onDe
             className="text-xs bg-gray-800 hover:bg-gray-900 text-white px-3 py-1.5 rounded disabled:opacity-50">
             {powerSaving ? 'Se salvează...' : 'Salvează'}
           </button>
-          {(group.power_on_time || group.power_off_time) && (
-            <button
-              onClick={handleClearPower}
-              className="text-xs text-gray-400 hover:text-red-500">
-              Șterge program
-            </button>
-          )}
+          <button
+            onClick={handleClearPower}
+            className={`text-xs px-3 py-1.5 rounded border font-medium transition-colors ${
+              !group.power_on_time && !group.power_off_time
+                ? 'bg-green-600 text-white border-green-600'
+                : 'text-gray-500 hover:text-red-500 border-gray-200 hover:border-red-300'
+            }`}>
+            24/24
+          </button>
         </div>
         {powerOn && powerOff && (
           <p className="text-xs text-gray-400 mt-1.5">
