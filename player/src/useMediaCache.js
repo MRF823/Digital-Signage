@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || `http://${window.location.hostname}:4000`
+const _urlParams = new URLSearchParams(window.location.search)
+const SERVER_URL = _urlParams.get('mediaServer') || import.meta.env.VITE_SERVER_URL || `http://${window.location.hostname}:4000`
 const DB_NAME = 'signage-cache'
 const STORE = 'media'
 
