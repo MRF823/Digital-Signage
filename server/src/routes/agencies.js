@@ -23,6 +23,8 @@ router.post('/', (req, res) => {
     if (!name?.trim() || !city?.trim()) return res.status(400).json({ error: 'name and city required' })
 
     const db = getDb()
+    if (db.prepare('SELECT id FROM agencies WHERE LOWER(name) = LOWER(?)').get(name.trim()))
+      return res.status(409).json({ error: 'Există deja o agenție cu acest nume' })
     const result = db.prepare('INSERT INTO agencies (name, city) VALUES (?, ?)').run(name.trim(), city.trim())
     const agency = db.prepare('SELECT * FROM agencies WHERE id = ?').get(result.lastInsertRowid)
     res.status(201).json({ ...agency, tvs: [] })

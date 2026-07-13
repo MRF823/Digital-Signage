@@ -37,8 +37,8 @@ export default function Agencies() {
       setNewCity('')
       setShowForm(false)
       await load()
-    } catch {
-      setFormError('Eroare la creare agenție.')
+    } catch (err) {
+      setFormError(err?.response?.data?.error || 'Eroare la creare agenție.')
     }
   }
 

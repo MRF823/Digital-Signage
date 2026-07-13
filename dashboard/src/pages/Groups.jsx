@@ -64,8 +64,8 @@ export default function Groups() {
       setNewName('')
       setShowForm(false)
       await load()
-    } catch {
-      setFormError('Eroare la creare grup.')
+    } catch (err) {
+      setFormError(err?.response?.data?.error || 'Eroare la creare grup.')
     }
   }
 

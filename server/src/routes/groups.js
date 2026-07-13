@@ -68,6 +68,8 @@ router.post('/', (req, res) => {
     const { name } = req.body
     if (!name?.trim()) return res.status(400).json({ error: 'name required' })
     const db = getDb()
+    if (db.prepare('SELECT id FROM groups WHERE LOWER(name) = LOWER(?)').get(name.trim()))
+      return res.status(409).json({ error: 'Există deja un grup cu acest nume' })
     const result = db.prepare('INSERT INTO groups (name) VALUES (?)').run(name.trim())
     res.status(201).json(getGroupWithMembers(db, result.lastInsertRowid))
   } catch {
