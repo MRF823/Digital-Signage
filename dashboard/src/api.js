@@ -79,6 +79,7 @@ export const getPlayLog = (params = {}) =>
 
 export const getStats = () => api.get('/api/stats').then(r => r.data)
 export const reloadPlayers = () => api.post('/api/players/reload').then(r => r.data)
+export const syncMedia = () => api.post('/api/players/sync-media').then(r => r.data)
 
 export const mediaUrl = (filename) => `${BASE}/api/media/${filename}`
 

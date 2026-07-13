@@ -13,8 +13,22 @@ const TV_ID     = process.env.TV_ID      || 'TV-1'
 const PORT      = process.env.PORT       || 4001
 const MEDIA_DIR = process.env.MEDIA_DIR  || path.join(__dirname, 'media')
 
-// Sync complet la fiecare 6 ore (reconectare WS → server retrimite playlist)
-const SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000
+// Sync automat la miezul noptii
+function scheduleMidnightSync() {
+  const now = new Date()
+  const midnight = new Date(now)
+  midnight.setHours(24, 0, 0, 0)
+  const msUntilMidnight = midnight - now
+  console.log(`[media-sync] Urmator sync automat la miezul noptii (in ${Math.round(msUntilMidnight / 3600000)}h)`)
+  setTimeout(() => {
+    console.log('[media-sync] Sync automat miez de noapte — reconectare...')
+    ws?.close()
+    setInterval(() => {
+      console.log('[media-sync] Sync automat zilnic — reconectare...')
+      ws?.close()
+    }, 24 * 60 * 60 * 1000)
+  }, msUntilMidnight)
+}
 
 fs.mkdirSync(MEDIA_DIR, { recursive: true })
 
@@ -100,7 +114,6 @@ async function syncPlaylist(items) {
 // --- WebSocket catre VPS ---
 let ws = null
 let reconnectTimer = null
-let syncTimer = null
 
 function connect() {
   console.log(`[media-sync] Conectare la VPS: ${VPS_WS}`)
@@ -109,13 +122,6 @@ function connect() {
   ws.on('open', () => {
     console.log('[media-sync] Conectat la VPS.')
     ws.send(JSON.stringify({ type: 'register', agencyId: AGENCY_ID, tvId: TV_ID }))
-
-    // Reseteaza timer-ul de sync periodic
-    clearInterval(syncTimer)
-    syncTimer = setInterval(() => {
-      console.log('[media-sync] Sync periodic (6 ore) — reconectare...')
-      ws.close()
-    }, SYNC_INTERVAL_MS)
   })
 
   ws.on('message', (data) => {
@@ -124,12 +130,15 @@ function connect() {
       if (msg.type === 'playlist_update') {
         syncPlaylist(msg.items)
       }
+      if (msg.type === 'sync_media') {
+        console.log('[media-sync] Comanda sync_media primita din dashboard — reconectare pentru sync...')
+        ws.close()
+      }
     } catch {}
   })
 
   ws.on('close', () => {
     console.log('[media-sync] Deconectat. Reconectare in 15 sec...')
-    clearInterval(syncTimer)
     clearTimeout(reconnectTimer)
     reconnectTimer = setTimeout(connect, 15_000)
   })
@@ -141,3 +150,4 @@ function connect() {
 }
 
 connect()
+scheduleMidnightSync()

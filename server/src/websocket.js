@@ -138,6 +138,15 @@ export function pushReloadToAll() {
   }
 }
 
+export function pushSyncMediaToAll() {
+  const msg = JSON.stringify({ type: 'sync_media' })
+  for (const agencyClients of clients.values()) {
+    for (const client of agencyClients) {
+      if (client.readyState === 1) client.send(msg)
+    }
+  }
+}
+
 export function pushPlaylist(agencyId, items, transition = 'fade') {
   const msg = JSON.stringify({ type: 'playlist_update', items, transition })
   const agencyClients = clients.get(String(agencyId))

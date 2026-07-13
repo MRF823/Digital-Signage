@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, NavLink, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import { reloadPlayers } from './api'
+import { reloadPlayers, syncMedia } from './api'
 import Login from './pages/Login'
 import Overview from './pages/Overview'
 import Content from './pages/Content'
@@ -77,6 +77,12 @@ function Sidebar() {
     try { await reloadPlayers() } finally { setTimeout(() => setReloading(false), 2000) }
   }
 
+  const [syncing, setSyncing] = useState(false)
+  const handleSync = async () => {
+    setSyncing(true)
+    try { await syncMedia() } finally { setTimeout(() => setSyncing(false), 2000) }
+  }
+
   return (
     <aside className="w-60 h-screen sticky top-0 bg-slate-900 flex flex-col shrink-0 overflow-hidden">
       {/* Logo */}
@@ -112,6 +118,13 @@ function Sidebar() {
 
       {/* Footer */}
       <div className="px-3 py-4 border-t border-slate-700/60 space-y-1">
+        <button onClick={handleSync} disabled={syncing}
+          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800 transition-colors disabled:opacity-50">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          {syncing ? 'Se trimite...' : 'Sync media'}
+        </button>
         <button onClick={handleReload} disabled={reloading}
           className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800 transition-colors disabled:opacity-50">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
