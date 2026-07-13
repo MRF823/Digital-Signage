@@ -78,7 +78,7 @@ function Sidebar() {
   }
 
   return (
-    <aside className="w-60 min-h-screen bg-slate-900 flex flex-col shrink-0">
+    <aside className="w-60 h-screen sticky top-0 bg-slate-900 flex flex-col shrink-0 overflow-hidden">
       {/* Logo */}
       <div className="px-6 py-5 border-b border-slate-700/60">
         <div className="flex items-center gap-2.5">
