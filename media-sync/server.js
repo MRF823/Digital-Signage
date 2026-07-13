@@ -1,4 +1,5 @@
 import express from 'express'
+import cors from 'cors'
 import WebSocket from 'ws'
 import fs from 'fs'
 import path from 'path'
@@ -57,6 +58,7 @@ fs.mkdirSync(MEDIA_DIR, { recursive: true })
 
 // --- HTTP: serveste media din disc local ---
 const app = express()
+app.use(cors())
 
 app.get('/api/media/:filename', (req, res) => {
   const file = path.join(MEDIA_DIR, req.params.filename)

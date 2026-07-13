@@ -62,8 +62,8 @@ export function useMediaCache() {
           await putCached(db, item.filename, blob)
           result[item.filename] = URL.createObjectURL(blob)
         } catch {
-          // download eșuat — fallback la URL direct pentru streaming
-          result[item.filename] = `${SERVER_URL}/api/media/${item.filename}`
+          // download eșuat (CORS, retea) — fallback la VPS pentru streaming
+          result[item.filename] = `${VPS_URL}/api/media/${item.filename}`
         }
       }
     }
