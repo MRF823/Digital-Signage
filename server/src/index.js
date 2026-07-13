@@ -62,6 +62,38 @@ app.get('/api/play-log', requireAuth, (req, res) => {
 })
 // File serving is public — filenames are random UUIDs, not guessable; needed for <video> elements
 app.get('/api/media/:filename', serveFile)
+
+// Upcoming campaign media — public, returnează filenames pentru campaniile care incep in urmatoarele `days` zile
+app.get('/api/upcoming-media', (req, res) => {
+  try {
+    const db = getDb()
+    const agencyId = req.query.agencyId
+    const days = parseInt(req.query.days || '3', 10)
+    if (!agencyId) return res.status(400).json({ error: 'agencyId required' })
+
+    const today = new Date().toISOString().slice(0, 10)
+    const future = new Date(Date.now() + days * 86400_000).toISOString().slice(0, 10)
+
+    const campaigns = db.prepare(`
+      SELECT id FROM campaigns
+      WHERE agency_id = ? AND start_date > ? AND start_date <= ?
+    `).all(agencyId, today, future)
+
+    const files = []
+    for (const c of campaigns) {
+      const items = db.prepare(`
+        SELECT m.filename, m.original_name, m.type, m.duration_seconds
+        FROM campaign_items ci JOIN media m ON m.id = ci.media_id
+        WHERE ci.campaign_id = ?
+      `).all(c.id)
+      files.push(...items)
+    }
+
+    res.json(files)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
 app.use('/api/media', requireAuth, mediaRoutes)
 app.use('/api/agencies', requireAuth, agencyRoutes)
 app.use('/api/agencies', requireAuth, playlistRoutes)

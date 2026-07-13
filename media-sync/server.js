@@ -13,6 +13,27 @@ const TV_ID     = process.env.TV_ID      || 'TV-1'
 const PORT      = process.env.PORT       || 4001
 const MEDIA_DIR = process.env.MEDIA_DIR  || path.join(__dirname, 'media')
 
+// Pre-download media pentru campaniile care incep in urmatoarele 3 zile
+async function prefetchUpcoming() {
+  console.log('[media-sync] Verific campanii viitoare (urmatoarele 3 zile)...')
+  try {
+    const res = await fetch(`${VPS_HTTP}/api/upcoming-media?agencyId=${AGENCY_ID}&days=3`)
+    if (!res.ok) return
+    const items = await res.json()
+    if (items.length === 0) {
+      console.log('[media-sync] Nicio campanie viitoare.')
+      return
+    }
+    console.log(`[media-sync] ${items.length} fisiere de pre-descarcat pentru campanii viitoare.`)
+    for (const item of items) {
+      await downloadFile(item.filename)
+    }
+    console.log('[media-sync] Pre-download complet.')
+  } catch (err) {
+    console.error('[media-sync] Pre-fetch eroare:', err.message)
+  }
+}
+
 // Sync automat la miezul noptii
 function scheduleMidnightSync() {
   const now = new Date()
@@ -23,9 +44,11 @@ function scheduleMidnightSync() {
   setTimeout(() => {
     console.log('[media-sync] Sync automat miez de noapte — reconectare...')
     ws?.close()
+    prefetchUpcoming()
     setInterval(() => {
       console.log('[media-sync] Sync automat zilnic — reconectare...')
       ws?.close()
+      prefetchUpcoming()
     }, 24 * 60 * 60 * 1000)
   }, msUntilMidnight)
 }
@@ -151,3 +174,5 @@ function connect() {
 
 connect()
 scheduleMidnightSync()
+// Pre-descarca campanii viitoare si la pornire
+setTimeout(prefetchUpcoming, 10_000)
