@@ -114,11 +114,6 @@ app.post('/api/players/sync-media', requireAuth, (req, res) => {
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-const playerDist = join(__dirname, '../../player/dist')
-if (existsSync(playerDist)) {
-  app.use('/player', express.static(playerDist))
-  app.use('/player', (req, res) => res.sendFile(join(playerDist, 'index.html')))
-}
 
 const dashDist = join(__dirname, '../../dashboard/dist')
 if (existsSync(dashDist)) {
