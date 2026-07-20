@@ -20,6 +20,11 @@ http.createServer((req, res) => {
     filePath = path.join(DIST, 'index.html')
   }
   const ext = path.extname(filePath)
-  res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' })
+  const headers = { 'Content-Type': MIME[ext] || 'application/octet-stream' }
+  if (ext === '.html') {
+    headers['Permissions-Policy'] = 'autoplay=*'
+    headers['Feature-Policy'] = 'autoplay *'
+  }
+  res.writeHead(200, headers)
   fs.createReadStream(filePath).pipe(res)
 }).listen(5176, '0.0.0.0', () => console.log('Player running on :5176'))
