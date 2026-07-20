@@ -118,7 +118,7 @@ const __dirname = dirname(__filename)
 const dashDist = join(__dirname, '../../dashboard/dist')
 if (existsSync(dashDist)) {
   app.use(express.static(dashDist))
-  app.use((req, res) => res.sendFile(join(dashDist, 'index.html')))
+  app.get(/.*/, (req, res) => res.sendFile(join(dashDist, 'index.html')))
 }
 
 export { app, httpServer }
