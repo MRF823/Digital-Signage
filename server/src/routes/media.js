@@ -62,9 +62,21 @@ export function serveFile(req, res) {
   if (basename !== req.params.filename) return res.status(400).json({ error: 'Invalid filename' })
   const filePath = path.join(UPLOADS_DIR, basename)
 
-  const ext = path.extname(basename).toLowerCase()
-  const MIME = { '.mp4': 'video/mp4', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png' }
-  const contentType = MIME[ext] || 'application/octet-stream'
+  const MIME_BY_EXT = { '.mp4': 'video/mp4', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png' }
+  const MIME_BY_TYPE = { 'video': 'video/mp4', 'image/jpeg': 'image/jpeg', 'image/png': 'image/png' }
+  let contentType = MIME_BY_EXT[path.extname(basename).toLowerCase()]
+  if (!contentType) {
+    try {
+      const row = getDb().prepare('SELECT original_name, type FROM media WHERE filename = ?').get(basename)
+      if (row) {
+        contentType = MIME_BY_EXT[path.extname(row.original_name).toLowerCase()]
+          || MIME_BY_TYPE[row.type]
+          || 'application/octet-stream'
+      } else {
+        contentType = 'application/octet-stream'
+      }
+    } catch { contentType = 'application/octet-stream' }
+  }
 
   try {
     const stat = statSync(filePath)
