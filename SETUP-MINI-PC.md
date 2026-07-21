@@ -83,7 +83,33 @@ Deschide `C:\Users\admin\digital-signage\start-kiosk.bat` cu Notepad și modific
 
 ---
 
-## PASUL 5 — Pornire automată Edge la boot
+## PASUL 5 — Ascundere taskbar și cursor mouse
+
+### 5.1 Ascunde bara de jos (taskbar)
+1. Click dreapta pe taskbar → **Taskbar settings**
+2. Activează **Automatically hide the taskbar** (ascunde automat)
+3. Taskbar-ul dispare și nu mai apare decât dacă dai mouse în jos
+
+### 5.2 Ascunde cursorul mouse (cursor invizibil)
+1. Descarcă **cursor transparent** — creează un fișier `.cur` transparent sau folosește unul existent
+2. Mergi la **Control Panel** → **Mouse** → tab **Pointers**
+3. Selectează **Normal Select** → Browse → alege cursorul transparent → Apply
+4. Alternativ (mai simplu): instalează **[Cursor Hider](https://www.gpsoft.com.au)** sau **AutoHotkey** cu script:
+   ```
+   #Persistent
+   SetTimer, HideMouse, 3000
+   return
+   HideMouse:
+   MouseMove, 99999, 99999
+   return
+   ```
+   Salvează ca `hide-mouse.ahk` și pune shortcut în `shell:startup`
+
+> **Notă:** Player-ul ascunde automat cursorul după 3 secunde de inactivitate (cod deja implementat). Dacă mouse-ul nu e conectat deloc la mini PC, nu e nevoie de nimic.
+
+---
+
+## PASUL 6 — Pornire automată Edge la boot
 
 1. Apasă `Win + R` → scrie `shell:startup` → Enter
 2. Se deschide folderul de startup
@@ -92,7 +118,7 @@ Deschide `C:\Users\admin\digital-signage\start-kiosk.bat` cu Notepad și modific
 
 ---
 
-## PASUL 6 — Update agent (actualizare automată și din dashboard)
+## PASUL 7 — Update agent (actualizare automată și din dashboard)
 
 Update agent-ul este un proces pm2 care ascultă comenzi de la VPS și actualizează automat mini PC-ul.
 
@@ -104,7 +130,7 @@ pm2 save
 
 ---
 
-## PASUL 7 — Auto-update la ora 00:00 (Task Scheduler)
+## PASUL 8 — Auto-update la ora 00:00 (Task Scheduler)
 
 Rulează **ca Administrator**:
 ```powershell
@@ -115,7 +141,7 @@ Dacă merge: `[OK] Task Scheduler configurat cu succes!`
 
 ---
 
-## PASUL 8 — Verificare finală
+## PASUL 9 — Verificare finală
 
 Repornește mini PC-ul și verifică:
 1. `pm2 list` → toate procesele `online`: `signage-player` + `signage-update-agent`
@@ -181,8 +207,10 @@ Apasă `Alt + F4` pentru a închide Edge kiosk.
 5. npm install + npm run build (în player/)
 6. pm2 start signage-player + pm2 save
 7. Editează start-kiosk.bat cu agencyId și tvId corecte
-8. Pune shortcut în shell:startup
-9. pm2 start update-agent.cjs --name signage-update-agent + pm2 save
-10. Rulează 6-setup-autoupdate.bat ca Administrator (Task Scheduler 00:00)
-11. Repornește PC-ul și verifică în dashboard că TV-ul e verde
+8. Ascunde taskbar (Taskbar settings → Automatically hide)
+9. (Opțional) Ascunde cursorul mouse
+10. Pune shortcut în shell:startup
+11. pm2 start update-agent.cjs --name signage-update-agent + pm2 save
+12. Rulează 6-setup-autoupdate.bat ca Administrator (Task Scheduler 00:00)
+13. Repornește PC-ul și verifică în dashboard că TV-ul e verde
 ```

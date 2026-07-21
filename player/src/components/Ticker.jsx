@@ -1,35 +1,20 @@
 const CURRENCIES = ['EUR', 'USD', 'CHF', 'GBP']
 
-function formatDateTime(dateStr) {
-  if (!dateStr) return { time: null, date: null }
+function formatLastUpdate(dateStr) {
+  if (!dateStr) return null
   const d = new Date(dateStr)
-  return {
-    time: d.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' }),
-    date: d.toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-  }
-}
-
-function TimeBlock({ time, date }) {
-  if (!time) return null
-  return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      padding: '0 16px', borderLeft: '1px solid rgba(0,0,0,0.06)',
-      textAlign: 'center', flexShrink: 0, marginLeft: 'auto',
-    }}>
-      <div style={{ fontSize: 18, fontWeight: 700, color: '#111827', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{time}</div>
-      <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>{date}</div>
-    </div>
-  )
+  const time = d.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })
+  const day = d.getDate().toString().padStart(2, '0')
+  const month = d.toLocaleDateString('ro-RO', { month: 'long' })
+  const monthCap = month.charAt(0).toUpperCase() + month.slice(1)
+  const year = d.getFullYear()
+  return `${time} ▪ ${day} ${monthCap} ${year}`
 }
 
 export default function Ticker({ rates, updatedAt, cecUpdatedAt, bnrUpdatedAt }) {
   if (!rates) return null
 
-  // cecUpdatedAt și bnrUpdatedAt vor fi folosite când avem API-uri separate
-  // deocamdată ambele folosesc updatedAt
-  const cec = formatDateTime(cecUpdatedAt || updatedAt)
-  const bnr = formatDateTime(bnrUpdatedAt || updatedAt)
+  const lastUpdate = formatLastUpdate(cecUpdatedAt || bnrUpdatedAt || updatedAt)
 
   const s = {
     wrap: {
@@ -80,7 +65,6 @@ export default function Ticker({ rates, updatedAt, cecUpdatedAt, bnrUpdatedAt })
             </div>
           )
         })}
-        <TimeBlock time={cec.time} date={cec.date} />
       </div>
 
       {/* Rând BNR */}
@@ -95,8 +79,27 @@ export default function Ticker({ rates, updatedAt, cecUpdatedAt, bnrUpdatedAt })
             }
           </div>
         ))}
-        <TimeBlock time={bnr.time} date={bnr.date} />
       </div>
+
+      {/* Bara "Ultima actualizare" */}
+      {lastUpdate && (
+        <div style={{
+          background: '#6B1F6B',
+          padding: '5px 20px',
+          display: 'flex',
+          alignItems: 'center',
+        }}>
+          <span style={{
+            color: '#fff',
+            fontSize: 13,
+            fontWeight: 700,
+            letterSpacing: '0.02em',
+            fontVariantNumeric: 'tabular-nums',
+          }}>
+            Ultima actualizare: {lastUpdate}
+          </span>
+        </div>
+      )}
     </div>
   )
 }
