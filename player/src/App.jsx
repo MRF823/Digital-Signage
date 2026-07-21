@@ -173,14 +173,25 @@ export default function App() {
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'black', display: 'flex', flexDirection: 'column' }}>
-      {showPlayerLabel && (
-        <div style={{
-          position: 'fixed', top: 12, left: 12, zIndex: 200,
-          background: 'rgba(0,0,0,0.5)', borderRadius: '6px',
-          padding: '3px 8px', fontSize: '11px', color: 'rgba(255,255,255,0.4)',
-          fontFamily: 'monospace',
-        }}>Player · :{window.location.port}</div>
-      )}
+      <div style={{ position: 'fixed', top: 12, left: 12, zIndex: 200, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        {showAgencyName && agencyName && (
+          <div style={{
+            background: 'rgba(0,0,0,0.55)', borderRadius: '6px',
+            padding: '4px 10px',
+            color: 'rgba(255,255,255,0.9)',
+            fontSize: '13px', fontFamily: 'sans-serif', letterSpacing: '0.3px',
+          }}>
+            {agencyName}
+          </div>
+        )}
+        {showPlayerLabel && (
+          <div style={{
+            background: 'rgba(0,0,0,0.5)', borderRadius: '6px',
+            padding: '3px 8px', fontSize: '11px', color: 'rgba(255,255,255,0.4)',
+            fontFamily: 'monospace',
+          }}>Player · :{window.location.port}</div>
+        )}
+      </div>
       {!connected && (
         <div style={{
           position: 'fixed', top: 12, right: 12, zIndex: 200,
@@ -198,17 +209,6 @@ export default function App() {
         {src && current.type === 'video' && <VideoPlayer key={playCount} src={src} onEnded={next} />}
         {src && current.type === 'image' && <ImageDisplay key={playCount} src={src} duration={current.display_duration_seconds} onEnded={next} />}
       </div>
-      {showAgencyName && agencyName && (
-        <div style={{
-          position: 'fixed', top: 12, left: 12, zIndex: 200,
-          background: 'rgba(0,0,0,0.55)', borderRadius: '6px',
-          padding: '4px 10px',
-          color: 'rgba(255,255,255,0.9)',
-          fontSize: '13px', fontFamily: 'sans-serif', letterSpacing: '0.3px',
-        }}>
-          {agencyName}
-        </div>
-      )}
       {ratesData && <Ticker rates={ratesData?.rates} updatedAt={ratesData?.updatedAt} />}
       {!screenOn && (
         <div style={{
