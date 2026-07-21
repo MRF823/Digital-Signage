@@ -125,6 +125,7 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
                 <button onClick={() => { setEditingName(true); setEditName(agency.name); setEditCity(agency.city) }} className="text-xs text-gray-400 hover:text-blue-600" title="Redenumește">✏️</button>
               </div>
               <p className="text-xs text-gray-400">{agency.city}</p>
+              {agency.address && <p className="text-xs text-gray-400">{agency.address}</p>}
             </>
           )}
           {groupName && (
