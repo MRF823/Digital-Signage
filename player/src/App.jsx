@@ -144,6 +144,16 @@ export default function App() {
     if (playlist.length > 0) cachePlaylist(playlist)
   }, [])
 
+  const current = playlist.length > 0 ? playlist[index % playlist.length] : null
+  const src = current ? urls[current.filename] : undefined
+
+  useEffect(() => {
+    if (!src && ready && playlist.length > 0) {
+      const t = setTimeout(() => advance(false), 800)
+      return () => clearTimeout(t)
+    }
+  }, [src, ready, playlist.length, advance])
+
   if (!ready || playlist.length === 0) {
     return (
       <div style={{ width: '100vw', height: '100vh', background: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -153,16 +163,6 @@ export default function App() {
       </div>
     )
   }
-
-  const current = playlist[index % playlist.length]
-  const src = urls[current?.filename]
-
-  useEffect(() => {
-    if (!src && ready && playlist.length > 0) {
-      const t = setTimeout(() => advance(false), 800)
-      return () => clearTimeout(t)
-    }
-  }, [src, ready, playlist.length, advance])
   const tickerHeight = ratesData ? 88 : 0
 
   return (
