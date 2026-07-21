@@ -5,6 +5,7 @@ import AgencyCard from '../components/AgencyCard'
 export default function Agencies() {
   const [agencies, setAgencies] = useState([])
   const [agencyGroupMap, setAgencyGroupMap] = useState({})
+  const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [newName, setNewName] = useState('')
   const [newCity, setNewCity] = useState('')
@@ -90,16 +91,33 @@ export default function Agencies() {
         </form>
       )}
 
+      <div className="mb-4">
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Caută agenție, oraș, adresă..."
+          className="w-full border border-gray-200 rounded-full px-4 py-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white shadow-sm"
+        />
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {agencies.map(agency => (
-          <AgencyCard
-            key={agency.id}
-            agency={agency}
-            groupName={agencyGroupMap[agency.id] || null}
-            onPlaylistSaved={load}
-            onDeleted={load}
-          />
-        ))}
+        {agencies
+          .filter(a => {
+            const q = search.toLowerCase()
+            return !q ||
+              a.name.toLowerCase().includes(q) ||
+              a.city.toLowerCase().includes(q) ||
+              (a.address || '').toLowerCase().includes(q)
+          })
+          .map(agency => (
+            <AgencyCard
+              key={agency.id}
+              agency={agency}
+              groupName={agencyGroupMap[agency.id] || null}
+              onPlaylistSaved={load}
+              onDeleted={load}
+            />
+          ))}
       </div>
     </div>
   )
