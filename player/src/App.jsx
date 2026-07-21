@@ -186,9 +186,9 @@ export default function App() {
         )}
         {showPlayerLabel && (
           <div style={{
-            background: 'rgba(0,0,0,0.5)', borderRadius: '6px',
-            padding: '3px 8px', fontSize: '11px', color: 'rgba(255,255,255,0.4)',
-            fontFamily: 'monospace',
+            background: 'rgba(0,0,0,0.55)', borderRadius: '6px',
+            padding: '4px 10px', fontSize: '13px', color: 'rgba(255,255,255,0.9)',
+            fontFamily: 'sans-serif', letterSpacing: '0.3px',
           }}>Player · :{window.location.port}</div>
         )}
       </div>
