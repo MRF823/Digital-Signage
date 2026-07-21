@@ -123,15 +123,40 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
               Grup: {groupName}
             </span>
           )}
-          <div className="flex gap-4 mt-2">
-            <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
-              <input type="checkbox" checked={showAgencyName} onChange={e => handleSetting('show_agency_name', e.target.checked)} className="accent-blue-600" />
-              Afișează numele agenției pe TV
-            </label>
-            <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
-              <input type="checkbox" checked={showPlayerLabel} onChange={e => handleSetting('show_player_label', e.target.checked)} className="accent-blue-600" />
-              Afișează eticheta Player
-            </label>
+          <div className="flex items-start gap-4 mt-2">
+            <div className="flex flex-col gap-1.5">
+              <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+                <input type="checkbox" checked={showAgencyName} onChange={e => handleSetting('show_agency_name', e.target.checked)} className="accent-blue-600" />
+                Afișează numele agenției pe TV
+              </label>
+              <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+                <input type="checkbox" checked={showPlayerLabel} onChange={e => handleSetting('show_player_label', e.target.checked)} className="accent-blue-600" />
+                Afișează eticheta Player
+              </label>
+            </div>
+            {/* Preview TV */}
+            <div className="ml-2 flex-shrink-0" title="Preview cum apare pe TV">
+              <div style={{ width: 110, height: 66, background: '#111', borderRadius: 5, position: 'relative', border: '1.5px solid #444', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: 5, left: 5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {showAgencyName && (
+                    <div style={{ background: 'rgba(0,0,0,0.6)', borderRadius: 3, padding: '2px 5px', fontSize: 7, color: 'rgba(255,255,255,0.9)', fontFamily: 'sans-serif', whiteSpace: 'nowrap' }}>
+                      {agency.name}
+                    </div>
+                  )}
+                  {showPlayerLabel && (
+                    <div style={{ background: 'rgba(0,0,0,0.5)', borderRadius: 3, padding: '1px 5px', fontSize: 6, color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+                      Player · :5176
+                    </div>
+                  )}
+                </div>
+                {!showAgencyName && !showPlayerLabel && (
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontSize: 7, color: 'rgba(255,255,255,0.2)' }}>nimic afisat</span>
+                  </div>
+                )}
+              </div>
+              <p style={{ fontSize: 8, color: '#aaa', textAlign: 'center', marginTop: 2 }}>Preview TV</p>
+            </div>
           </div>
         </div>
         <div className="flex gap-2">
