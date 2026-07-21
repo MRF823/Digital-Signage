@@ -7,14 +7,14 @@ function isOnline(tv) {
 }
 
 function timeAgo(dateStr) {
-  if (!dateStr) return '—'
+  if (!dateStr) return { rel: '—', exact: '' }
   const date = new Date(dateStr + 'Z')
   const diff = Date.now() - date.getTime()
   const pad = n => String(n).padStart(2, '0')
-  const exact = `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`
-  if (diff < 60_000) return 'acum'
-  if (diff < 3_600_000) return `${Math.round(diff / 60_000)}min · ${exact}`
-  return `${Math.round(diff / 3_600_000)}h · ${exact}`
+  const exact = `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}\n${pad(date.getHours())}:${pad(date.getMinutes())}`
+  if (diff < 60_000) return { rel: 'acum', exact }
+  if (diff < 3_600_000) return { rel: `${Math.round(diff / 60_000)}min`, exact }
+  return { rel: `${Math.round(diff / 3_600_000)}h`, exact }
 }
 
 function isActiveCampaign(c) {
@@ -98,7 +98,10 @@ function AgencyCard({ agency }) {
               ${on ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
               <span className={`w-2.5 h-2.5 rounded-full ${on ? 'bg-green-500' : 'bg-red-400'}`} />
               <span className={`font-semibold ${on ? 'text-green-700' : 'text-red-500'}`}>{tv.label}</span>
-              <span className={`text-xs ${on ? 'text-green-500' : 'text-red-400'}`}>{timeAgo(tv.last_seen_at)}</span>
+              {(() => { const { rel, exact } = timeAgo(tv.last_seen_at); return (<>
+                <span className={`text-xs ${on ? 'text-green-500' : 'text-red-400'}`}>{rel}</span>
+                {!on && exact && <span className="text-[9px] text-red-300 text-center whitespace-pre-line leading-tight">{exact}</span>}
+              </>)})()}
               <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded tracking-wide ${tv.orientation === 'portrait' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}>
                 {tv.orientation === 'portrait' ? 'PORT.' : 'LAND.'}
               </span>
