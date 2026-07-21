@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { getDb } from '../db.js'
+import { pushPlaylist } from '../websocket.js'
 
 const router = Router()
 
@@ -86,6 +87,22 @@ router.patch('/:id/settings', (req, res) => {
       return res.status(404).json({ error: 'Not found' })
     db.prepare('UPDATE agencies SET show_agency_name = ?, show_player_label = ? WHERE id = ?')
       .run(show_agency_name ? 1 : 0, show_player_label ? 1 : 0, id)
+
+    // Trimite setarile actualizate la player via WebSocket
+    const playlist = db.prepare(`
+      SELECT pi.*, m.filename, m.original_name, m.type, m.duration_seconds
+      FROM playlist_items pi
+      JOIN media m ON m.id = pi.media_id
+      WHERE pi.agency_id = ?
+      ORDER BY pi.position
+    `).all(id)
+    const groupRow = db.prepare(`
+      SELECT g.transition FROM groups g
+      JOIN group_members gm ON gm.group_id = g.id
+      WHERE gm.agency_id = ? LIMIT 1
+    `).get(id)
+    pushPlaylist(id, playlist, groupRow?.transition || 'fade')
+
     res.json({ ok: true })
   } catch (err) {
     res.status(500).json({ error: 'Internal server error' })
