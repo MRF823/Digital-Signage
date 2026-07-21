@@ -32,9 +32,9 @@ export const uploadMedia = (file, onProgress) =>
 export const deleteMedia = (id) => api.delete(`/api/media/${id}`)
 
 export const getAgencies = () => api.get('/api/agencies').then(r => r.data)
-export const createAgency = (name, city) => api.post('/api/agencies', { name, city }).then(r => r.data)
+export const createAgency = (name, city, address) => api.post('/api/agencies', { name, city, address }).then(r => r.data)
 export const deleteAgency = (id) => api.delete(`/api/agencies/${id}`)
-export const renameAgency = (id, name, city) => api.patch(`/api/agencies/${id}/name`, { name, city }).then(r => r.data)
+export const renameAgency = (id, name, city, address) => api.patch(`/api/agencies/${id}/name`, { name, city, address }).then(r => r.data)
 export const updateAgencySettings = (id, settings) => api.patch(`/api/agencies/${id}/settings`, settings).then(r => r.data)
 export const updateAgencyCoords = (agencyId, lat, lng) => api.patch(`/api/agencies/${agencyId}/coords`, { lat, lng }).then(r => r.data)
 export const addTv = (agencyId, label, orientation = 'landscape') => api.post(`/api/agencies/${agencyId}/tvs`, { label, orientation }).then(r => r.data)

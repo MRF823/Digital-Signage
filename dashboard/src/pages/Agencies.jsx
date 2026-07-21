@@ -8,7 +8,9 @@ export default function Agencies() {
   const [showForm, setShowForm] = useState(false)
   const [newName, setNewName] = useState('')
   const [newCity, setNewCity] = useState('')
+  const [newAddress, setNewAddress] = useState('')
   const [formError, setFormError] = useState('')
+  const [geocoding, setGeocoding] = useState(false)
 
   const load = async () => {
     const [list, groups] = await Promise.all([getAgencies(), getGroups()])
@@ -31,15 +33,18 @@ export default function Agencies() {
     e.preventDefault()
     setFormError('')
     if (!newName.trim() || !newCity.trim()) return setFormError('Completează numele și orașul.')
+    setGeocoding(!!newAddress.trim())
     try {
-      await createAgency(newName.trim(), newCity.trim())
+      await createAgency(newName.trim(), newCity.trim(), newAddress.trim())
       setNewName('')
       setNewCity('')
+      setNewAddress('')
       setShowForm(false)
       await load()
     } catch (err) {
       setFormError(err?.response?.data?.error || 'Eroare la creare agenție.')
     }
+    setGeocoding(false)
   }
 
   return (
@@ -67,9 +72,15 @@ export default function Agencies() {
               placeholder='ex: "București"'
               className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-40" />
           </div>
-          <button type="submit"
-            className="bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-blue-800">
-            Creează
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Adresă <span className="text-gray-400">(pentru hartă)</span></label>
+            <input value={newAddress} onChange={e => setNewAddress(e.target.value)}
+              placeholder='ex: "Str. Victoriei 10, București"'
+              className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-72" />
+          </div>
+          <button type="submit" disabled={geocoding}
+            className="bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-blue-800 disabled:opacity-60">
+            {geocoding ? 'Se caută pe hartă...' : 'Creează'}
           </button>
           <button type="button" onClick={() => setShowForm(false)}
             className="text-sm text-gray-400 hover:text-gray-600">

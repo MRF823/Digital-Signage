@@ -2,6 +2,16 @@ import { Router } from 'express'
 import { getDb } from '../db.js'
 import { pushPlaylist } from '../websocket.js'
 
+async function geocode(address) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`
+    const res = await fetch(url, { headers: { 'User-Agent': 'BancaSign/1.0' } })
+    const data = await res.json()
+    if (data.length > 0) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
+  } catch {}
+  return null
+}
+
 const router = Router()
 
 router.get('/', (req, res) => {
@@ -18,15 +28,23 @@ router.get('/', (req, res) => {
   }
 })
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
-    const { name, city } = req.body
+    const { name, city, address } = req.body
     if (!name?.trim() || !city?.trim()) return res.status(400).json({ error: 'name and city required' })
 
     const db = getDb()
     if (db.prepare('SELECT id FROM agencies WHERE LOWER(name) = LOWER(?)').get(name.trim()))
       return res.status(409).json({ error: 'Există deja o agenție cu acest nume' })
-    const result = db.prepare('INSERT INTO agencies (name, city) VALUES (?, ?)').run(name.trim(), city.trim())
+
+    let lat = null, lng = null
+    if (address?.trim()) {
+      const coords = await geocode(address.trim())
+      if (coords) { lat = coords.lat; lng = coords.lng }
+    }
+
+    const result = db.prepare('INSERT INTO agencies (name, city, address, lat, lng) VALUES (?, ?, ?, ?, ?)')
+      .run(name.trim(), city.trim(), address?.trim() || null, lat, lng)
     const agency = db.prepare('SELECT * FROM agencies WHERE id = ?').get(result.lastInsertRowid)
     res.status(201).json({ ...agency, tvs: [] })
   } catch (err) {
@@ -34,20 +52,27 @@ router.post('/', (req, res) => {
   }
 })
 
-router.patch('/:id/name', (req, res) => {
+router.patch('/:id/name', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10)
     if (isNaN(id)) return res.status(400).json({ error: 'Invalid id' })
-    const { name, city } = req.body
+    const { name, city, address } = req.body
     if (!name?.trim()) return res.status(400).json({ error: 'name required' })
     const db = getDb()
     if (!db.prepare('SELECT id FROM agencies WHERE id = ?').get(id))
       return res.status(404).json({ error: 'Not found' })
     const duplicate = db.prepare('SELECT id FROM agencies WHERE LOWER(name) = LOWER(?) AND id != ?').get(name.trim(), id)
     if (duplicate) return res.status(409).json({ error: 'Există deja o agenție cu acest nume' })
-    db.prepare('UPDATE agencies SET name = ?' + (city ? ', city = ?' : '') + ' WHERE id = ?').run(
-      ...(city ? [name.trim(), city.trim(), id] : [name.trim(), id])
-    )
+
+    let lat = null, lng = null
+    if (address?.trim()) {
+      const coords = await geocode(address.trim())
+      if (coords) { lat = coords.lat; lng = coords.lng }
+    }
+
+    db.prepare('UPDATE agencies SET name = ?, city = ?, address = ?, lat = ?, lng = ? WHERE id = ?')
+      .run(name.trim(), city?.trim() || '', address?.trim() || null, lat, lng, id)
+
     const agency = db.prepare('SELECT * FROM agencies WHERE id = ?').get(id)
     const tvs = db.prepare('SELECT * FROM tvs WHERE agency_id = ?').all(id)
     res.json({ ...agency, tvs })
