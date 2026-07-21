@@ -6,6 +6,9 @@ import { shouldScreenBeOn } from './scheduler.js'
 // Map: agencyId (string) -> Set of WebSocket clients
 const clients = new Map()
 
+// Set of update agent connections
+const updateAgents = new Set()
+
 export function initWebSocket(httpServer) {
   const wss = new WebSocketServer({ server: httpServer })
 
@@ -16,6 +19,11 @@ export function initWebSocket(httpServer) {
     ws.on('message', (raw) => {
       let msg
       try { msg = JSON.parse(raw) } catch { return }
+
+      if (msg.type === 'register_update_agent') {
+        updateAgents.add(ws)
+        return
+      }
 
       if (msg.type === 'register') {
         agencyId = String(msg.agencyId)
@@ -108,6 +116,7 @@ export function initWebSocket(httpServer) {
     })
 
     ws.on('close', () => {
+      updateAgents.delete(ws)
       if (agencyId && clients.has(agencyId)) {
         clients.get(agencyId).delete(ws)
         if (clients.get(agencyId).size === 0) clients.delete(agencyId)
@@ -150,6 +159,14 @@ export function pushSyncMediaToAll() {
       if (client.readyState === 1) client.send(msg)
     }
   }
+}
+
+export function pushTriggerUpdate() {
+  const msg = JSON.stringify({ type: 'trigger_update' })
+  for (const agent of updateAgents) {
+    if (agent.readyState === 1) agent.send(msg)
+  }
+  return updateAgents.size
 }
 
 export function pushPlaylist(agencyId, items, transition = 'fade') {

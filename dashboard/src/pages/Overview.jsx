@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getAgencies, getGroups, getMedia, getCampaigns, getRates, getStats } from '../api'
+import { getAgencies, getGroups, getMedia, getCampaigns, getRates, getStats, triggerUpdate } from '../api'
 
 function isOnline(tv) {
   if (!tv.last_seen_at) return false
@@ -122,6 +122,8 @@ export default function Overview() {
   const [plays24h, setPlays24h] = useState(0)
   const [rates, setRates] = useState(null)
   const [ratesTime, setRatesTime] = useState(null)
+  const [updating, setUpdating] = useState(false)
+  const [updateMsg, setUpdateMsg] = useState('')
 
   const load = async () => {
     const [ag, gr, med, camp] = await Promise.all([
@@ -176,11 +178,52 @@ export default function Overview() {
     ? ratesDate.toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' })
     : null
 
+  const handleUpdate = async () => {
+    setUpdating(true)
+    setUpdateMsg('')
+    try {
+      const res = await triggerUpdate()
+      if (res.agents === 0) {
+        setUpdateMsg('Niciun mini PC conectat momentan.')
+      } else {
+        setUpdateMsg(`Comandă trimisă către ${res.agents} mini PC${res.agents > 1 ? '-uri' : ''}. Actualizarea durează ~2 min.`)
+      }
+    } catch {
+      setUpdateMsg('Eroare la trimiterea comenzii.')
+    }
+    setUpdating(false)
+    setTimeout(() => setUpdateMsg(''), 6000)
+  }
+
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-800">Prezentare generală</h2>
-        <p className="text-sm text-gray-400 mt-0.5">Status în timp real · actualizat la 15s</p>
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-gray-800">Prezentare generală</h2>
+          <p className="text-sm text-gray-400 mt-0.5">Status în timp real · actualizat la 15s</p>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <button
+            onClick={handleUpdate}
+            disabled={updating}
+            className="flex items-center gap-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+          >
+            {updating ? (
+              <>
+                <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+                Se actualizează...
+              </>
+            ) : (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>
+                Actualizează mini PC-uri
+              </>
+            )}
+          </button>
+          {updateMsg && (
+            <p className="text-xs text-gray-500 max-w-xs text-right">{updateMsg}</p>
+          )}
+        </div>
       </div>
 
       {/* Stat cards */}

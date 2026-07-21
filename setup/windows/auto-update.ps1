@@ -1,7 +1,7 @@
 # BancaSign Auto-Update Script
-# Ruleaza noaptea prin Task Scheduler
-# Verifica daca exista cod nou si face build + restart daca e necesar
+# Ruleaza noaptea prin Task Scheduler sau la cerere din dashboard
 
+$repoDir = "C:\Users\admin\digital-signage"
 $playerDir = "C:\Users\admin\digital-signage\player"
 $logFile = "C:\Users\admin\digital-signage\update.log"
 
@@ -21,10 +21,8 @@ try {
     exit 0
 }
 
-# Intra in folderul player
-Set-Location $playerDir
-
-# Git pull
+# Git pull din radacina repo-ului
+Set-Location $repoDir
 $pullOutput = git pull 2>&1
 Log "git pull: $pullOutput"
 
@@ -34,8 +32,9 @@ if ($pullOutput -match "Already up to date") {
     exit 0
 }
 
-# Sunt modificari — face build
+# Sunt modificari — face build in folderul player
 Log "Modificari detectate — incep build..."
+Set-Location $playerDir
 $buildOutput = npm run build 2>&1
 Log "build: $buildOutput"
 
