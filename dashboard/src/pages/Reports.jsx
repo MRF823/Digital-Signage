@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import * as XLSX from 'xlsx'
-import { getPlayLog, getAgencies, getPlaylist } from '../api'
+import { getPlayLog, getAgencies, getGroups, getPlaylist, getGroupPlaylist } from '../api'
 
 function fmt(dateStr) {
   if (!dateStr) return '—'
@@ -90,14 +90,34 @@ export default function Reports() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    getAgencies().then(ag => {
+    Promise.all([getAgencies(), getGroups()]).then(async ([ag, groups]) => {
       setAgencies(ag)
-      Promise.all(ag.map(a => getPlaylist(a.id).then(items => ({ id: a.id, items })).catch(() => ({ id: a.id, items: [] }))))
-        .then(results => {
-          const map = {}
-          results.forEach(r => { map[r.id] = r.items })
-          setPlaylists(map)
-        })
+
+      // map agencyId -> groupId
+      const agencyGroupId = {}
+      groups.forEach(g => g.agencies.forEach(a => { agencyGroupId[a.id] = g.id }))
+
+      // fetch playlist direct per agenție
+      const directResults = await Promise.all(
+        ag.map(a => getPlaylist(a.id).then(items => ({ id: a.id, items })).catch(() => ({ id: a.id, items: [] })))
+      )
+
+      // fetch playlist de grup (o singură dată per grup)
+      const groupPlaylistMap = {}
+      await Promise.all(
+        groups.map(g => getGroupPlaylist(g.id).then(items => { groupPlaylistMap[g.id] = items }).catch(() => {}))
+      )
+
+      const map = {}
+      directResults.forEach(r => {
+        // dacă playlist direct e gol și agenția e în grup → folosește playlist-ul grupului
+        if (r.items.length === 0 && agencyGroupId[r.id]) {
+          map[r.id] = groupPlaylistMap[agencyGroupId[r.id]] || []
+        } else {
+          map[r.id] = r.items
+        }
+      })
+      setPlaylists(map)
     }).catch(() => {})
   }, [])
 
