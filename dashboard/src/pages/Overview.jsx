@@ -12,9 +12,8 @@ function timeAgo(dateStr) {
   const diff = Date.now() - date.getTime()
   const pad = n => String(n).padStart(2, '0')
   const exact = `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}\n${pad(date.getHours())}:${pad(date.getMinutes())}`
-  if (diff < 60_000) return { rel: 'acum', exact }
-  if (diff < 3_600_000) return { rel: `${Math.round(diff / 60_000)}min`, exact }
-  return { rel: `${Math.round(diff / 3_600_000)}h`, exact }
+  if (diff < 60_000) return { rel: 'Online', exact }
+  return { rel: '', exact }
 }
 
 function isActiveCampaign(c) {
