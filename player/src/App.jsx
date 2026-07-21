@@ -22,6 +22,7 @@ export default function App() {
   const indexRef = useRef(0)
   const [playCount, setPlayCount] = useState(0)
   const [ratesData, setRatesData] = useState(null)
+  const [agencyName, setAgencyName] = useState('')
   const playedAtRef = useRef(toLocalISO(new Date()))
   const [animClass, setAnimClass] = useState('')
   const [transitionType, setTransitionType] = useState('fade')
@@ -119,6 +120,7 @@ export default function App() {
       update(msg.items)
       cachePlaylist(msg.items)
       if (msg.transition) setTransitionType(msg.transition)
+      if (msg.agencyName) setAgencyName(msg.agencyName)
     }
     if (msg.type === 'rates_update') {
       setRatesData({ rates: msg.rates, updatedAt: msg.updatedAt })
@@ -190,6 +192,16 @@ export default function App() {
         {src && current.type === 'video' && <VideoPlayer key={playCount} src={src} onEnded={next} />}
         {src && current.type === 'image' && <ImageDisplay key={playCount} src={src} duration={current.display_duration_seconds} onEnded={next} />}
       </div>
+      {agencyName && (
+        <div style={{
+          textAlign: 'center', padding: '6px 0',
+          background: 'rgba(0,0,0,0.7)',
+          color: 'rgba(255,255,255,0.85)',
+          fontSize: '13px', fontFamily: 'sans-serif', letterSpacing: '0.5px',
+        }}>
+          {agencyName}
+        </div>
+      )}
       {ratesData && <Ticker rates={ratesData?.rates} updatedAt={ratesData?.updatedAt} />}
       {!screenOn && (
         <div style={{

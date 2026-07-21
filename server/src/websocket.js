@@ -49,8 +49,11 @@ export function initWebSocket(httpServer) {
           `).get(agencyId)
           const transition = groupRow?.transition || 'fade'
 
+          const agencyRow = db2.prepare('SELECT name FROM agencies WHERE id = ?').get(agencyId)
+          const agencyName = agencyRow?.name || ''
+
           if (ws.readyState === 1) {
-            ws.send(JSON.stringify({ type: 'playlist_update', items: playlist, transition }))
+            ws.send(JSON.stringify({ type: 'playlist_update', items: playlist, transition, agencyName }))
           }
 
           // Trimite cursul valutar curent imediat la conectare
@@ -148,7 +151,12 @@ export function pushSyncMediaToAll() {
 }
 
 export function pushPlaylist(agencyId, items, transition = 'fade') {
-  const msg = JSON.stringify({ type: 'playlist_update', items, transition })
+  let agencyName = ''
+  try {
+    const row = getDb().prepare('SELECT name FROM agencies WHERE id = ?').get(agencyId)
+    agencyName = row?.name || ''
+  } catch {}
+  const msg = JSON.stringify({ type: 'playlist_update', items, transition, agencyName })
   const agencyClients = clients.get(String(agencyId))
   if (!agencyClients) return
   for (const client of agencyClients) {
