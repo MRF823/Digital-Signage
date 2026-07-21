@@ -200,10 +200,11 @@ export default function App() {
       </div>
       {showAgencyName && agencyName && (
         <div style={{
-          textAlign: 'center', padding: '6px 0',
-          background: 'rgba(0,0,0,0.7)',
-          color: 'rgba(255,255,255,0.85)',
-          fontSize: '13px', fontFamily: 'sans-serif', letterSpacing: '0.5px',
+          position: 'fixed', top: 12, left: 12, zIndex: 200,
+          background: 'rgba(0,0,0,0.55)', borderRadius: '6px',
+          padding: '4px 10px',
+          color: 'rgba(255,255,255,0.9)',
+          fontSize: '13px', fontFamily: 'sans-serif', letterSpacing: '0.3px',
         }}>
           {agencyName}
         </div>
