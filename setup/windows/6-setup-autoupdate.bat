@@ -4,7 +4,7 @@ REM Ruleaza ca Administrator!
 
 echo Configurare auto-update BancaSign...
 
-schtasks /create /tn "BancaSign-AutoUpdate" /tr "powershell.exe -ExecutionPolicy Bypass -File C:\Users\admin\digital-signage\setup\windows\auto-update.ps1" /sc daily /st 03:00 /ru SYSTEM /f
+schtasks /create /tn "BancaSign-AutoUpdate" /tr "powershell.exe -ExecutionPolicy Bypass -File C:\Users\admin\digital-signage\setup\windows\auto-update.ps1" /sc daily /st 23:00 /ru SYSTEM /f
 
 if %errorlevel% == 0 (
     echo.
