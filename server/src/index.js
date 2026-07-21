@@ -116,6 +116,11 @@ app.post('/api/players/trigger-update', requireAuth, (req, res) => {
   res.json({ ok: true, agents: count })
 })
 
+app.post('/api/players/reload-all', requireAuth, (req, res) => {
+  pushReloadToAll()
+  res.json({ ok: true })
+})
+
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 

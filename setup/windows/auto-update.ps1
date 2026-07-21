@@ -42,4 +42,16 @@ Log "build: $buildOutput"
 $restartOutput = pm2 restart signage-player 2>&1
 Log "pm2 restart: $restartOutput"
 
+# Asteapta 5 secunde ca serverul sa porneasca
+Start-Sleep -Seconds 5
+
+# Trimite reload la toate TV-urile prin VPS
+try {
+    $token = (Invoke-RestMethod -Uri "http://92.5.28.167:4000/api/auth/login" -Method POST -Body '{"username":"admin","password":"admin123"}' -ContentType "application/json" -TimeoutSec 10).token
+    Invoke-RestMethod -Uri "http://92.5.28.167:4000/api/players/reload-all" -Method POST -Headers @{Authorization="Bearer $token"} -TimeoutSec 10 | Out-Null
+    Log "Reload trimis la TV-uri"
+} catch {
+    Log "Reload skip: $_"
+}
+
 Log "Actualizare completa!"
