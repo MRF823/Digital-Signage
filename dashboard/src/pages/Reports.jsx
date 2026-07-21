@@ -32,14 +32,21 @@ function fmtDurationLong(sec) {
   return `${s}s`
 }
 
-function playlistDuration(items) {
+function playlistDuration(items, avgDurations = {}) {
   return items.reduce((s, item) => {
-    if (item.type === 'video') return s + (item.duration_seconds ?? 0)
+    if (item.type === 'video') {
+      const d = item.duration_seconds ?? avgDurations[item.filename] ?? 0
+      return s + d
+    }
     return s + (item.display_duration_seconds ?? 10)
   }, 0)
 }
 
-function downloadExcel(logs, agencies, playlists) {
+function hasUnknownDuration(items, avgDurations = {}) {
+  return items.some(item => item.type === 'video' && !item.duration_seconds && !avgDurations[item.filename])
+}
+
+function downloadExcel(logs, agencies, playlists, avgDurations = {}) {
   const agencyMap = {}
   agencies.forEach(a => { agencyMap[a.id] = { name: a.name, city: a.city } })
 
@@ -54,7 +61,7 @@ function downloadExcel(logs, agencies, playlists) {
 
   const summaryRows = [['Agenție', 'Oraș', 'Total redări', 'Durată totală', 'Durată playlist', 'Cicluri complete']]
   Object.entries(byAgency).forEach(([agId, data]) => {
-    const pd = playlists[agId] ? playlistDuration(playlists[agId]) : 0
+    const pd = playlists[agId] ? playlistDuration(playlists[agId], avgDurations) : 0
     const cycles = pd > 0 ? Math.floor(data.total / pd) : '—'
     summaryRows.push([data.name, data.city, data.plays, fmtDurationLong(data.total), fmtDurationLong(pd), cycles])
   })
@@ -152,6 +159,20 @@ export default function Reports() {
   const totalDuration = logs.reduce((s, r) => s + (r.duration_seconds ?? 0), 0)
   const uniqueFiles = new Set(logs.map(r => r.filename)).size
 
+  // Durata medie per fișier din log-uri (pentru videoclipuri fără duration_seconds în DB)
+  const fileDurationSums = {}
+  const fileDurationCounts = {}
+  logs.forEach(r => {
+    if (r.duration_seconds > 0) {
+      fileDurationSums[r.filename] = (fileDurationSums[r.filename] || 0) + r.duration_seconds
+      fileDurationCounts[r.filename] = (fileDurationCounts[r.filename] || 0) + 1
+    }
+  })
+  const avgDurations = {}
+  Object.keys(fileDurationSums).forEach(f => {
+    avgDurations[f] = Math.round(fileDurationSums[f] / fileDurationCounts[f])
+  })
+
   // Per agenție
   const agencyMap = {}
   agencies.forEach(a => { agencyMap[a.id] = a })
@@ -180,7 +201,7 @@ export default function Reports() {
           <h2 className="text-xl font-bold text-gray-800">Proof of Play</h2>
           <p className="text-sm text-gray-400 mt-0.5">Istoric redare pe fiecare ecran</p>
         </div>
-        <button onClick={() => downloadExcel(logs, agencies, playlists)} disabled={logs.length === 0}
+        <button onClick={() => downloadExcel(logs, agencies, playlists, avgDurations)} disabled={logs.length === 0}
           className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 shadow-sm">
           ↓ Export Excel
         </button>
@@ -250,7 +271,7 @@ export default function Reports() {
             {Object.entries(byAgency).map(([agId, data]) => {
               const agency = agencyMap[agId]
               const items = playlists[agId] || []
-              const pd = playlistDuration(items)
+              const pd = playlistDuration(items, avgDurations)
               const cycles = pd > 0 ? Math.floor(data.total / pd) : null
               const remainder = pd > 0 ? data.total % pd : 0
               const expectedCycles = (pd > 0 && periodSeconds) ? Math.floor(periodSeconds / pd) : null
@@ -306,8 +327,11 @@ export default function Reports() {
                     </div>
                   )}
 
-                  {pd === 0 && (
+                  {items.length === 0 && (
                     <p className="text-xs text-amber-600">Playlist gol — nu se poate calcula cicluri</p>
+                  )}
+                  {items.length > 0 && pd === 0 && (
+                    <p className="text-xs text-amber-600">Durată video necunoscută — nu se poate calcula cicluri</p>
                   )}
                 </div>
               )
