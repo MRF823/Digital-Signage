@@ -23,6 +23,8 @@ export default function App() {
   const [playCount, setPlayCount] = useState(0)
   const [ratesData, setRatesData] = useState(null)
   const [agencyName, setAgencyName] = useState('')
+  const [showAgencyName, setShowAgencyName] = useState(true)
+  const [showPlayerLabel, setShowPlayerLabel] = useState(false)
   const playedAtRef = useRef(toLocalISO(new Date()))
   const [animClass, setAnimClass] = useState('')
   const [transitionType, setTransitionType] = useState('fade')
@@ -121,6 +123,8 @@ export default function App() {
       cachePlaylist(msg.items)
       if (msg.transition) setTransitionType(msg.transition)
       if (msg.agencyName) setAgencyName(msg.agencyName)
+      if (msg.showAgencyName !== undefined) setShowAgencyName(msg.showAgencyName)
+      if (msg.showPlayerLabel !== undefined) setShowPlayerLabel(msg.showPlayerLabel)
     }
     if (msg.type === 'rates_update') {
       setRatesData({ rates: msg.rates, updatedAt: msg.updatedAt })
@@ -169,12 +173,14 @@ export default function App() {
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'black', display: 'flex', flexDirection: 'column' }}>
-      <div style={{
-        position: 'fixed', top: 12, left: 12, zIndex: 200,
-        background: 'rgba(0,0,0,0.5)', borderRadius: '6px',
-        padding: '3px 8px', fontSize: '11px', color: 'rgba(255,255,255,0.4)',
-        fontFamily: 'monospace',
-      }}>Player · :{window.location.port}</div>
+      {showPlayerLabel && (
+        <div style={{
+          position: 'fixed', top: 12, left: 12, zIndex: 200,
+          background: 'rgba(0,0,0,0.5)', borderRadius: '6px',
+          padding: '3px 8px', fontSize: '11px', color: 'rgba(255,255,255,0.4)',
+          fontFamily: 'monospace',
+        }}>Player · :{window.location.port}</div>
+      )}
       {!connected && (
         <div style={{
           position: 'fixed', top: 12, right: 12, zIndex: 200,
@@ -192,7 +198,7 @@ export default function App() {
         {src && current.type === 'video' && <VideoPlayer key={playCount} src={src} onEnded={next} />}
         {src && current.type === 'image' && <ImageDisplay key={playCount} src={src} duration={current.display_duration_seconds} onEnded={next} />}
       </div>
-      {agencyName && (
+      {showAgencyName && agencyName && (
         <div style={{
           textAlign: 'center', padding: '6px 0',
           background: 'rgba(0,0,0,0.7)',

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import PlaylistModal from './PlaylistModal'
 import PreviewPlayer from './PreviewPlayer'
-import { addTv, deleteTv, deleteAgency, updateTvOrientation, renameAgency } from '../api'
+import { addTv, deleteTv, deleteAgency, updateTvOrientation, renameAgency, updateAgencySettings } from '../api'
 
 function tvStatus(tv) {
   if (!tv.last_seen_at) return { online: false, label: 'Niciodată conectat', detail: '' }
@@ -26,6 +26,15 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
   const [editName, setEditName] = useState(agency.name)
   const [editCity, setEditCity] = useState(agency.city)
   const [renameError, setRenameError] = useState('')
+  const [showAgencyName, setShowAgencyName] = useState(agency.show_agency_name !== 0)
+  const [showPlayerLabel, setShowPlayerLabel] = useState(agency.show_player_label === 1)
+
+  const handleSetting = async (key, value) => {
+    const next = { show_agency_name: showAgencyName, show_player_label: showPlayerLabel, [key]: value }
+    if (key === 'show_agency_name') setShowAgencyName(value)
+    if (key === 'show_player_label') setShowPlayerLabel(value)
+    try { await updateAgencySettings(agency.id, next) } catch {}
+  }
 
   const handleRename = async (e) => {
     e.preventDefault()
@@ -114,6 +123,16 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
               Grup: {groupName}
             </span>
           )}
+          <div className="flex gap-4 mt-2">
+            <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+              <input type="checkbox" checked={showAgencyName} onChange={e => handleSetting('show_agency_name', e.target.checked)} className="accent-blue-600" />
+              Afișează numele agenției pe TV
+            </label>
+            <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+              <input type="checkbox" checked={showPlayerLabel} onChange={e => handleSetting('show_player_label', e.target.checked)} className="accent-blue-600" />
+              Afișează eticheta Player
+            </label>
+          </div>
         </div>
         <div className="flex gap-2">
           {agency.playlist?.length > 0 && (

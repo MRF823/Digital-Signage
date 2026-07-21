@@ -76,6 +76,22 @@ router.delete('/:id', (req, res) => {
   }
 })
 
+router.patch('/:id/settings', (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    if (isNaN(id)) return res.status(400).json({ error: 'Invalid id' })
+    const { show_agency_name, show_player_label } = req.body
+    const db = getDb()
+    if (!db.prepare('SELECT id FROM agencies WHERE id = ?').get(id))
+      return res.status(404).json({ error: 'Not found' })
+    db.prepare('UPDATE agencies SET show_agency_name = ?, show_player_label = ? WHERE id = ?')
+      .run(show_agency_name ? 1 : 0, show_player_label ? 1 : 0, id)
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 router.patch('/:id/coords', (req, res) => {
   try {
     const id = parseInt(req.params.id, 10)

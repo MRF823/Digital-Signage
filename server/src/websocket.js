@@ -49,11 +49,13 @@ export function initWebSocket(httpServer) {
           `).get(agencyId)
           const transition = groupRow?.transition || 'fade'
 
-          const agencyRow = db2.prepare('SELECT name FROM agencies WHERE id = ?').get(agencyId)
+          const agencyRow = db2.prepare('SELECT name, show_agency_name, show_player_label FROM agencies WHERE id = ?').get(agencyId)
           const agencyName = agencyRow?.name || ''
+          const showAgencyName = agencyRow?.show_agency_name !== 0
+          const showPlayerLabel = agencyRow?.show_player_label === 1
 
           if (ws.readyState === 1) {
-            ws.send(JSON.stringify({ type: 'playlist_update', items: playlist, transition, agencyName }))
+            ws.send(JSON.stringify({ type: 'playlist_update', items: playlist, transition, agencyName, showAgencyName, showPlayerLabel }))
           }
 
           // Trimite cursul valutar curent imediat la conectare
@@ -151,12 +153,14 @@ export function pushSyncMediaToAll() {
 }
 
 export function pushPlaylist(agencyId, items, transition = 'fade') {
-  let agencyName = ''
+  let agencyName = '', showAgencyName = true, showPlayerLabel = false
   try {
-    const row = getDb().prepare('SELECT name FROM agencies WHERE id = ?').get(agencyId)
+    const row = getDb().prepare('SELECT name, show_agency_name, show_player_label FROM agencies WHERE id = ?').get(agencyId)
     agencyName = row?.name || ''
+    showAgencyName = row?.show_agency_name !== 0
+    showPlayerLabel = row?.show_player_label === 1
   } catch {}
-  const msg = JSON.stringify({ type: 'playlist_update', items, transition, agencyName })
+  const msg = JSON.stringify({ type: 'playlist_update', items, transition, agencyName, showAgencyName, showPlayerLabel })
   const agencyClients = clients.get(String(agencyId))
   if (!agencyClients) return
   for (const client of agencyClients) {

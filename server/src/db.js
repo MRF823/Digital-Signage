@@ -104,6 +104,8 @@ export function initDb(path = './signage.db') {
   try { db.exec('ALTER TABLE groups ADD COLUMN power_on_time TEXT') } catch {}
   try { db.exec('ALTER TABLE groups ADD COLUMN power_off_time TEXT') } catch {}
   try { db.exec("ALTER TABLE tvs ADD COLUMN orientation TEXT NOT NULL DEFAULT 'landscape'") } catch {}
+  try { db.exec('ALTER TABLE agencies ADD COLUMN show_agency_name INTEGER NOT NULL DEFAULT 1') } catch {}
+  try { db.exec('ALTER TABLE agencies ADD COLUMN show_player_label INTEGER NOT NULL DEFAULT 0') } catch {}
 
   // Coordonate implicite per oraș
   const cityCoords = {
