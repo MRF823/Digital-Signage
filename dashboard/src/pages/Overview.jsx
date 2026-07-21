@@ -8,10 +8,13 @@ function isOnline(tv) {
 
 function timeAgo(dateStr) {
   if (!dateStr) return '—'
-  const diff = Date.now() - new Date(dateStr + 'Z').getTime()
+  const date = new Date(dateStr + 'Z')
+  const diff = Date.now() - date.getTime()
+  const pad = n => String(n).padStart(2, '0')
+  const exact = `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`
   if (diff < 60_000) return 'acum'
-  if (diff < 3_600_000) return `${Math.round(diff / 60_000)}min`
-  return `${Math.round(diff / 3_600_000)}h`
+  if (diff < 3_600_000) return `${Math.round(diff / 60_000)}min · ${exact}`
+  return `${Math.round(diff / 3_600_000)}h · ${exact}`
 }
 
 function isActiveCampaign(c) {

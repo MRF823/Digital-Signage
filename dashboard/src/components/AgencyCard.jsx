@@ -4,11 +4,15 @@ import PreviewPlayer from './PreviewPlayer'
 import { addTv, deleteTv, deleteAgency, updateTvOrientation, renameAgency } from '../api'
 
 function tvStatus(tv) {
-  if (!tv.last_seen_at) return { online: false, label: 'Niciodată conectat' }
-  const diff = Date.now() - new Date(tv.last_seen_at + 'Z').getTime()
-  return diff < 60_000
-    ? { online: true, label: 'Online' }
-    : { online: false, label: `Offline · ${Math.round(diff / 60_000)}m` }
+  if (!tv.last_seen_at) return { online: false, label: 'Niciodată conectat', detail: '' }
+  const date = new Date(tv.last_seen_at + 'Z')
+  const diff = Date.now() - date.getTime()
+  const pad = n => String(n).padStart(2, '0')
+  const detail = `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+  if (diff < 60_000) return { online: true, label: 'Online', detail }
+  const mins = Math.round(diff / 60_000)
+  const timeLabel = mins < 60 ? `${mins}min` : `${Math.floor(mins / 60)}h ${mins % 60}min`
+  return { online: false, label: timeLabel, detail }
 }
 
 export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDeleted }) {
