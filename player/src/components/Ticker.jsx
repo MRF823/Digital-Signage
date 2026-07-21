@@ -79,27 +79,17 @@ export default function Ticker({ rates, updatedAt, cecUpdatedAt, bnrUpdatedAt })
             }
           </div>
         ))}
-      </div>
-
-      {/* Bara "Ultima actualizare" */}
-      {lastUpdate && (
-        <div style={{
-          background: '#6B1F6B',
-          padding: '5px 20px',
-          display: 'flex',
-          alignItems: 'center',
-        }}>
-          <span style={{
-            color: '#fff',
-            fontSize: 13,
-            fontWeight: 700,
-            letterSpacing: '0.02em',
-            fontVariantNumeric: 'tabular-nums',
+        {lastUpdate && (
+          <div style={{
+            marginLeft: 'auto', paddingLeft: 16, borderLeft: '1px solid rgba(0,0,0,0.06)',
+            flexShrink: 0, display: 'flex', alignItems: 'center',
           }}>
-            Ultima actualizare: {lastUpdate}
-          </span>
-        </div>
-      )}
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#111827', fontVariantNumeric: 'tabular-nums' }}>
+              Ultima actualizare: {lastUpdate}
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
