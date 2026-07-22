@@ -66,37 +66,44 @@ export default function ForexTVs() {
         </div>
       )}
 
-      <div className="space-y-3">
-        {agencies.map(agency => {
-          const tv = forexTvs.find(t => t.agency_id === agency.id)
-          const online = tv ? isOnline(tv.last_seen_at) : false
+      <div className="flex gap-6 items-start">
 
-          return (
-            <div key={agency.id} className="bg-white border border-slate-200 rounded-xl px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${tv ? (online ? 'bg-green-500' : 'bg-slate-300') : 'bg-slate-200'}`} />
-                <div>
-                  <p className="text-sm font-medium text-slate-800">{agency.name}</p>
-                  <p className="text-xs text-slate-400">
-                    {tv
-                      ? online ? 'Online' : tv.last_seen_at ? `Ultima dată: ${new Date(tv.last_seen_at + 'Z').toLocaleString('ro-RO')}` : 'Niciodată conectat'
-                      : 'Niciun TV schimb valutar'}
-                  </p>
+        {/* Stânga — lista agenții */}
+        <div className="flex-1 space-y-3">
+          {agencies.map(agency => {
+            const tv = forexTvs.find(t => t.agency_id === agency.id)
+            const online = tv ? isOnline(tv.last_seen_at) : false
+
+            return (
+              <div key={agency.id} className="bg-white border border-slate-200 rounded-xl px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${tv ? (online ? 'bg-green-500' : 'bg-slate-300') : 'bg-slate-200'}`} />
+                  <div>
+                    <p className="text-sm font-medium text-slate-800">{agency.name}</p>
+                    <p className="text-xs text-slate-400">
+                      {tv
+                        ? online ? 'Online' : tv.last_seen_at ? `Ultima dată: ${new Date(tv.last_seen_at + 'Z').toLocaleString('ro-RO')}` : 'Niciodată conectat'
+                        : 'Niciun TV schimb valutar'}
+                    </p>
+                  </div>
                 </div>
+                {tv && (
+                  <button
+                    onClick={() => activate(tv)}
+                    disabled={activating === tv.id || !online}
+                    className="px-3 py-1.5 text-sm rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {activating === tv.id ? 'Se trimite...' : 'Activează forex'}
+                  </button>
+                )}
               </div>
+            )
+          })}
+        </div>
 
-              {tv && (
-                <button
-                  onClick={() => activate(tv)}
-                  disabled={activating === tv.id || !online}
-                  className="px-3 py-1.5 text-sm rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {activating === tv.id ? 'Se trimite...' : 'Activează forex'}
-                </button>
-              )}
-            </div>
-          )
-        })}
+        {/* Dreapta — rezervat */}
+        <div className="w-80 flex-shrink-0" />
+
       </div>
     </div>
   )
