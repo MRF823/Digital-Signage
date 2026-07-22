@@ -2,28 +2,20 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { mediaUrl, getRates } from '../api'
 
 const CURRENCIES = ['EUR', 'USD', 'CHF', 'GBP']
+const MONTHS = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie']
+
+function formatLastUpdate(iso) {
+  if (!iso) return null
+  const d = new Date(iso)
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  return `${hh}:${mm} ▪ ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`
+}
 
 function Ticker({ rates, updatedAt }) {
   if (!rates) return null
 
-  const ratesDate = updatedAt ? new Date(updatedAt) : null
-  const time = ratesDate
-    ? ratesDate.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })
-    : null
-  const date = ratesDate
-    ? ratesDate.toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' })
-    : null
-
-  const TimeBlock = () => time ? (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      padding: '0 16px', borderLeft: '1px solid rgba(0,0,0,0.06)',
-      textAlign: 'center', flexShrink: 0, marginLeft: 'auto',
-    }}>
-      <div style={{ fontSize: 18, fontWeight: 700, color: '#111827', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{time}</div>
-      <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>{date}</div>
-    </div>
-  ) : null
+  const lastUpdate = formatLastUpdate(updatedAt)
 
   const s = {
     wrap: {
@@ -70,7 +62,6 @@ function Ticker({ rates, updatedAt }) {
               </div>
             )
           })}
-          <TimeBlock />
         </div>
         <div style={s.row('#fafaf9')}>
           <span style={s.label('#854F0B')}>BNR REF.</span>
@@ -83,7 +74,13 @@ function Ticker({ rates, updatedAt }) {
               }
             </div>
           ))}
-          <TimeBlock />
+          {lastUpdate && (
+            <div style={{ marginLeft: 'auto', paddingLeft: 16, borderLeft: '1px solid rgba(0,0,0,0.06)', flexShrink: 0 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#111827', fontVariantNumeric: 'tabular-nums' }}>
+                Ultima actualizare: {lastUpdate}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>
