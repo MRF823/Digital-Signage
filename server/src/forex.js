@@ -18,13 +18,14 @@ async function scrapeForexRates() {
     const casaIdx = html.toLowerCase().indexOf('casa de schimb')
     const section = casaIdx >= 0 ? html.slice(casaIdx, casaIdx + 8000) : html
 
+    // Structura rând: VALUTA Denumire BNR BCE Cumpărare Vânzare ...
+    // Extragem al 3-lea și al 4-lea număr (Cumpărare și Vânzare), sărind BNR și BCE
     for (const currency of FOREX_CURRENCIES) {
-      // Caută rândul cu codul valutei în secțiunea casa de schimb
-      const pattern = new RegExp(currency + '[^]*?([\\d]+[.,][\\d]+)[^]*?([\\d]+[.,][\\d]+)', 'i')
+      const pattern = new RegExp(currency + '[^\\d]*([\\d]+[.,][\\d]+)[^\\d]+([\\d]+[.,][\\d]+)[^\\d]+([\\d]+[.,][\\d]+)[^\\d]+([\\d]+[.,][\\d]+)', 'i')
       const match = section.match(pattern)
       if (match) {
-        const buy = parseFloat(match[1].replace(',', '.'))
-        const sell = parseFloat(match[2].replace(',', '.'))
+        const buy = parseFloat(match[3].replace(',', '.'))
+        const sell = parseFloat(match[4].replace(',', '.'))
         if (!isNaN(buy) && !isNaN(sell) && buy > 0 && sell > 0) {
           rates[currency] = { buy, sell }
         }
