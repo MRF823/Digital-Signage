@@ -1,6 +1,72 @@
 import { useEffect, useState } from 'react'
 import { getAgencies, getForexTVs, setForexMode, getForexRates } from '../api'
 
+const CURRENCY_META = {
+  EUR: { name: 'Euro', flag: '🇪🇺' },
+  USD: { name: 'Dolar SUA', flag: '🇺🇸' },
+  GBP: { name: 'Liră sterlină', flag: '🇬🇧' },
+  CAD: { name: 'Dolar canadian', flag: '🇨🇦' },
+  CHF: { name: 'Franc elvețian', flag: '🇨🇭' },
+  DKK: { name: 'Coroană daneză', flag: '🇩🇰' },
+  HUF: { name: 'Forint maghiar', flag: '🇭🇺' },
+  PLN: { name: 'Zlot polonez', flag: '🇵🇱' },
+  SEK: { name: 'Coroană suedeză', flag: '🇸🇪' },
+}
+const ORDER = ['EUR', 'USD', 'GBP', 'CAD', 'CHF', 'DKK', 'HUF', 'PLN', 'SEK']
+
+function ForexRatesPanel({ rates, updatedAt }) {
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+        <p className="text-sm font-semibold text-slate-700">Cursuri de schimb valutar</p>
+        {updatedAt && (
+          <span className="text-xs text-slate-400">
+            Actualizat: {new Date(updatedAt).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        )}
+      </div>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-slate-100">
+            <th className="text-left px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Valută</th>
+            <th className="text-center px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Cumpărăm</th>
+            <th className="text-center px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Vindem</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-50">
+          {ORDER.map(code => {
+            const meta = CURRENCY_META[code]
+            const r = rates?.[code]
+            const isMain = code === 'EUR' || code === 'USD'
+            return (
+              <tr key={code} className={isMain ? 'bg-slate-50/60' : ''}>
+                <td className="px-4 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">{meta.flag}</span>
+                    <div>
+                      <p className={`font-medium text-slate-800 ${isMain ? 'text-sm' : 'text-xs'}`}>{meta.name}</p>
+                      <p className="text-xs text-slate-400">{code}</p>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-4 py-2.5 text-center font-semibold text-green-600">
+                  {r?.buy != null ? r.buy.toFixed(4) : '—'}
+                </td>
+                <td className="px-4 py-2.5 text-center font-semibold text-orange-500">
+                  {r?.sell != null ? r.sell.toFixed(4) : '—'}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+      {!rates && (
+        <div className="px-4 py-6 text-center text-slate-400 text-sm">Cursurile nu sunt disponibile momentan</div>
+      )}
+    </div>
+  )
+}
+
 function isOnline(lastSeen) {
   if (!lastSeen) return false
   return (Date.now() - new Date(lastSeen + 'Z').getTime()) < 2 * 60 * 1000
@@ -101,8 +167,10 @@ export default function ForexTVs() {
           })}
         </div>
 
-        {/* Dreapta — rezervat */}
-        <div className="w-80 flex-shrink-0" />
+        {/* Dreapta — cursuri live */}
+        <div className="w-80 flex-shrink-0">
+          <ForexRatesPanel rates={rates?.rates} updatedAt={rates?.updatedAt} />
+        </div>
 
       </div>
     </div>
