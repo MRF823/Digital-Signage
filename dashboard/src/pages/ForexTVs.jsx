@@ -24,53 +24,51 @@ function formatUpdated(iso) {
 
 function ForexRatesPanel({ rates, updatedAt }) {
   return (
-    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-      <div className="px-4 py-3 border-b border-slate-100">
-        <p className="text-sm font-semibold text-slate-700">Cursuri de schimb valutar</p>
-        {updatedAt && (
-          <p className="text-xs text-slate-700 mt-1">
-            Ultima actualizare: {formatUpdated(updatedAt)}
-          </p>
-        )}
+    <div style={{ background: '#1a2e20', borderRadius: 16, overflow: 'hidden', fontFamily: 'Arial, sans-serif' }}>
+      {/* Header */}
+      <div style={{ padding: '18px 16px 12px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ color: '#fff', fontSize: 22, fontWeight: 900, letterSpacing: 2 }}>CEC BANK</div>
+        <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10, letterSpacing: 2, marginTop: 3 }}>CURSURI DE SCHIMB VALUTAR</div>
       </div>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-slate-100">
-            <th className="text-left px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Valută</th>
-            <th className="text-center px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Cumpărăm</th>
-            <th className="text-center px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Vindem</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-50">
-          {ORDER.map(code => {
-            const meta = CURRENCY_META[code]
-            const r = rates?.[code]
-            const isMain = code === 'EUR' || code === 'USD'
-            return (
-              <tr key={code} className={isMain ? 'bg-slate-50/60' : ''}>
-                <td className="px-4 py-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">{meta.flag}</span>
-                    <div>
-                      <p className={`font-medium text-slate-800 ${isMain ? 'text-sm' : 'text-xs'}`}>{meta.name}</p>
-                      <p className="text-xs text-slate-400">{code}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-2.5 text-center font-semibold text-green-600">
-                  {r?.buy != null ? r.buy.toFixed(4) : '—'}
-                </td>
-                <td className="px-4 py-2.5 text-center font-semibold text-orange-500">
-                  {r?.sell != null ? r.sell.toFixed(4) : '—'}
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-      {!rates && (
-        <div className="px-4 py-6 text-center text-slate-400 text-sm">Cursurile nu sunt disponibile momentan</div>
-      )}
+      {/* Antet tabel */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px', padding: '6px 12px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        {['VALUTĂ','CUMPĂRĂM','VINDEM'].map((h, i) => (
+          <span key={h} style={{ color: 'rgba(255,255,255,0.4)', fontSize: 8, fontWeight: 700, letterSpacing: 1.5, textAlign: i === 0 ? 'left' : 'center' }}>{h}</span>
+        ))}
+      </div>
+      {/* Rânduri */}
+      {ORDER.map(code => {
+        const meta = CURRENCY_META[code]
+        const r = rates?.[code]
+        const isMain = code === 'EUR' || code === 'USD'
+        return (
+          <div key={code} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px', padding: isMain ? '6px 12px' : '4px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <span style={{ fontSize: isMain ? 18 : 14 }}>{meta.flag}</span>
+              <div>
+                <div style={{ color: '#fff', fontWeight: 700, fontSize: isMain ? 14 : 11 }}>{meta.name}</div>
+                <div style={{ color: 'rgba(255,255,255,0.38)', fontSize: 8 }}>{code}</div>
+              </div>
+            </div>
+            <div style={{ textAlign: 'center', fontWeight: 700, color: '#2ecc71', fontSize: isMain ? 15 : 11 }}>
+              {r?.buy != null ? r.buy.toFixed(4) : '—'}
+            </div>
+            <div style={{ textAlign: 'center', fontWeight: 700, color: '#e67e22', fontSize: isMain ? 15 : 11 }}>
+              {r?.sell != null ? r.sell.toFixed(4) : '—'}
+            </div>
+          </div>
+        )
+      })}
+      {/* Footer */}
+      <div style={{ padding: '6px 12px 8px', borderTop: '1px solid rgba(255,255,255,0.08)', background: 'rgba(0,0,0,0.2)' }}>
+        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 8, textAlign: 'center', marginBottom: 4 }}>
+          {updatedAt ? `Ultima actualizare: ${formatUpdated(updatedAt)}` : ''}
+        </div>
+        <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: 7, lineHeight: 1.5, textAlign: 'left' }}>
+          Cursurile CEC Bank se pot modifica de mai multe ori pe parcursul unei zile, în funcție de mișcările pieței valutare interbancare.<br />
+          În cazul schimburilor valutare inițiate online, de persoane fizice, se aplică cursul valutar mai avantajos, valabil pe Internet și Mobile Banking.
+        </div>
+      </div>
     </div>
   )
 }
