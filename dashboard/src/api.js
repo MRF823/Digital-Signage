@@ -83,6 +83,10 @@ export const reloadPlayers = () => api.post('/api/players/reload').then(r => r.d
 export const syncMedia = () => api.post('/api/players/sync-media').then(r => r.data)
 export const triggerUpdate = () => api.post('/api/players/trigger-update').then(r => r.data)
 
+export const getForexTVs = () => api.get('/api/tvs/forex').then(r => r.data)
+export const setForexMode = (tvId, forex_mode) => api.patch(`/api/tvs/${tvId}/forex`, { forex_mode }).then(r => r.data)
+export const getForexRates = () => api.get('/api/forex/rates').then(r => r.data)
+
 export const mediaUrl = (filename) => `${BASE}/api/media/${filename}`
 
 export default api

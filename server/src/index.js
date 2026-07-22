@@ -17,6 +17,7 @@ import { loginHandler, requireAuth } from './auth.js'
 import rateLimit from 'express-rate-limit'
 import { initScheduler } from './scheduler.js'
 import { initRates, getCurrentRates } from './rates.js'
+import { initForex, getCurrentForexRates } from './forex.js'
 
 const loginRateLimit = rateLimit({ windowMs: 15 * 60_000, max: 10 })
 
@@ -31,9 +32,11 @@ initDb()
 initWebSocket(httpServer)
 initScheduler()
 initRates()
+initForex()
 
 app.post('/api/login', loginRateLimit, loginHandler)
 app.get('/api/rates', (req, res) => res.json(getCurrentRates() || {}))
+app.get('/api/forex/rates', (req, res) => res.json(getCurrentForexRates() || {}))
 app.get('/api/stats', requireAuth, (req, res) => {
   try {
     const db = getDb()

@@ -10,6 +10,7 @@ import Groups from './pages/Groups'
 import Campaigns from './pages/Campaigns'
 import Reports from './pages/Reports'
 import MapPage from './pages/Map'
+import ForexTVs from './pages/ForexTVs'
 
 const IconOverview = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -57,6 +58,12 @@ const IconLogout = () => (
   </svg>
 )
 
+const IconForex = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+  </svg>
+)
+
 const NAV = [
   { to: '/', label: 'Overview', Icon: IconOverview, end: true },
   { to: '/content', label: 'Conținut', Icon: IconMedia },
@@ -66,6 +73,7 @@ const NAV = [
   { to: '/campaigns', label: 'Campanii', Icon: IconCampaigns },
   { to: '/map', label: 'Hartă', Icon: IconMap },
   { to: '/reports', label: 'Rapoarte', Icon: IconReports },
+  { to: '/forex', label: 'Schimb Valutar', Icon: IconForex },
 ]
 
 function Sidebar() {
@@ -172,6 +180,7 @@ export default function App() {
         <Route path="/campaigns" element={<AuthGuard><Layout><Campaigns /></Layout></AuthGuard>} />
         <Route path="/map" element={<AuthGuard><Layout><MapPage /></Layout></AuthGuard>} />
         <Route path="/reports" element={<AuthGuard><Layout><Reports /></Layout></AuthGuard>} />
+        <Route path="/forex" element={<AuthGuard><Layout><ForexTVs /></Layout></AuthGuard>} />
       </Routes>
     </BrowserRouter>
   )

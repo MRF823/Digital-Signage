@@ -1,10 +1,17 @@
 import { WebSocketServer } from 'ws'
 import { getDb } from './db.js'
 import { getCurrentRates } from './rates.js'
+import { getCurrentForexRates } from './forex.js'
 import { shouldScreenBeOn } from './scheduler.js'
 
 // Map: agencyId (string) -> Set of WebSocket clients
 const clients = new Map()
+
+// Map: `${agencyId}:${tvLabel}` -> ws (pentru push per TV)
+const tvClients = new Map()
+
+// Set cu TV-urile forex conectate
+const forexClients = new Set()
 
 // Set of update agent connections
 const updateAgents = new Set()
@@ -31,17 +38,37 @@ export function initWebSocket(httpServer) {
 
         if (!clients.has(agencyId)) clients.set(agencyId, new Set())
         clients.get(agencyId).add(ws)
+        tvClients.set(`${agencyId}:${tvId}`, ws)
 
         try {
-          // Update TV last_seen_at and ip_address
-          const ip = req.socket.remoteAddress
-          getDb().prepare(`
-            UPDATE tvs SET last_seen_at = datetime('now'), ip_address = ?
-            WHERE agency_id = ? AND label = ?
-          `).run(ip, agencyId, tvId)
-
-          // Send current playlist immediately on connect
           const db2 = getDb()
+          const ip = req.socket.remoteAddress
+
+          // Auto-asignare forex_mode dacă label-ul e "TV schimb valutar"
+          const isForexTV = typeof tvId === 'string' && tvId.toLowerCase() === 'tv schimb valutar'
+          if (isForexTV) {
+            db2.prepare(`UPDATE tvs SET forex_mode = 1, last_seen_at = datetime('now'), ip_address = ? WHERE agency_id = ? AND label = ?`)
+              .run(ip, agencyId, tvId)
+          } else {
+            db2.prepare(`UPDATE tvs SET last_seen_at = datetime('now'), ip_address = ? WHERE agency_id = ? AND label = ?`)
+              .run(ip, agencyId, tvId)
+          }
+
+          // Verifică forex_mode în DB (poate fi setat și manual din dashboard)
+          const tvRow = db2.prepare('SELECT forex_mode FROM tvs WHERE agency_id = ? AND label = ?').get(agencyId, tvId)
+          const isForex = tvRow?.forex_mode === 1
+
+          if (isForex) {
+            forexClients.add(ws)
+            if (ws.readyState === 1) {
+              ws.send(JSON.stringify({ type: 'forex_mode', enabled: true }))
+              const forexRates = getCurrentForexRates()
+              if (forexRates) ws.send(JSON.stringify({ type: 'forex_rates_update', ...forexRates }))
+            }
+            return
+          }
+
+          // TV normal — trimite playlist
           const playlist = db2.prepare(`
             SELECT pi.*, m.filename, m.original_name, m.type, m.duration_seconds
             FROM playlist_items pi
@@ -66,13 +93,11 @@ export function initWebSocket(httpServer) {
             ws.send(JSON.stringify({ type: 'playlist_update', items: playlist, transition, agencyName, showAgencyName, showPlayerLabel }))
           }
 
-          // Trimite cursul valutar curent imediat la conectare
           const rates = getCurrentRates()
           if (rates && ws.readyState === 1) {
             ws.send(JSON.stringify({ type: 'rates_update', ...rates }))
           }
 
-          // Dacă ecranul ar trebui să fie off, trimite comanda la conectare
           const powerRow = db2.prepare(`
             SELECT g.power_on_time, g.power_off_time FROM groups g
             JOIN group_members gm ON gm.group_id = g.id
@@ -117,6 +142,8 @@ export function initWebSocket(httpServer) {
 
     ws.on('close', () => {
       updateAgents.delete(ws)
+      forexClients.delete(ws)
+      if (agencyId && tvId) tvClients.delete(`${agencyId}:${tvId}`)
       if (agencyId && clients.has(agencyId)) {
         clients.get(agencyId).delete(ws)
         if (clients.get(agencyId).size === 0) clients.delete(agencyId)
@@ -167,6 +194,28 @@ export function pushTriggerUpdate() {
     if (agent.readyState === 1) agent.send(msg)
   }
   return updateAgents.size
+}
+
+export function pushForexRates(data) {
+  const msg = JSON.stringify({ type: 'forex_rates_update', ...data })
+  for (const client of forexClients) {
+    if (client.readyState === 1) client.send(msg)
+  }
+}
+
+export function pushForexMode(agencyId, tvLabel, enabled) {
+  const key = `${agencyId}:${tvLabel}`
+  const ws = tvClients.get(key)
+  if (ws && ws.readyState === 1) {
+    ws.send(JSON.stringify({ type: 'forex_mode', enabled }))
+    if (enabled) {
+      const forexRates = getCurrentForexRates()
+      if (forexRates) ws.send(JSON.stringify({ type: 'forex_rates_update', ...forexRates }))
+      forexClients.add(ws)
+    } else {
+      forexClients.delete(ws)
+    }
+  }
 }
 
 export function pushPlaylist(agencyId, items, transition = 'fade') {

@@ -107,6 +107,7 @@ export function initDb(path = './signage.db') {
   try { db.exec('ALTER TABLE agencies ADD COLUMN show_agency_name INTEGER NOT NULL DEFAULT 1') } catch {}
   try { db.exec('ALTER TABLE agencies ADD COLUMN show_player_label INTEGER NOT NULL DEFAULT 0') } catch {}
   try { db.exec('ALTER TABLE agencies ADD COLUMN address TEXT') } catch {}
+  try { db.exec('ALTER TABLE tvs ADD COLUMN forex_mode INTEGER NOT NULL DEFAULT 0') } catch {}
 
   // Coordonate implicite per oraș
   const cityCoords = {

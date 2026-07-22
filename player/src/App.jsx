@@ -5,6 +5,7 @@ import { useMediaCache } from './useMediaCache'
 import VideoPlayer from './components/VideoPlayer'
 import ImageDisplay from './components/ImageDisplay'
 import Ticker from './components/Ticker'
+import ForexDisplay from './components/ForexDisplay'
 import './transitions.css'
 
 const EXIT_MS = 350
@@ -22,6 +23,8 @@ export default function App() {
   const indexRef = useRef(0)
   const [playCount, setPlayCount] = useState(0)
   const [ratesData, setRatesData] = useState(null)
+  const [forexMode, setForexMode] = useState(false)
+  const [forexRates, setForexRates] = useState(null)
   const [agencyName, setAgencyName] = useState('')
   const [showAgencyName, setShowAgencyName] = useState(true)
   const [showPlayerLabel, setShowPlayerLabel] = useState(false)
@@ -129,6 +132,12 @@ export default function App() {
     if (msg.type === 'rates_update') {
       setRatesData({ rates: msg.rates, updatedAt: msg.updatedAt })
     }
+    if (msg.type === 'forex_mode') {
+      setForexMode(msg.enabled)
+    }
+    if (msg.type === 'forex_rates_update') {
+      setForexRates({ rates: msg.rates, updatedAt: msg.updatedAt })
+    }
     if (msg.type === 'sync_advance') {
       advance(false)
     }
@@ -159,6 +168,10 @@ export default function App() {
       return () => clearTimeout(t)
     }
   }, [src, ready, playlist.length, advance])
+
+  if (forexMode) {
+    return <ForexDisplay rates={forexRates?.rates} updatedAt={forexRates?.updatedAt} />
+  }
 
   if (!ready || playlist.length === 0) {
     return (
