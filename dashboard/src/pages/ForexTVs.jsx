@@ -61,7 +61,7 @@ function ForexRatesPanel({ rates, updatedAt }) {
       })}
       {/* Footer */}
       <div style={{ padding: '6px 12px 8px', borderTop: '1px solid rgba(255,255,255,0.08)', background: 'rgba(0,0,0,0.2)' }}>
-        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 8, textAlign: 'center', marginBottom: 4 }}>
+        <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: 600, textAlign: 'center', marginBottom: 4 }}>
           {updatedAt ? `Ultima actualizare: ${formatUpdated(updatedAt)}` : ''}
         </div>
         <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: 7, lineHeight: 1.5, textAlign: 'left' }}>
