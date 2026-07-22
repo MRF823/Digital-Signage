@@ -1,14 +1,12 @@
 const CURRENCIES = ['EUR', 'USD', 'CHF', 'GBP']
+const MONTHS = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie']
 
 function formatLastUpdate(dateStr) {
   if (!dateStr) return null
   const d = new Date(dateStr)
-  const time = d.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })
-  const day = d.getDate().toString().padStart(2, '0')
-  const month = d.toLocaleDateString('ro-RO', { month: 'long' })
-  const monthCap = month.charAt(0).toUpperCase() + month.slice(1)
-  const year = d.getFullYear()
-  return `${time} ▪ ${day} ${monthCap} ${year}`
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  return `${hh}:${mm} ▪ ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`
 }
 
 export default function Ticker({ rates, updatedAt, cecUpdatedAt, bnrUpdatedAt }) {
