@@ -28,7 +28,7 @@ function ForexRatesPanel({ rates, updatedAt }) {
       <div className="px-4 py-3 border-b border-slate-100">
         <p className="text-sm font-semibold text-slate-700">Cursuri de schimb valutar</p>
         {updatedAt && (
-          <p className="text-sm font-semibold text-slate-900 mt-1">
+          <p className="text-xs text-slate-700 mt-1">
             Ultima actualizare: {formatUpdated(updatedAt)}
           </p>
         )}
