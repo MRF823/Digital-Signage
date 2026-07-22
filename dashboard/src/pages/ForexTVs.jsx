@@ -13,16 +13,24 @@ const CURRENCY_META = {
   SEK: { name: 'Coroană suedeză', flag: '🇸🇪' },
 }
 const ORDER = ['EUR', 'USD', 'GBP', 'CAD', 'CHF', 'DKK', 'HUF', 'PLN', 'SEK']
+const MONTHS = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie']
+
+function formatUpdated(iso) {
+  const d = new Date(iso)
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  return `${hh}:${mm} ▪ ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`
+}
 
 function ForexRatesPanel({ rates, updatedAt }) {
   return (
     <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-slate-100">
         <p className="text-sm font-semibold text-slate-700">Cursuri de schimb valutar</p>
         {updatedAt && (
-          <span className="text-xs text-slate-400">
-            Actualizat: {new Date(updatedAt).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
-          </span>
+          <p className="text-sm font-semibold text-slate-900 mt-1">
+            Ultima actualizare: {formatUpdated(updatedAt)}
+          </p>
         )}
       </div>
       <table className="w-full text-sm">
