@@ -14,9 +14,10 @@ async function scrapeForexRates() {
     const html = await res.text()
     const rates = {}
 
-    // Caută secțiunea "Casa de schimb" din HTML
-    const casaIdx = html.toLowerCase().indexOf('casa de schimb')
-    const section = casaIdx >= 0 ? html.slice(casaIdx, casaIdx + 8000) : html
+    // Caută secțiunea "Casa de schimb" după id-ul exact din HTML
+    const casaIdx = html.indexOf('id="exchangeHouse"')
+    if (casaIdx < 0) { console.warn('[forex] exchangeHouse section not found'); return null }
+    const section = html.slice(casaIdx, casaIdx + 8000)
 
     // Structura rând: VALUTA Denumire BNR BCE Cumpărare Vânzare ...
     // Extragem al 3-lea și al 4-lea număr (Cumpărare și Vânzare), sărind BNR și BCE
