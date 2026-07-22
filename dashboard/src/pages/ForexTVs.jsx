@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getForexTVs, getForexRates } from '../api'
+import { getForexTVs, setForexMode, getForexRates } from '../api'
 
 function isOnline(lastSeen) {
   if (!lastSeen) return false
@@ -10,6 +10,7 @@ export default function ForexTVs() {
   const [tvs, setTvs] = useState([])
   const [rates, setRates] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [activating, setActivating] = useState(null)
 
   useEffect(() => {
     Promise.all([getForexTVs(), getForexRates()])
@@ -22,6 +23,15 @@ export default function ForexTVs() {
       })
       .finally(() => setLoading(false))
   }, [])
+
+  async function activate(tv) {
+    setActivating(tv.id)
+    try {
+      await setForexMode(tv.id, 1)
+    } finally {
+      setActivating(null)
+    }
+  }
 
   const byAgency = tvs.reduce((acc, tv) => {
     const key = tv.agency_name
@@ -78,14 +88,23 @@ export default function ForexTVs() {
               </div>
               <div className="divide-y divide-slate-100">
                 {agencyTvs.map(tv => (
-                  <div key={tv.id} className="px-4 py-3 flex items-center gap-3">
-                    <div className={`w-2.5 h-2.5 rounded-full ${isOnline(tv.last_seen_at) ? 'bg-green-500' : 'bg-slate-300'}`} />
-                    <div>
-                      <p className="text-sm font-medium text-slate-800">{tv.label}</p>
-                      <p className="text-xs text-slate-400">
-                        {isOnline(tv.last_seen_at) ? 'Online' : tv.last_seen_at ? `Ultima dată online: ${new Date(tv.last_seen_at + 'Z').toLocaleString('ro-RO')}` : 'Niciodată conectat'}
-                      </p>
+                  <div key={tv.id} className="px-4 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-2.5 h-2.5 rounded-full ${isOnline(tv.last_seen_at) ? 'bg-green-500' : 'bg-slate-300'}`} />
+                      <div>
+                        <p className="text-sm font-medium text-slate-800">{tv.label}</p>
+                        <p className="text-xs text-slate-400">
+                          {isOnline(tv.last_seen_at) ? 'Online' : tv.last_seen_at ? `Ultima dată: ${new Date(tv.last_seen_at + 'Z').toLocaleString('ro-RO')}` : 'Niciodată conectat'}
+                        </p>
+                      </div>
                     </div>
+                    <button
+                      onClick={() => activate(tv)}
+                      disabled={activating === tv.id || !isOnline(tv.last_seen_at)}
+                      className="px-3 py-1.5 text-sm rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {activating === tv.id ? 'Se trimite...' : 'Activează forex'}
+                    </button>
                   </div>
                 ))}
               </div>
