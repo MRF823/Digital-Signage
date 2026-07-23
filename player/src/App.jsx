@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { useWebSocket } from './useWebSocket'
 import { usePlaylist } from './usePlaylist'
 import { useMediaCache } from './useMediaCache'
+import { enqueueLog, flushQueue } from './usePlayQueue'
 import VideoPlayer from './components/VideoPlayer'
 import ImageDisplay from './components/ImageDisplay'
 import Ticker from './components/Ticker'
@@ -34,6 +35,7 @@ export default function App() {
   const [screenOn, setScreenOn] = useState(true)
   const fadingRef = useRef(false)
   const sendRef = useRef(() => {})
+  const connectedRef = useRef(false)
   const playCountRef = useRef(0)
   useEffect(() => {
     const id = setInterval(() => window.location.reload(), 10 * 60 * 1000)
@@ -77,7 +79,7 @@ export default function App() {
     const current = playlist[indexRef.current % Math.max(playlist.length, 1)]
     if (current && sendLog) {
       const durationSeconds = Math.round((Date.now() - new Date(playedAtRef.current).getTime()) / 1000)
-      sendRef.current({
+      enqueueLog({
         type: 'play_log',
         filename: current.filename,
         original_name: current.original_name,
@@ -85,6 +87,7 @@ export default function App() {
         played_at: playedAtRef.current,
         duration_seconds: durationSeconds,
       })
+      if (connectedRef.current) flushQueue(sendRef.current)
     }
 
     playCountRef.current += 1
@@ -154,6 +157,11 @@ export default function App() {
   useEffect(() => {
     sendRef.current = send
   }, [send])
+
+  useEffect(() => {
+    connectedRef.current = connected
+    if (connected) flushQueue(sendRef.current)
+  }, [connected])
 
   useEffect(() => {
     if (playlist.length > 0) cachePlaylist(playlist)
