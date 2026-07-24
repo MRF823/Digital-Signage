@@ -7,31 +7,30 @@ let lastRatesJson = ''
 
 async function scrapeCEC() {
   try {
-    const res = await fetch('https://www.cursbnr.ro/curs-valutar-banci', {
+    const res = await fetch('https://www.cec.ro/curs-valutar', {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36' },
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(15_000),
     })
     const html = await res.text()
+
+    // Pagina are 3 tabele cu Cumpărare: Internet Banking, Cont/Card, Casa de Schimb (ultimul, doar EUR/USD/GBP/CHF)
+    const tableMatches = [...html.matchAll(/<table[\s\S]*?<\/table>/gi)]
+    const exchangeTables = tableMatches.filter(m => m[0].includes('Cump'))
+    // Casa de Schimb e ultimul tabel — cel mai mic, doar 4 valute
+    const casaTable = exchangeTables[exchangeTables.length - 1]?.[0]
+    if (!casaTable) return null
+
     const rates = {}
-
-    // Pagina are tabele separate per valuta — fiecare contine header-ul valutei si randuri per banca
-    const tables = html.split('<table')
-    for (const table of tables) {
-      for (const currency of CURRENCIES) {
-        if (rates[currency]) continue
-        if (!table.includes(currency) || !table.includes('Banca cumpara')) continue
-        if (!table.includes('CEC BANK')) continue
-
-        const cecIdx = table.indexOf('CEC BANK')
-        const section = table.slice(cecIdx, cecIdx + 400)
-        const nums = section.match(/(\d+\.\d+)/g)
-        if (nums && nums.length >= 2) {
-          rates[currency] = {
-            buy: parseFloat(nums[0]),
-            sell: parseFloat(nums[1]),
-          }
-        }
-      }
+    const rowPattern = /<tr>[\s\S]*?<\/tr>/gi
+    for (const rowMatch of casaTable.matchAll(rowPattern)) {
+      const tds = [...rowMatch[0].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)]
+        .map(m => m[1].replace(/<[^>]+>/g, '').trim())
+      if (tds.length < 6) continue
+      const code = tds[0].replace('*', '')
+      if (!CURRENCIES.includes(code)) continue
+      const buy = parseFloat(tds[4])
+      const sell = parseFloat(tds[5])
+      if (!isNaN(buy) && !isNaN(sell)) rates[code] = { buy, sell }
     }
 
     return Object.keys(rates).length >= 1 ? rates : null
