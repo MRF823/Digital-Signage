@@ -145,7 +145,16 @@ export default function Reports() {
       .finally(() => setLoading(false))
   }
 
+  const [nextRefresh, setNextRefresh] = useState(60)
+
   useEffect(() => { load() }, [])
+
+  useEffect(() => {
+    setNextRefresh(60)
+    const tick = setInterval(() => setNextRefresh(n => n - 1), 1000)
+    const refresh = setInterval(() => { load(); setNextRefresh(60) }, 60_000)
+    return () => { clearInterval(tick); clearInterval(refresh) }
+  }, [agencyId, from, to])
 
   const today = new Date().toISOString().slice(0, 10)
 
@@ -199,7 +208,10 @@ export default function Reports() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-xl font-bold text-gray-800">Proof of Play</h2>
-          <p className="text-sm text-gray-400 mt-0.5">Istoric redare pe fiecare ecran</p>
+          <p className="text-sm text-gray-400 mt-0.5">
+            Istoric redare pe fiecare ecran
+            <span className="ml-2 text-gray-300">· actualizare în {nextRefresh}s</span>
+          </p>
         </div>
         <button onClick={() => downloadExcel(summary, logs, agencies, playlists, avgDurations)} disabled={!summary}
           className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 shadow-sm">
