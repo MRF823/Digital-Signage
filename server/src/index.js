@@ -131,7 +131,11 @@ const __dirname = dirname(__filename)
 const dashDist = join(__dirname, '../../dashboard/dist')
 if (existsSync(dashDist)) {
   app.use(express.static(dashDist))
-  app.get(/.*/, (req, res) => res.sendFile(join(dashDist, 'index.html')))
+  app.get(/.*/, (req, res) => {
+    res.sendFile(join(dashDist, 'index.html'), err => {
+      if (err) res.status(503).send('Dashboard temporarily unavailable')
+    })
+  })
 }
 
 export { app, httpServer }
