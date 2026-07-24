@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import * as XLSX from 'xlsx'
-import { getPlayLog, getAgencies, getGroups, getPlaylist, getGroupPlaylist } from '../api'
+import { getPlayLog, getReportsSummary, getAgencies, getGroups, getPlaylist, getGroupPlaylist } from '../api'
 
 function fmt(dateStr) {
   if (!dateStr) return '—'
@@ -46,27 +46,20 @@ function hasUnknownDuration(items, avgDurations = {}) {
   return items.some(item => item.type === 'video' && !item.duration_seconds && !avgDurations[item.filename])
 }
 
-function downloadExcel(logs, agencies, playlists, avgDurations = {}) {
+function downloadExcel(summary, logs, agencies, playlists, avgDurations = {}) {
   const agencyMap = {}
   agencies.forEach(a => { agencyMap[a.id] = { name: a.name, city: a.city } })
 
-  // Sheet 1: Sumar per agenție
-  const byAgency = {}
-  logs.forEach(r => {
-    const ag = agencyMap[r.agency_id] ?? { name: `#${r.agency_id}`, city: '' }
-    if (!byAgency[r.agency_id]) byAgency[r.agency_id] = { name: ag.name, city: ag.city, plays: 0, total: 0 }
-    byAgency[r.agency_id].plays++
-    byAgency[r.agency_id].total += r.duration_seconds ?? 0
-  })
-
+  // Sheet 1: Sumar per agenție (date complete din summary)
   const summaryRows = [['Agenție', 'Oraș', 'Total redări', 'Durată totală', 'Durată playlist', 'Cicluri complete']]
-  Object.entries(byAgency).forEach(([agId, data]) => {
-    const pd = playlists[agId] ? playlistDuration(playlists[agId], avgDurations) : 0
-    const cycles = pd > 0 ? Math.floor(data.total / pd) : '—'
-    summaryRows.push([data.name, data.city, data.plays, fmtDurationLong(data.total), fmtDurationLong(pd), cycles])
+  ;(summary?.byAgency ?? []).forEach(r => {
+    const ag = agencyMap[r.agency_id] ?? { name: `#${r.agency_id}`, city: '' }
+    const pd = playlists[r.agency_id] ? playlistDuration(playlists[r.agency_id], avgDurations) : 0
+    const cycles = pd > 0 ? Math.floor(r.total_seconds / pd) : '—'
+    summaryRows.push([ag.name, ag.city, r.plays, fmtDurationLong(r.total_seconds), fmtDurationLong(pd), cycles])
   })
 
-  // Sheet 2: Detaliat
+  // Sheet 2: Detaliat (ultimele 200 din log-uri)
   const detailRows = [['Data / Ora', 'Agenție', 'TV', 'Fișier', 'Tip', 'Durată']]
   logs.forEach(r => {
     const ag = agencyMap[r.agency_id]
@@ -88,6 +81,7 @@ function downloadExcel(logs, agencies, playlists, avgDurations = {}) {
 
 export default function Reports() {
   const [logs, setLogs] = useState([])
+  const [summary, setSummary] = useState(null) // { global, byAgency, byFile, byAgencyFile }
   const [agencies, setAgencies] = useState([])
   const [playlists, setPlaylists] = useState({}) // agencyId -> items[]
   const [agencyId, setAgencyId] = useState('')
@@ -138,9 +132,16 @@ export default function Reports() {
     if (aid) params.agency_id = aid
     if (f) params.from = new Date(f + 'T00:00:00').toISOString()
     if (t) params.to = new Date(t + 'T23:59:59').toISOString()
-    getPlayLog(params)
-      .then(data => { setLogs(data); if (data.length === 0) setError('Niciun rezultat pentru filtrele selectate.') })
-      .catch(e => { setLogs([]); setError('Eroare la încărcare: ' + (e?.message || 'unknown')) })
+    Promise.all([
+      getReportsSummary(params),
+      getPlayLog(params),
+    ])
+      .then(([sumData, logData]) => {
+        setSummary(sumData)
+        setLogs(logData)
+        if (sumData.global.total_plays === 0) setError('Niciun rezultat pentru filtrele selectate.')
+      })
+      .catch(e => { setSummary(null); setLogs([]); setError('Eroare la încărcare: ' + (e?.message || 'unknown')) })
       .finally(() => setLoading(false))
   }
 
@@ -155,11 +156,12 @@ export default function Reports() {
     ? Math.round((periodEnd - periodStart) / 1000)
     : null
 
-  // Stats globale
-  const totalDuration = logs.reduce((s, r) => s + (r.duration_seconds ?? 0), 0)
-  const uniqueFiles = new Set(logs.map(r => r.filename)).size
+  // Stats globale — din summary (date complete, fără limita de 200)
+  const totalDuration = summary?.global?.total_seconds ?? 0
+  const totalPlays = summary?.global?.total_plays ?? 0
+  const uniqueFiles = summary?.global?.unique_files ?? 0
 
-  // Durata medie per fișier din log-uri (pentru videoclipuri fără duration_seconds în DB)
+  // Durata medie per fișier din log-uri (pentru calcul cicluri playlist)
   const fileDurationSums = {}
   const fileDurationCounts = {}
   logs.forEach(r => {
@@ -173,25 +175,23 @@ export default function Reports() {
     avgDurations[f] = Math.round(fileDurationSums[f] / fileDurationCounts[f])
   })
 
-  // Per agenție
+  // Per agenție — din summary
   const agencyMap = {}
   agencies.forEach(a => { agencyMap[a.id] = a })
 
   const byAgency = {}
-  logs.forEach(r => {
-    if (!byAgency[r.agency_id]) byAgency[r.agency_id] = { plays: 0, total: 0 }
-    byAgency[r.agency_id].plays++
-    byAgency[r.agency_id].total += r.duration_seconds ?? 0
+  ;(summary?.byAgency ?? []).forEach(r => {
+    byAgency[r.agency_id] = { plays: r.plays, total: r.total_seconds }
   })
 
-  // Per file breakdown
-  const byFile = {}
-  logs.forEach(r => {
-    if (!byFile[r.original_name]) byFile[r.original_name] = { name: r.original_name, type: r.media_type, plays: 0, total: 0 }
-    byFile[r.original_name].plays++
-    byFile[r.original_name].total += r.duration_seconds ?? 0
-  })
-  const fileStats = Object.values(byFile).sort((a, b) => b.total - a.total)
+  // Per file breakdown — din summary
+  const fileStats = (summary?.byFile ?? []).map(r => ({
+    name: r.original_name,
+    filename: r.filename,
+    type: r.media_type,
+    plays: r.plays,
+    total: r.total_seconds,
+  }))
   const maxTotal = fileStats[0]?.total || 1
 
   return (
@@ -201,7 +201,7 @@ export default function Reports() {
           <h2 className="text-xl font-bold text-gray-800">Proof of Play</h2>
           <p className="text-sm text-gray-400 mt-0.5">Istoric redare pe fiecare ecran</p>
         </div>
-        <button onClick={() => downloadExcel(logs, agencies, playlists, avgDurations)} disabled={logs.length === 0}
+        <button onClick={() => downloadExcel(summary, logs, agencies, playlists, avgDurations)} disabled={!summary}
           className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 shadow-sm">
           ↓ Export Excel
         </button>
@@ -251,7 +251,7 @@ export default function Reports() {
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-5">
           <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1">Total redări</p>
-          <p className="text-3xl font-bold text-gray-800">{logs.length}</p>
+          <p className="text-3xl font-bold text-gray-800">{totalPlays}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-5">
           <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1">Durată totală rulată</p>
@@ -394,7 +394,9 @@ export default function Reports() {
       {/* Tabel detaliat */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-700">{loading ? 'Se încarcă...' : `${logs.length} înregistrări detaliate`}</h3>
+          <h3 className="text-sm font-semibold text-gray-700">
+            {loading ? 'Se încarcă...' : `${logs.length} înregistrări recente${totalPlays > logs.length ? ` (din ${totalPlays} total)` : ''}`}
+          </h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

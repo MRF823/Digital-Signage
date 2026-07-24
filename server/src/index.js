@@ -63,6 +63,25 @@ app.get('/api/play-log', requireAuth, (req, res) => {
     res.status(500).json({ error: e.message })
   }
 })
+
+app.get('/api/reports/summary', requireAuth, (req, res) => {
+  const { agency_id, from, to } = req.query
+  const db = getDb()
+  const params = []
+  let where = 'WHERE 1=1'
+  if (agency_id) { where += ' AND agency_id = ?'; params.push(agency_id) }
+  if (from)      { where += ' AND played_at >= ?'; params.push(from) }
+  if (to)        { where += ' AND played_at <= ?'; params.push(to) }
+  try {
+    const global = db.prepare(`SELECT COUNT(*) as total_plays, COALESCE(SUM(duration_seconds),0) as total_seconds, COUNT(DISTINCT filename) as unique_files FROM play_log ${where}`).get(...params)
+    const byAgency = db.prepare(`SELECT agency_id, COUNT(*) as plays, COALESCE(SUM(duration_seconds),0) as total_seconds FROM play_log ${where} GROUP BY agency_id`).all(...params)
+    const byFile = db.prepare(`SELECT filename, original_name, media_type, COUNT(*) as plays, COALESCE(SUM(duration_seconds),0) as total_seconds FROM play_log ${where} GROUP BY filename, original_name, media_type ORDER BY total_seconds DESC`).all(...params)
+    const byAgencyFile = db.prepare(`SELECT agency_id, filename, original_name, COUNT(*) as plays, COALESCE(SUM(duration_seconds),0) as total_seconds FROM play_log ${where} GROUP BY agency_id, filename, original_name ORDER BY total_seconds DESC`).all(...params)
+    res.json({ global, byAgency, byFile, byAgencyFile })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
 // File serving is public — filenames are random UUIDs, not guessable; needed for <video> elements
 app.get('/api/media/:filename', serveFile)
 

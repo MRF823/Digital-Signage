@@ -78,6 +78,9 @@ export const getRates = () => api.get('/api/rates').then(r => r.data)
 export const getPlayLog = (params = {}) =>
   api.get('/api/play-log', { params }).then(r => r.data)
 
+export const getReportsSummary = (params = {}) =>
+  api.get('/api/reports/summary', { params }).then(r => r.data)
+
 export const getStats = () => api.get('/api/stats').then(r => r.data)
 export const reloadPlayers = () => api.post('/api/players/reload').then(r => r.data)
 export const syncMedia = () => api.post('/api/players/sync-media').then(r => r.data)
