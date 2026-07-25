@@ -130,8 +130,8 @@ export default function Reports() {
     setError('')
     const params = {}
     if (aid) params.agency_id = aid
-    if (f) params.from = new Date(f + 'T00:00:00').toISOString()
-    if (t) params.to = new Date(t + 'T23:59:59').toISOString()
+    if (f) params.from = f + 'T00:00:00'
+    if (t) params.to = t + 'T23:59:59'
     Promise.all([
       getReportsSummary(params),
       getPlayLog(params),
