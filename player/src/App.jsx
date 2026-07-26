@@ -38,7 +38,7 @@ export default function App() {
   const connectedRef = useRef(false)
   const playCountRef = useRef(0)
   useEffect(() => {
-    const id = setInterval(() => window.location.reload(), 10 * 60 * 1000)
+    const id = setInterval(() => window.location.reload(), 60 * 60 * 1000)
     return () => clearInterval(id)
   }, [])
 
