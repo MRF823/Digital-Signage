@@ -177,6 +177,22 @@ export default function App() {
 
   const current = playlist.length > 0 ? playlist[index % playlist.length] : null
   const src = current ? urls[current.filename] : undefined
+  const seamless = playlist.length === 1 && current?.type === 'video'
+
+  const logCurrentPlay = useCallback(() => {
+    if (!current) return
+    const durationSeconds = Math.round((Date.now() - new Date(playedAtRef.current).getTime()) / 1000)
+    enqueueLog({
+      type: 'play_log',
+      filename: current.filename,
+      original_name: current.original_name,
+      media_type: current.type,
+      played_at: playedAtRef.current,
+      duration_seconds: durationSeconds,
+    })
+    if (connectedRef.current) flushQueue(sendRef.current)
+    playedAtRef.current = toLocalISO(new Date())
+  }, [current])
 
   useEffect(() => {
     if (!src && ready && playlist.length > 0) {
@@ -235,7 +251,11 @@ export default function App() {
         className={animClass}
         style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}
       >
-        {src && current.type === 'video' && <VideoPlayer key={playCount} src={src} onEnded={next} />}
+        {src && current.type === 'video' && (
+          seamless
+            ? <VideoPlayer key={src} src={src} seamless onLoop={logCurrentPlay} />
+            : <VideoPlayer key={playCount} src={src} onEnded={next} />
+        )}
         {src && current.type === 'image' && <ImageDisplay key={playCount} src={src} duration={current.display_duration_seconds} onEnded={next} />}
       </div>
       {ratesData && <Ticker rates={ratesData?.rates} updatedAt={ratesData?.updatedAt} />}
