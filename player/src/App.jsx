@@ -38,8 +38,16 @@ export default function App() {
   const connectedRef = useRef(false)
   const playCountRef = useRef(0)
   useEffect(() => {
-    const id = setInterval(() => window.location.reload(), 240 * 60 * 1000)
-    return () => clearInterval(id)
+    const scheduleNightlyReload = () => {
+      const now = new Date()
+      const next2am = new Date()
+      next2am.setHours(2, 0, 0, 0)
+      if (next2am <= now) next2am.setDate(next2am.getDate() + 1)
+      const msUntil2am = next2am - now
+      return setTimeout(() => window.location.reload(), msUntil2am)
+    }
+    const id = scheduleNightlyReload()
+    return () => clearTimeout(id)
   }, [])
 
   useEffect(() => {
