@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import * as XLSX from 'xlsx'
 import { getPlayLog, getReportsSummary, getAgencies, getGroups, getPlaylist, getGroupPlaylist } from '../api'
 
@@ -30,6 +30,13 @@ function fmtDurationLong(sec) {
   if (h > 0) return `${h}h ${m}m`
   if (m > 0) return `${m}m ${s}s`
   return `${s}s`
+}
+
+const RO_MONTHS = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie']
+function fmtDateDisplay(val) {
+  if (!val) return '—'
+  const [y, m, d] = val.split('-')
+  return `${d} ${RO_MONTHS[parseInt(m, 10) - 1]} ${y}`
 }
 
 function playlistDuration(items, avgDurations = {}) {
@@ -90,6 +97,8 @@ export default function Reports() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [hasFiltered, setHasFiltered] = useState(false)
+  const fromRef = useRef()
+  const toRef = useRef()
 
   useEffect(() => {
     Promise.all([getAgencies(), getGroups()]).then(async ([ag, groups]) => {
@@ -231,22 +240,22 @@ export default function Reports() {
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-xs text-gray-400 font-medium uppercase tracking-wide">De la</label>
-          <div className="relative">
-            <input type="date" value={from} max={today} onChange={e => setFrom(e.target.value)}
-              className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full" />
-            {!from && (
-              <span className="absolute inset-0 flex items-center px-3 text-sm text-gray-400 pointer-events-none bg-white rounded-lg border border-gray-200">—</span>
-            )}
+          <div className="relative cursor-pointer" onClick={() => fromRef.current?.showPicker?.() ?? fromRef.current?.click()}>
+            <input ref={fromRef} type="date" value={from} max={today} onChange={e => setFrom(e.target.value)}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+            <div className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 min-w-[170px] select-none">
+              {fmtDateDisplay(from)}
+            </div>
           </div>
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-xs text-gray-400 font-medium uppercase tracking-wide">Până la</label>
-          <div className="relative">
-            <input type="date" value={to} max={today} onChange={e => setTo(e.target.value)}
-              className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full" />
-            {!to && (
-              <span className="absolute inset-0 flex items-center px-3 text-sm text-gray-400 pointer-events-none bg-white rounded-lg border border-gray-200">—</span>
-            )}
+          <div className="relative cursor-pointer" onClick={() => toRef.current?.showPicker?.() ?? toRef.current?.click()}>
+            <input ref={toRef} type="date" value={to} max={today} onChange={e => setTo(e.target.value)}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+            <div className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 min-w-[170px] select-none">
+              {fmtDateDisplay(to)}
+            </div>
           </div>
         </div>
         <button onClick={() => { setHasFiltered(true); load() }} disabled={loading}
