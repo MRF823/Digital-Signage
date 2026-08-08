@@ -148,8 +148,8 @@ export default function TVs() {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-100">
-              <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-widest">Denumire</th>
               <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-widest">Agenție</th>
+              <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-widest">Denumire</th>
               <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-widest">Grup</th>
               <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-widest">Conținut</th>
               <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-widest">Status</th>
@@ -193,22 +193,11 @@ export default function TVs() {
                       key={tv.id}
                       className={`transition-colors ${on ? 'hover:bg-gray-50' : 'bg-red-50/30 hover:bg-red-50/60'}`}
                     >
-                      {/* Denumire */}
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-2.5">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
-                            ${on ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-400'}`}>
-                            <IconMonitor />
-                          </div>
-                          <span className="font-semibold text-gray-800">{tv.label}</span>
-                        </div>
-                      </td>
-
                       {/* Agenție — rowspan, apare doar pe primul TV din grup */}
                       {isFirst && (
                         <td
                           rowSpan={g.tvs.length}
-                          className={`px-5 py-4 align-top border-l border-gray-100 ${!isLast ? 'border-b-0' : ''}`}
+                          className={`px-5 py-4 align-top border-r border-gray-100 ${!isLast ? 'border-b-0' : ''}`}
                         >
                           <div className="flex items-start gap-1.5">
                             <span className="text-gray-400 mt-0.5 flex-shrink-0"><IconLocation /></span>
@@ -222,6 +211,17 @@ export default function TVs() {
                           </div>
                         </td>
                       )}
+
+                      {/* Denumire */}
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2.5">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
+                            ${on ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-400'}`}>
+                            <IconMonitor />
+                          </div>
+                          <span className="font-semibold text-gray-800">{tv.label}</span>
+                        </div>
+                      </td>
 
                       {/* Grup */}
                       <td className="px-5 py-4">
