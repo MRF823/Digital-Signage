@@ -231,13 +231,23 @@ export default function Reports() {
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-xs text-gray-400 font-medium uppercase tracking-wide">De la</label>
-          <input type="date" value={from} max={today} onChange={e => setFrom(e.target.value)}
-            className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <div className="relative">
+            <input type="date" value={from} max={today} onChange={e => setFrom(e.target.value)}
+              className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full" />
+            {!from && (
+              <span className="absolute inset-0 flex items-center px-3 text-sm text-gray-400 pointer-events-none bg-white rounded-lg border border-gray-200">—</span>
+            )}
+          </div>
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-xs text-gray-400 font-medium uppercase tracking-wide">Până la</label>
-          <input type="date" value={to} max={today} onChange={e => setTo(e.target.value)}
-            className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <div className="relative">
+            <input type="date" value={to} max={today} onChange={e => setTo(e.target.value)}
+              className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full" />
+            {!to && (
+              <span className="absolute inset-0 flex items-center px-3 text-sm text-gray-400 pointer-events-none bg-white rounded-lg border border-gray-200">—</span>
+            )}
+          </div>
         </div>
         <button onClick={() => { setHasFiltered(true); load() }} disabled={loading}
           className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60">
