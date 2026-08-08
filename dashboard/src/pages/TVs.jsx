@@ -168,100 +168,122 @@ export default function TVs() {
                 </td>
               </tr>
             )}
-            {filtered.map(tv => {
-              const on = isOnline(tv)
-              const { line1, line2 } = formatLastSeen(tv.last_seen_at)
-              const isExp = expanded === tv.id
+            {(() => {
+              // grupare pe agenție cu rowspan
+              const groups = []
+              filtered.forEach(tv => {
+                const last = groups[groups.length - 1]
+                if (last && last.agency_id === tv.agency_id) {
+                  last.tvs.push(tv)
+                } else {
+                  groups.push({ agency_id: tv.agency_id, agency_name: tv.agency_name, city: tv.city, tvs: [tv] })
+                }
+              })
 
-              return (
-                <tr
-                  key={tv.id}
-                  className={`transition-colors ${on ? 'hover:bg-gray-50' : 'bg-red-50/30 hover:bg-red-50/60'}`}
-                >
-                  {/* Denumire */}
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-2.5">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
-                        ${on ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-400'}`}>
-                        <IconMonitor />
-                      </div>
-                      <span className="font-semibold text-gray-800">{tv.label}</span>
-                    </div>
-                  </td>
+              return groups.flatMap(g =>
+                g.tvs.map((tv, tvIdx) => {
+                  const on = isOnline(tv)
+                  const { line1, line2 } = formatLastSeen(tv.last_seen_at)
+                  const isExp = expanded === tv.id
+                  const isFirst = tvIdx === 0
+                  const isLast = tvIdx === g.tvs.length - 1
 
-                  {/* Agenție */}
-                  <td className="px-5 py-4">
-                    <div className="flex items-start gap-1.5">
-                      <span className="text-gray-400 mt-0.5 flex-shrink-0"><IconLocation /></span>
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <p className="font-medium text-gray-700">{tv.agency_name}</p>
-                          <span className="text-xs font-mono bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded">ID:{tv.agency_id}</span>
-                        </div>
-                        {tv.city && <p className="text-xs text-gray-400">{tv.city}</p>}
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Grup */}
-                  <td className="px-5 py-4">
-                    {tv.group_name ? (
-                      <span className="inline-flex items-center gap-1.5 bg-purple-50 text-purple-700 border border-purple-100 px-2.5 py-1 rounded-full text-xs font-medium">
-                        <IconGroup />
-                        {tv.group_name}
-                      </span>
-                    ) : (
-                      <span className="text-gray-300 text-xs">—</span>
-                    )}
-                  </td>
-
-                  {/* Conținut */}
-                  <td className="px-5 py-4">
-                    {!tv.has_content ? (
-                      <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-600 border border-amber-100 px-2.5 py-1 rounded-full text-xs font-medium">
-                        Fără conținut
-                      </span>
-                    ) : tv.group_name ? (
-                      <span className="inline-flex items-center gap-1.5 bg-purple-50 text-purple-600 border border-purple-100 px-2.5 py-1 rounded-full text-xs font-medium">
-                        <IconFilm />
-                        Din grup
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 border border-blue-100 px-2.5 py-1 rounded-full text-xs font-medium">
-                        <IconFilm />
-                        {tv.playlist_count} fișier{tv.playlist_count !== 1 ? 'e' : ''}
-                      </span>
-                    )}
-                  </td>
-
-                  {/* Status */}
-                  <td className="px-5 py-4">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold
-                      ${on ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${on ? 'bg-green-500 animate-pulse' : 'bg-red-400'}`} />
-                      {on ? 'Online' : 'Offline'}
-                    </span>
-                  </td>
-
-                  {/* Ultima activitate */}
-                  <td className="px-5 py-4">
-                    <p className="font-medium text-gray-700">{line1}</p>
-                    {line2 && <p className="text-xs text-gray-400">{line2}</p>}
-                  </td>
-
-                  {/* Acțiuni */}
-                  <td className="px-5 py-4">
-                    <button
-                      onClick={() => setExpanded(isExp ? null : tv.id)}
-                      className="text-gray-300 hover:text-blue-500 transition-colors"
-                      title="Detalii"
+                  return (
+                    <tr
+                      key={tv.id}
+                      className={`transition-colors ${on ? 'hover:bg-gray-50' : 'bg-red-50/30 hover:bg-red-50/60'}`}
                     >
-                      <IconInfo />
-                    </button>
-                  </td>
-                </tr>
+                      {/* Denumire */}
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2.5">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
+                            ${on ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-400'}`}>
+                            <IconMonitor />
+                          </div>
+                          <span className="font-semibold text-gray-800">{tv.label}</span>
+                        </div>
+                      </td>
+
+                      {/* Agenție — rowspan, apare doar pe primul TV din grup */}
+                      {isFirst && (
+                        <td
+                          rowSpan={g.tvs.length}
+                          className={`px-5 py-4 align-top border-l border-gray-100 ${!isLast ? 'border-b-0' : ''}`}
+                        >
+                          <div className="flex items-start gap-1.5">
+                            <span className="text-gray-400 mt-0.5 flex-shrink-0"><IconLocation /></span>
+                            <div>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <p className="font-medium text-gray-700">{g.agency_name}</p>
+                                <span className="text-xs font-mono bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded">ID:{g.agency_id}</span>
+                              </div>
+                              {g.city && <p className="text-xs text-gray-400">{g.city}</p>}
+                            </div>
+                          </div>
+                        </td>
+                      )}
+
+                      {/* Grup */}
+                      <td className="px-5 py-4">
+                        {tv.group_name ? (
+                          <span className="inline-flex items-center gap-1.5 bg-purple-50 text-purple-700 border border-purple-100 px-2.5 py-1 rounded-full text-xs font-medium">
+                            <IconGroup />
+                            {tv.group_name}
+                          </span>
+                        ) : (
+                          <span className="text-gray-300 text-xs">—</span>
+                        )}
+                      </td>
+
+                      {/* Conținut */}
+                      <td className="px-5 py-4">
+                        {!tv.has_content ? (
+                          <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-600 border border-amber-100 px-2.5 py-1 rounded-full text-xs font-medium">
+                            Fără conținut
+                          </span>
+                        ) : tv.group_name ? (
+                          <span className="inline-flex items-center gap-1.5 bg-purple-50 text-purple-600 border border-purple-100 px-2.5 py-1 rounded-full text-xs font-medium">
+                            <IconFilm />
+                            Din grup
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 border border-blue-100 px-2.5 py-1 rounded-full text-xs font-medium">
+                            <IconFilm />
+                            {tv.playlist_count} fișier{tv.playlist_count !== 1 ? 'e' : ''}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-5 py-4">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold
+                          ${on ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${on ? 'bg-green-500 animate-pulse' : 'bg-red-400'}`} />
+                          {on ? 'Online' : 'Offline'}
+                        </span>
+                      </td>
+
+                      {/* Ultima activitate */}
+                      <td className="px-5 py-4">
+                        <p className="font-medium text-gray-700">{line1}</p>
+                        {line2 && <p className="text-xs text-gray-400">{line2}</p>}
+                      </td>
+
+                      {/* Acțiuni */}
+                      <td className="px-5 py-4">
+                        <button
+                          onClick={() => setExpanded(isExp ? null : tv.id)}
+                          className="text-gray-300 hover:text-blue-500 transition-colors"
+                          title="Detalii"
+                        >
+                          <IconInfo />
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })
               )
-            })}
+            })()}
           </tbody>
         </table>
       </div>
