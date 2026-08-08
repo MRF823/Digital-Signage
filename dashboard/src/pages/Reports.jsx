@@ -89,6 +89,7 @@ export default function Reports() {
   const [to, setTo] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [hasFiltered, setHasFiltered] = useState(false)
 
   useEffect(() => {
     Promise.all([getAgencies(), getGroups()]).then(async ([ag, groups]) => {
@@ -147,14 +148,13 @@ export default function Reports() {
 
   const [nextRefresh, setNextRefresh] = useState(60)
 
-  useEffect(() => { load() }, [])
-
   useEffect(() => {
+    if (!hasFiltered) return
     setNextRefresh(60)
     const tick = setInterval(() => setNextRefresh(n => n - 1), 1000)
     const refresh = setInterval(() => { load(); setNextRefresh(60) }, 60_000)
     return () => { clearInterval(tick); clearInterval(refresh) }
-  }, [agencyId, from, to])
+  }, [agencyId, from, to, hasFiltered])
 
   const today = new Date().toISOString().slice(0, 10)
 
@@ -210,7 +210,7 @@ export default function Reports() {
           <h2 className="text-xl font-bold text-gray-800">Proof of Play</h2>
           <p className="text-sm text-gray-400 mt-0.5">
             Istoric redare pe fiecare ecran
-            <span className="ml-2 text-gray-300">· actualizare în {nextRefresh}s</span>
+            {hasFiltered && <span className="ml-2 text-gray-300">· actualizare în {nextRefresh}s</span>}
           </p>
         </div>
         <button onClick={() => downloadExcel(summary, logs, agencies, playlists, avgDurations)} disabled={!summary}
@@ -239,26 +239,37 @@ export default function Reports() {
           <input type="date" value={to} max={today} onChange={e => setTo(e.target.value)}
             className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
-        <button onClick={() => load()} disabled={loading}
+        <button onClick={() => { setHasFiltered(true); load() }} disabled={loading}
           className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60">
           {loading ? 'Se încarcă...' : 'Filtrează'}
         </button>
         {(agencyId || from || to) && (
           <button onClick={() => {
-            setAgencyId(''); setFrom(''); setTo('')
-            load({ agencyId: '', from: '', to: '' })
+            setAgencyId(''); setFrom(''); setTo(''); setHasFiltered(false); setSummary(null); setLogs([])
           }} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-600">
             Resetează
           </button>
         )}
       </div>
 
-      {error && (
+      {error && hasFiltered && (
         <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
           {error}
         </div>
       )}
 
+      {!hasFiltered && (
+        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mb-4 opacity-40">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+            <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/>
+          </svg>
+          <p className="text-sm">Selectează perioada și apasă <strong className="text-gray-500">Filtrează</strong> pentru a vedea raportul.</p>
+        </div>
+      )}
+
+      {hasFiltered && (
+      <>
       {/* Carduri sumar */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-5">
@@ -444,6 +455,8 @@ export default function Reports() {
           </table>
         </div>
       </div>
+      </>
+      )}
     </div>
   )
 }
