@@ -32,7 +32,7 @@ function fmtDurationLong(sec) {
   return `${s}s`
 }
 
-const RO_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
+const RO_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 function fmtDateDisplay(val) {
   if (!val) return '—'
   const [y, m, d] = val.split('-')
