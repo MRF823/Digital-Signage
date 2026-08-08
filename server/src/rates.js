@@ -42,17 +42,26 @@ async function scrapeCEC() {
 
 async function fetchBNR() {
   try {
-    const res = await fetch('https://www.bnr.ro/nbrfxrates.xml', {
+    const body = `limit=1&valute=${CURRENCIES.join(',')}`
+    const res = await fetch('https://www.bnr.ro/seriizilnice', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Referer': 'https://www.bnr.ro/Cursul-de-schimb-3544.aspx',
+      },
+      body,
       signal: AbortSignal.timeout(10_000),
     })
-    const xml = await res.text()
+    const json = await res.json()
+    if (json.error !== 0 || !json.data) return null
+
+    const dayData = Object.values(json.data)[0] // { EUR: { valuta: '5.25' }, ... }
     const rates = {}
-
     for (const currency of CURRENCIES) {
-      const match = xml.match(new RegExp(`<Rate currency="${currency}">([\\.\\d]+)<`))
-      if (match) rates[currency] = parseFloat(match[1])
+      const val = parseFloat(dayData?.[currency]?.valuta)
+      if (!isNaN(val)) rates[currency] = val
     }
-
     return Object.keys(rates).length >= 2 ? rates : null
   } catch (err) {
     console.warn('BNR fetch error:', err.message)
