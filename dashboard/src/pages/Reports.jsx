@@ -258,31 +258,19 @@ export default function Reports() {
         </div>
       )}
 
-      {!hasFiltered && (
-        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mb-4 opacity-40">
-            <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
-            <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/>
-          </svg>
-          <p className="text-sm">Selectează perioada și apasă <strong className="text-gray-500">Filtrează</strong> pentru a vedea raportul.</p>
-        </div>
-      )}
-
-      {hasFiltered && (
-      <>
       {/* Carduri sumar */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-5">
           <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1">Total redări</p>
-          <p className="text-3xl font-bold text-gray-800">{totalPlays}</p>
+          <p className="text-3xl font-bold text-gray-800">{summary ? totalPlays : '—'}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-5">
           <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1">Durată totală rulată</p>
-          <p className="text-3xl font-bold text-blue-600">{fmtDurationLong(totalDuration)}</p>
+          <p className="text-3xl font-bold text-blue-600">{summary ? fmtDurationLong(totalDuration) : '—'}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-5">
           <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1">Fișiere unice</p>
-          <p className="text-3xl font-bold text-gray-800">{uniqueFiles}</p>
+          <p className="text-3xl font-bold text-gray-800">{summary ? uniqueFiles : '—'}</p>
         </div>
       </div>
 
@@ -455,8 +443,6 @@ export default function Reports() {
           </table>
         </div>
       </div>
-      </>
-      )}
     </div>
   )
 }
