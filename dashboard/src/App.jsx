@@ -101,9 +101,9 @@ function Sidebar() {
               <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4" stroke="white" strokeWidth="2" fill="none"/>
             </svg>
           </div>
-          <span className="text-white font-bold text-base tracking-tight">BancaSign</span>
+          <span className="text-white font-bold text-base tracking-tight">DisplayIQ</span>
         </div>
-        <p className="text-slate-500 text-xs mt-1 ml-0.5">Digital Signage · CEC Bank</p>
+        <p className="text-slate-500 text-xs mt-1 ml-0.5">Digital Signage</p>
         <span className="mt-1.5 inline-block text-xs font-mono bg-slate-800 text-slate-400 px-2 py-0.5 rounded">Dashboard · :{window.location.port}</span>
       </div>
 

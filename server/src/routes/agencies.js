@@ -5,7 +5,7 @@ import { pushPlaylist } from '../websocket.js'
 async function geocode(address) {
   try {
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`
-    const res = await fetch(url, { headers: { 'User-Agent': 'BancaSign/1.0' } })
+    const res = await fetch(url, { headers: { 'User-Agent': 'DisplayIQ/1.0' } })
     const data = await res.json()
     if (data.length > 0) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
   } catch {}

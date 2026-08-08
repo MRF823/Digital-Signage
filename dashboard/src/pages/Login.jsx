@@ -27,7 +27,7 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-blue-950 flex items-center justify-center">
       <form onSubmit={submit} className="bg-white rounded-xl shadow-lg p-8 w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-blue-900 mb-6 text-center">BancaSign</h1>
+        <h1 className="text-2xl font-bold text-blue-900 mb-6 text-center">DisplayIQ</h1>
         {error && <p className="text-red-600 text-sm mb-4 bg-red-50 p-2 rounded">{error}</p>}
         <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">Utilizator</label>
         <input id="username" value={username} onChange={e => setUsername(e.target.value)}

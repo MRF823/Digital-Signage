@@ -1,4 +1,4 @@
-const QUEUE_KEY = 'bancasign_play_queue'
+const QUEUE_KEY = 'displayiq_play_queue'
 
 export function getQueue() {
   try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]') } catch { return [] }
