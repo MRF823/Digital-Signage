@@ -202,10 +202,8 @@ export default function TVs() {
                           <div className="flex items-start gap-1.5">
                             <span className="text-gray-400 mt-0.5 flex-shrink-0"><IconLocation /></span>
                             <div>
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <p className="font-medium text-gray-700">{g.agency_name}</p>
-                                <span className="text-xs font-mono bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded">ID:{g.agency_id}</span>
-                              </div>
+                              <p className="font-medium text-gray-700">{g.agency_name}</p>
+                              <span className="text-xs font-mono bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded self-start">ID:{g.agency_id}</span>
                               {g.city && <p className="text-xs text-gray-400">{g.city}</p>}
                             </div>
                           </div>
