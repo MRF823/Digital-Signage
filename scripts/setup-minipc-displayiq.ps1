@@ -6,6 +6,44 @@
 $agencyId = Read-Host "Agency ID (ex: 12 pentru Ana Tower)"
 $tvLabel  = Read-Host "Label TV exact ca in dashboard (ex: Tv Vitrina)"
 
+$repoDir = "C:\Users\$env:USERNAME\Digital-Signage"
+$serverDir = "$repoDir\server"
+
+# ── [1/5] Git clone repo ─────────────────────────────────────
+Write-Host ""
+Write-Host "[1/5] Descarcare Digital-Signage..." -ForegroundColor Cyan
+
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    Write-Host "      Instalare Git via winget..." -ForegroundColor Yellow
+    winget install Git.Git --accept-source-agreements --accept-package-agreements --silent
+    $env:PATH += ";C:\Program Files\Git\cmd"
+}
+
+if (Test-Path $repoDir) {
+    Write-Host "      Repo deja exista, actualizare..." -ForegroundColor Yellow
+    cd $repoDir
+    git pull
+} else {
+    git clone https://github.com/MRF823/Digital-Signage.git $repoDir
+}
+Write-Host "      OK." -ForegroundColor Green
+
+# ── [2/5] npm install in server ──────────────────────────────
+Write-Host "[2/5] Instalare dependinte server..." -ForegroundColor Cyan
+cd $serverDir
+npm install --omit=dev
+Write-Host "      OK." -ForegroundColor Green
+
+# ── [3/5] PM2 update agent ───────────────────────────────────
+Write-Host "[3/5] Pornire update agent (PM2)..." -ForegroundColor Cyan
+pm2 delete signage-update-agent 2>$null
+pm2 start update-agent.cjs --name signage-update-agent
+pm2 save
+Write-Host "      OK." -ForegroundColor Green
+
+# ── [4/5] Edge autostart (registry) ─────────────────────────
+Write-Host "[4/5] Configurare Edge autostart..." -ForegroundColor Cyan
+
 $tvEncoded = [Uri]::EscapeDataString($tvLabel)
 $url  = "http://92.5.28.167:4000/player?agencyId=$agencyId&tvId=$tvEncoded"
 $edge = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
@@ -13,19 +51,20 @@ if (-not (Test-Path $edge)) { $edge = "C:\Program Files\Microsoft\Edge\Applicati
 
 $cmd = "`"$edge`" --app=`"$url`" --start-maximized --no-first-run"
 
-# Sterge orice intrare veche
 Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "BancaSign" -ErrorAction SilentlyContinue
 Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "DisplayIQ" -ErrorAction SilentlyContinue
-
-# Adauga intrarea noua
 New-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "DisplayIQ" -Value $cmd -PropertyType String -Force | Out-Null
 
-# Dezactiveaza sleep si screensaver
+Write-Host "      OK." -ForegroundColor Green
+
+# ── [5/5] Setari Windows ─────────────────────────────────────
+Write-Host "[5/5] Dezactivare sleep, screensaver, hibernare..." -ForegroundColor Cyan
 powercfg /change standby-timeout-ac 0
 powercfg /change standby-timeout-dc 0
 powercfg /change monitor-timeout-ac 0
 powercfg /change monitor-timeout-dc 0
 powercfg /change hibernate-timeout-ac 0
+Write-Host "      OK." -ForegroundColor Green
 
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Cyan
