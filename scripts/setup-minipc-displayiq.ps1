@@ -34,18 +34,14 @@ cd $serverDir
 npm install --omit=dev
 Write-Host "      OK." -ForegroundColor Green
 
-# ── [3/5] PM2 update agent ───────────────────────────────────
-Write-Host "[3/5] Pornire update agent (PM2)..." -ForegroundColor Cyan
-pm2 delete signage-update-agent 2>$null
-pm2 start update-agent.cjs --name signage-update-agent
-pm2 save
-
-# Auto-start la boot via Task Scheduler
-$action = New-ScheduledTaskAction -Execute "pm2" -Argument "resurrect" -WorkingDirectory $serverDir
+# ── [3/5] Update agent via Task Scheduler (Node direct) ──────
+Write-Host "[3/5] Configurare update agent..." -ForegroundColor Cyan
+$node = (Get-Command node).Source
+$action = New-ScheduledTaskAction -Execute $node -Argument "update-agent.cjs" -WorkingDirectory $serverDir
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
-$settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit 0
+$settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit 0 -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
 Register-ScheduledTask -TaskName "DisplayIQ-UpdateAgent" -Action $action -Trigger $trigger -Settings $settings -RunLevel Highest -Force | Out-Null
-
+Start-ScheduledTask -TaskName "DisplayIQ-UpdateAgent"
 Write-Host "      OK." -ForegroundColor Green
 
 # ── [4/5] Edge autostart (registry) ─────────────────────────
