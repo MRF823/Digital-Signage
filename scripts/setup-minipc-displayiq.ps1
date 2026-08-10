@@ -39,6 +39,13 @@ Write-Host "[3/5] Pornire update agent (PM2)..." -ForegroundColor Cyan
 pm2 delete signage-update-agent 2>$null
 pm2 start update-agent.cjs --name signage-update-agent
 pm2 save
+
+# Auto-start la boot via Task Scheduler
+$action = New-ScheduledTaskAction -Execute "pm2" -Argument "resurrect" -WorkingDirectory $serverDir
+$trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+$settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit 0
+Register-ScheduledTask -TaskName "DisplayIQ-UpdateAgent" -Action $action -Trigger $trigger -Settings $settings -RunLevel Highest -Force | Out-Null
+
 Write-Host "      OK." -ForegroundColor Green
 
 # ── [4/5] Edge autostart (registry) ─────────────────────────
