@@ -4,7 +4,7 @@ chcp 65001 >nul
 
 echo.
 echo ============================================================
-echo    BancaSign  ^|  Setup Mini PC  ^|  Windows
+echo    DisplayIQ  ^|  Setup Mini PC  ^|  Windows
 echo ============================================================
 echo.
 
@@ -27,7 +27,7 @@ set "CHROME=C:\Program Files\Google\Chrome\Application\chrome.exe"
 if not exist "!CHROME!" set "CHROME=C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
 
 set "STARTUP_DIR=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
-set "VBS_FILE=!STARTUP_DIR!\BancaSign-Kiosk.vbs"
+set "VBS_FILE=!STARTUP_DIR!\DisplayIQ-Kiosk.vbs"
 set "PS1=%TEMP%\bancasign_setup.ps1"
 
 echo  Configurare:
@@ -107,7 +107,7 @@ echo    OK ^> confirma cu parola daca ti-o cere
 echo.
 echo  La urmatoarea repornire a PC-ului:
 echo    - Windows se logheaza automat
-echo    - Chrome porneste in kiosk si se conecteaza la BancaSign
+echo    - Chrome porneste in kiosk si se conecteaza la DisplayIQ
 echo    - TV-ul apare online in dashboard
 echo.
 echo  Verifica in dashboard DisplayIQ ca TV-ul "!TV_LABEL!" este:

@@ -4,7 +4,7 @@ chcp 65001 >nul
 
 echo.
 echo ============================================================
-echo    BancaSign ^| Setup TV Vitrina ^| Windows
+echo    DisplayIQ ^| Setup TV Vitrina ^| Windows
 echo ============================================================
 echo.
 
@@ -17,7 +17,7 @@ if %errorLevel% neq 0 (
 )
 
 REM ── Directorul de instalare ───────────────────────────────────
-set INSTALL_DIR=C:\BancaSign
+set INSTALL_DIR=C:\DisplayIQ
 set REPO_DIR=%INSTALL_DIR%\Digital-Signage
 set PLAYER_DIR=%REPO_DIR%\player
 set STARTUP_DIR=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
@@ -60,7 +60,7 @@ if not exist "%CHROME_PATH%" (
 )
 
 REM ── PASUL 4: Clonare / Actualizare repo ──────────────────────
-echo [4/8] Clonare / Actualizare repo BancaSign...
+echo [4/8] Clonare / Actualizare repo DisplayIQ...
 if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
 if exist "%REPO_DIR%\.git" (
     echo       Repo existent - actualizare...
@@ -97,7 +97,7 @@ echo [7/8] Configurare Chrome kiosk la pornire Windows...
 set CHROME_PATH=C:\Program Files\Google\Chrome\Application\chrome.exe
 if not exist "%CHROME_PATH%" set CHROME_PATH=C:\Program Files (x86)\Google\Chrome\Application\chrome.exe
 
-set VBS_FILE=%STARTUP_DIR%\BancaSign-Vitrina.vbs
+set VBS_FILE=%STARTUP_DIR%\DisplayIQ-Vitrina.vbs
 (
     echo Set WshShell = CreateObject^("WScript.Shell"^)
     echo WshShell.Run """"%CHROME_PATH%"""" ^& _
@@ -136,7 +136,7 @@ echo.
 echo  1. Seteaza auto-login Windows (fara parola la startup):
 echo     Win+R ^> netplwiz ^> debifezi "Users must enter..."
 echo.
-echo  2. In dashboard BancaSign, adauga TV-ul in agentia corecta:
+echo  2. In dashboard DisplayIQ, adauga TV-ul in agentia corecta:
 echo     Agentii ^> Agentia ta ^> + TV
 echo     Label: Tv Vitrina  (sau orice nume, ex: TV-1, TV Zona)
 echo     ATENTIE: NU pune "TV schimb valutar" - acela e pentru forex!
