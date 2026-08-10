@@ -90,6 +90,20 @@ export const getForexTVs = () => api.get('/api/tvs/forex').then(r => r.data)
 export const setForexMode = (tvId, forex_mode) => api.patch(`/api/tvs/${tvId}/forex`, { forex_mode }).then(r => r.data)
 export const getForexRates = () => api.get('/api/forex/rates').then(r => r.data)
 
+export const getInfoTVs = () => api.get('/api/tvs/info').then(r => r.data)
+export const getInfoDocs = (agencyId) => api.get(`/api/info/${agencyId}`).then(r => r.data)
+export const uploadInfoDoc = (agencyId, file, side, onProgress) =>
+  api.post(`/api/info/${agencyId}/upload`, (() => { const f = new FormData(); f.append('file', file); f.append('side', side); return f })(), {
+    onUploadProgress: e => onProgress?.(Math.round((e.loaded * 100) / e.total)),
+  }).then(r => r.data)
+export const deleteInfoDoc = (docId) => api.delete(`/api/info/doc/${docId}`)
+export const setInfoRotation = (agencyId, seconds) => api.put(`/api/info/${agencyId}/rotation`, { seconds }).then(r => r.data)
+export const setInfoSchedule = (agencyId, on_time, off_time) => api.put(`/api/info/${agencyId}/schedule`, { on_time, off_time }).then(r => r.data)
+export const toggleInfoMode = (tvId) => api.post(`/api/info/tv/${tvId}/toggle`).then(r => r.data)
+
+export const getSettings = () => api.get('/api/settings').then(r => r.data)
+export const updateSettings = (data) => api.put('/api/settings', data).then(r => r.data)
+
 export const mediaUrl = (filename) => `${BASE}/api/media/${filename}`
 
 export default api
