@@ -89,7 +89,7 @@ echo       OK.
 REM ── [4/4] Test imediat ───────────────────────────────────────
 echo [4/4] Lansare Chrome pentru test...
 if exist "!CHROME!" (
-    powershell -NoProfile -Command "$tv=[Uri]::EscapeDataString('!TV_LABEL!'); $url='http://92.5.28.167:4000/player?agencyId=!AGENCY_ID!'+[char]38+'tvId='+$tv; Start-Process '!CHROME!' -ArgumentList '--kiosk','--noerrdialogs','--disable-infobars','--disable-session-crashed-bubble','--edge-kiosk-idle-timeout-minutes=0',$url"
+    powershell -NoProfile -Command "$tv=[Uri]::EscapeDataString('!TV_LABEL!'); $url='http://92.5.28.167:4000/player?agencyId=!AGENCY_ID!'+[char]38+'tvId='+$tv; Start-Process '!CHROME!' -ArgumentList ('--app='+$url),'--start-fullscreen','--no-first-run'"
     echo       Chrome lansat in kiosk.
 ) else (
     echo       Chrome nu a fost gasit - test sarit.
