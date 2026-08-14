@@ -13,6 +13,8 @@ import tvsRoutes from './routes/tvs.js'
 import groupRoutes from './routes/groups.js'
 import scheduleRoutes from './routes/schedules.js'
 import campaignRoutes from './routes/campaigns.js'
+import infoRoutes, { serveInfoFile } from './routes/info.js'
+import settingsRoutes from './routes/settings.js'
 import { loginHandler, requireAuth } from './auth.js'
 import rateLimit from 'express-rate-limit'
 import { initScheduler } from './scheduler.js'
@@ -82,8 +84,93 @@ app.get('/api/reports/summary', requireAuth, (req, res) => {
     res.status(500).json({ error: e.message })
   }
 })
+app.get('/api/reports/uptime', requireAuth, (req, res) => {
+  const { agency_id, tv_label, date } = req.query
+  if (!agency_id || !tv_label || !date) return res.status(400).json({ error: 'agency_id, tv_label, date sunt obligatorii' })
+  try {
+    const db = getDb()
+    const dayStart = `${date} 00:00:00`
+    const dayEnd = `${date} 23:59:59`
+
+    // Sesiuni care se suprapun cu ziua cerută
+    const sessions = db.prepare(`
+      SELECT connected_at, disconnected_at FROM tv_uptime
+      WHERE agency_id = ? AND tv_label = ?
+        AND connected_at <= ? AND (disconnected_at >= ? OR disconnected_at IS NULL)
+      ORDER BY connected_at
+    `).all(agency_id, tv_label, dayEnd, dayStart)
+
+    // Calculează perioadele offline (golurile dintre sesiuni)
+    const offline = []
+    let totalOnlineSec = 0
+
+    const clamp = (t, min, max) => t < min ? min : t > max ? max : t
+    const toSec = t => new Date(t.replace(' ', 'T') + 'Z').getTime() / 1000
+
+    const dayStartSec = toSec(dayStart)
+    const dayEndSec = toSec(dayEnd)
+
+    // Perioadele online (clampate la ziua cerută)
+    const onlinePeriods = sessions.map(s => ({
+      from: clamp(toSec(s.connected_at), dayStartSec, dayEndSec),
+      to: clamp(s.disconnected_at ? toSec(s.disconnected_at) : Date.now() / 1000, dayStartSec, dayEndSec)
+    })).filter(p => p.to > p.from)
+
+    onlinePeriods.forEach(p => { totalOnlineSec += p.to - p.from })
+
+    // Golurile = perioade offline
+    let cursor = dayStartSec
+    for (const p of onlinePeriods) {
+      if (p.from > cursor) offline.push({ from: cursor, to: p.from })
+      cursor = Math.max(cursor, p.to)
+    }
+    const nowSec = Math.min(Date.now() / 1000, dayEndSec)
+    if (cursor < nowSec) offline.push({ from: cursor, to: nowSec })
+
+    const fmt = sec => new Date(sec * 1000).toISOString().replace('T', ' ').slice(0, 19)
+    const fmtDur = sec => {
+      const h = Math.floor(sec / 3600)
+      const m = Math.floor((sec % 3600) / 60)
+      return h > 0 ? `${h}h ${m}min` : `${m}min`
+    }
+
+    res.json({
+      date,
+      agency_id,
+      tv_label,
+      total_online_seconds: Math.round(totalOnlineSec),
+      total_online_formatted: fmtDur(totalOnlineSec),
+      total_offline_seconds: Math.round(nowSec - dayStartSec - totalOnlineSec),
+      total_offline_formatted: fmtDur(Math.max(0, nowSec - dayStartSec - totalOnlineSec)),
+      offline_periods: offline.map(p => ({
+        from: fmt(p.from),
+        to: fmt(p.to),
+        duration_seconds: Math.round(p.to - p.from),
+        duration_formatted: fmtDur(p.to - p.from)
+      }))
+    })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 // File serving is public — filenames are random UUIDs, not guessable; needed for <video> elements
 app.get('/api/media/:filename', serveFile)
+app.get('/api/info/file/:filename', serveInfoFile)
+
+// Public endpoint for player — check if docs changed (no auth needed, filenames are random UUIDs)
+app.get('/api/info/public/:agencyId', (req, res) => {
+  try {
+    const db = getDb()
+    const agencyId = parseInt(req.params.agencyId, 10)
+    if (isNaN(agencyId)) return res.status(400).json({ error: 'Invalid agencyId' })
+    const docs = db.prepare('SELECT * FROM info_docs WHERE agency_id = ? ORDER BY side, position').all(agencyId)
+    const row = db.prepare('SELECT info_rotation_seconds FROM agencies WHERE id = ?').get(agencyId)
+    res.json({ docs, rotation_seconds: row?.info_rotation_seconds ?? 5 })
+  } catch {
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
 
 // Upcoming campaign media — public, returnează filenames pentru campaniile care incep in urmatoarele `days` zile
 app.get('/api/upcoming-media', (req, res) => {
@@ -123,6 +210,8 @@ app.use('/api/tvs', requireAuth, tvsRoutes)
 app.use('/api/groups', requireAuth, groupRoutes)
 app.use('/api/groups/:id/schedules', requireAuth, scheduleRoutes)
 app.use('/api/campaigns', requireAuth, campaignRoutes)
+app.use('/api/info', requireAuth, infoRoutes)
+app.use('/api/settings', requireAuth, settingsRoutes)
 app.post('/api/players/reload', requireAuth, (req, res) => {
   pushReloadToAll()
   res.json({ ok: true })
@@ -146,6 +235,16 @@ app.post('/api/players/reload-all', requireAuth, (req, res) => {
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
+
+const playerDist = join(__dirname, '../../player/dist')
+if (existsSync(playerDist)) {
+  app.use('/player', express.static(playerDist))
+  app.get(/^\/player/, (req, res) => {
+    res.sendFile(join(playerDist, 'index.html'), err => {
+      if (err) res.status(503).send('Player temporarily unavailable')
+    })
+  })
+}
 
 const dashDist = join(__dirname, '../../dashboard/dist')
 if (existsSync(dashDist)) {

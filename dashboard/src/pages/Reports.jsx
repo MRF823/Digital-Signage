@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import * as XLSX from 'xlsx'
-import { getPlayLog, getReportsSummary, getAgencies, getGroups, getPlaylist, getGroupPlaylist } from '../api'
+import { getPlayLog, getReportsSummary, getAgencies, getGroups, getPlaylist, getGroupPlaylist, getUptimeReport } from '../api'
 
 function fmt(dateStr) {
   if (!dateStr) return '—'
@@ -153,7 +153,33 @@ export default function Reports() {
       })
       .catch(e => { setSummary(null); setLogs([]); setError('Eroare la încărcare: ' + (e?.message || 'unknown')) })
       .finally(() => setLoading(false))
+
+    // Uptime per TV — doar dacă e o singură zi
+    const singleDay = f && t && f === t ? f : (!f && !t ? new Date().toISOString().slice(0, 10) : null)
+    if (singleDay) {
+      setUptimeLoading(true)
+      // Obține TV-urile din agenția selectată sau toate
+      const targetAgencies = aid ? agencies.filter(a => String(a.id) === String(aid)) : agencies
+      Promise.all(
+        targetAgencies.flatMap(a =>
+          (a.tvs || []).map(tv =>
+            getUptimeReport(a.id, tv.label, singleDay)
+              .then(d => ({ key: `${a.id}:${tv.label}`, data: d }))
+              .catch(() => null)
+          )
+        )
+      ).then(results => {
+        const map = {}
+        results.filter(Boolean).forEach(r => { map[r.key] = r.data })
+        setUptimeData(map)
+      }).finally(() => setUptimeLoading(false))
+    } else {
+      setUptimeData({})
+    }
   }
+
+  const [uptimeData, setUptimeData] = useState({}) // { "agencyId:tvLabel": data }
+  const [uptimeLoading, setUptimeLoading] = useState(false)
 
   const [nextRefresh, setNextRefresh] = useState(60)
 
@@ -292,6 +318,76 @@ export default function Reports() {
           <p className="text-3xl font-bold text-gray-800">{summary ? uniqueFiles : '—'}</p>
         </div>
       </div>
+
+      {/* Uptime / Downtime per TV */}
+      {(Object.keys(uptimeData).length > 0 || uptimeLoading) && (
+        <div className="mb-6">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">
+            Funcționare TV pe zi
+            {uptimeLoading && <span className="ml-2 text-gray-400 font-normal">Se încarcă...</span>}
+          </h3>
+          <div className="grid grid-cols-2 gap-4">
+            {Object.entries(uptimeData).map(([key, d]) => {
+              const [agId, ...tvParts] = key.split(':')
+              const tvLabel = tvParts.join(':')
+              const agency = agencyMap[agId]
+              return (
+                <div key={key} className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <p className="font-semibold text-gray-800">{agency?.name ?? `#${agId}`}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{tvLabel}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-green-600 font-semibold">✅ {d.total_online_formatted} online</p>
+                      {d.total_offline_seconds > 0 && (
+                        <p className="text-xs text-red-500 font-semibold">❌ {d.total_offline_formatted} offline</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Bara uptime vizuală */}
+                  {(() => {
+                    const total = d.total_online_seconds + d.total_offline_seconds
+                    const pct = total > 0 ? Math.round((d.total_online_seconds / total) * 100) : 0
+                    return (
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-gray-400">Uptime</span>
+                          <span className={`text-xs font-bold ${pct >= 90 ? 'text-green-600' : pct >= 50 ? 'text-amber-600' : 'text-red-500'}`}>{pct}%</span>
+                        </div>
+                        <div className="h-2 bg-red-100 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full ${pct >= 90 ? 'bg-green-500' : pct >= 50 ? 'bg-amber-400' : 'bg-red-400'}`}
+                            style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    )
+                  })()}
+
+                  {/* Perioade offline */}
+                  {d.offline_periods.length === 0 ? (
+                    <p className="text-xs text-green-600">Nicio perioadă de nefuncționare înregistrată.</p>
+                  ) : (
+                    <div>
+                      <p className="text-xs text-gray-400 font-medium mb-2">Perioade nefuncționare:</p>
+                      <div className="space-y-1">
+                        {d.offline_periods.map((p, i) => (
+                          <div key={i} className="flex items-center justify-between text-xs bg-red-50 rounded px-3 py-1.5">
+                            <span className="text-red-600 font-medium">
+                              {p.from.slice(11, 16)} – {p.to.slice(11, 16)}
+                            </span>
+                            <span className="text-red-400">{p.duration_formatted}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Statistici playlist per agenție */}
       {Object.keys(byAgency).length > 0 && (

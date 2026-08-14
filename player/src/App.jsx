@@ -7,6 +7,7 @@ import VideoPlayer from './components/VideoPlayer'
 import ImageDisplay from './components/ImageDisplay'
 import Ticker from './components/Ticker'
 import ForexDisplay from './components/ForexDisplay'
+import InfoDisplay from './components/InfoDisplay'
 import './transitions.css'
 
 const EXIT_MS = 350
@@ -26,6 +27,11 @@ export default function App() {
   const [ratesData, setRatesData] = useState(null)
   const [forexMode, setForexMode] = useState(false)
   const [forexRates, setForexRates] = useState(null)
+  const [infoMode, setInfoMode] = useState(false)
+  const [infoDocs, setInfoDocs] = useState([])
+  const [infoRotationSeconds, setInfoRotationSeconds] = useState(5)
+  const [infoPowered, setInfoPowered] = useState(true)
+  const infoModeRef = useRef(false)
   const [agencyName, setAgencyName] = useState('')
   const [showAgencyName, setShowAgencyName] = useState(true)
   const [showPlayerLabel, setShowPlayerLabel] = useState(false)
@@ -43,8 +49,11 @@ export default function App() {
       const next2am = new Date()
       next2am.setHours(2, 0, 0, 0)
       if (next2am <= now) next2am.setDate(next2am.getDate() + 1)
-      const msUntil2am = next2am - now
-      return setTimeout(() => window.location.reload(), msUntil2am)
+      const msUntil2am = Math.max(next2am - now, 60 * 60 * 1000)
+      return setTimeout(() => {
+        // Info TVs handle their own update check without reload
+        if (!infoModeRef.current) window.location.reload()
+      }, msUntil2am)
     }
     const id = scheduleNightlyReload()
     return () => clearTimeout(id)
@@ -149,6 +158,17 @@ export default function App() {
     if (msg.type === 'forex_rates_update') {
       setForexRates({ rates: msg.rates, updatedAt: msg.updatedAt })
     }
+    if (msg.type === 'info_mode') {
+      infoModeRef.current = msg.enabled
+      setInfoMode(msg.enabled)
+    }
+    if (msg.type === 'info_docs') {
+      setInfoDocs(msg.docs ?? [])
+      setInfoRotationSeconds(msg.rotation_seconds ?? 5)
+    }
+    if (msg.type === 'info_power') {
+      setInfoPowered(msg.on)
+    }
     if (msg.type === 'sync_advance') {
       advance(false)
     }
@@ -200,6 +220,20 @@ export default function App() {
       return () => clearTimeout(t)
     }
   }, [src, ready, playlist.length, advance])
+
+  if (infoMode) {
+    return (
+      <InfoDisplay
+        docs={infoDocs}
+        rotationSeconds={infoRotationSeconds}
+        powered={infoPowered}
+        onDocsUpdate={(newDocs, newRotSec) => {
+          setInfoDocs(newDocs)
+          setInfoRotationSeconds(newRotSec)
+        }}
+      />
+    )
+  }
 
   if (forexMode) {
     return <ForexDisplay rates={forexRates?.rates} updatedAt={forexRates?.updatedAt} />

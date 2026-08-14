@@ -16,6 +16,17 @@ router.delete('/:tvId', (req, res) => {
   }
 })
 
+router.get('/info', (req, res) => {
+  const db = getDb()
+  const tvs = db.prepare(`
+    SELECT t.id, t.label, t.agency_id, t.info_mode, t.last_seen_at, a.name as agency_name, a.city
+    FROM tvs t
+    JOIN agencies a ON a.id = t.agency_id
+    ORDER BY a.name, t.label
+  `).all()
+  res.json(tvs)
+})
+
 router.get('/forex', (req, res) => {
   const db = getDb()
   const tvs = db.prepare(`

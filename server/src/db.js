@@ -95,6 +95,26 @@ export function initDb(path = './signage.db') {
       played_at TEXT NOT NULL,
       duration_seconds INTEGER
     );
+    CREATE TABLE IF NOT EXISTS tv_uptime (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      agency_id TEXT NOT NULL,
+      tv_label TEXT NOT NULL,
+      connected_at TEXT NOT NULL,
+      disconnected_at TEXT
+    );
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL DEFAULT ''
+    );
+    CREATE TABLE IF NOT EXISTS info_docs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      agency_id INTEGER NOT NULL REFERENCES agencies(id),
+      side TEXT NOT NULL CHECK(side IN ('static','rotativ')),
+      filename TEXT NOT NULL,
+      original_name TEXT NOT NULL,
+      position INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `)
 
   // Migrări pentru coloane noi
@@ -108,6 +128,10 @@ export function initDb(path = './signage.db') {
   try { db.exec('ALTER TABLE agencies ADD COLUMN show_player_label INTEGER NOT NULL DEFAULT 0') } catch {}
   try { db.exec('ALTER TABLE agencies ADD COLUMN address TEXT') } catch {}
   try { db.exec('ALTER TABLE tvs ADD COLUMN forex_mode INTEGER NOT NULL DEFAULT 0') } catch {}
+  try { db.exec('ALTER TABLE tvs ADD COLUMN info_mode INTEGER NOT NULL DEFAULT 0') } catch {}
+  try { db.exec('ALTER TABLE agencies ADD COLUMN info_rotation_seconds INTEGER NOT NULL DEFAULT 5') } catch {}
+  try { db.exec('ALTER TABLE agencies ADD COLUMN info_on_time TEXT') } catch {}
+  try { db.exec('ALTER TABLE agencies ADD COLUMN info_off_time TEXT') } catch {}
 
   // Coordonate implicite per oraș
   const cityCoords = {

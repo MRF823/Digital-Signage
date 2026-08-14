@@ -3,6 +3,12 @@ import { getDb } from './db.js'
 import { getCurrentRates } from './rates.js'
 import { getCurrentForexRates } from './forex.js'
 import { shouldScreenBeOn } from './scheduler.js'
+import { sendOfflineAlert, sendReconnectedAlert } from './mailer.js'
+
+// tvKey -> { timer, agencyName, tvLabel }
+const offlineTimers = new Map()
+// tvKeys pentru care alerta offline a fost deja trimisă (așteptăm reconectare)
+const confirmedOffline = new Set()
 
 // Map: agencyId (string) -> Set of WebSocket clients
 const clients = new Map()
@@ -12,6 +18,9 @@ const tvClients = new Map()
 
 // Set cu TV-urile forex conectate
 const forexClients = new Set()
+
+// Map: agencyId (string) -> Set cu TV-urile info obligatorii conectate
+const infoClients = new Map()
 
 // Set of update agent connections
 const updateAgents = new Set()
@@ -40,23 +49,63 @@ export function initWebSocket(httpServer) {
         clients.get(agencyId).add(ws)
         tvClients.set(`${agencyId}:${tvId}`, ws)
 
+        const tvKey = `${agencyId}:${tvId}`
+        if (offlineTimers.has(tvKey)) {
+          // Reconectat înainte ca alerta să fie trimisă — anulăm silențios
+          const { timer } = offlineTimers.get(tvKey)
+          clearTimeout(timer)
+          offlineTimers.delete(tvKey)
+        } else if (confirmedOffline.has(tvKey)) {
+          // Reconectat după ce alerta offline a fost trimisă — trimite reconectare
+          confirmedOffline.delete(tvKey)
+          let agencyName = ''
+          try {
+            const row = getDb().prepare('SELECT name FROM agencies WHERE id = ?').get(agencyId)
+            agencyName = row?.name || `Agency ${agencyId}`
+          } catch {}
+          sendReconnectedAlert(tvId, agencyName)
+        }
+
         try {
           const db2 = getDb()
           const ip = req.socket.remoteAddress
 
-          // Auto-asignare forex_mode dacă label-ul e "TV schimb valutar"
+          // Log uptime connect
+          db2.prepare(`INSERT INTO tv_uptime (agency_id, tv_label, connected_at) VALUES (?, ?, datetime('now'))`).run(agencyId, tvId)
+
+          // Auto-asignare mod după label
           const isForexTV = typeof tvId === 'string' && tvId.toLowerCase() === 'tv schimb valutar'
+          const isInfoTV = typeof tvId === 'string' && tvId.toLowerCase() === 'tv info obligatorii'
           if (isForexTV) {
             db2.prepare(`UPDATE tvs SET forex_mode = 1, last_seen_at = datetime('now'), ip_address = ? WHERE agency_id = ? AND label = ?`)
+              .run(ip, agencyId, tvId)
+          } else if (isInfoTV) {
+            db2.prepare(`UPDATE tvs SET info_mode = 1, last_seen_at = datetime('now'), ip_address = ? WHERE agency_id = ? AND label = ?`)
               .run(ip, agencyId, tvId)
           } else {
             db2.prepare(`UPDATE tvs SET last_seen_at = datetime('now'), ip_address = ? WHERE agency_id = ? AND label = ?`)
               .run(ip, agencyId, tvId)
           }
 
-          // Verifică forex_mode în DB (poate fi setat și manual din dashboard)
-          const tvRow = db2.prepare('SELECT forex_mode FROM tvs WHERE agency_id = ? AND label = ?').get(agencyId, tvId)
-          const isForex = tvRow?.forex_mode === 1
+          // Verifică modul din DB (label are prioritate față de flag-ul din DB)
+          const tvRow = db2.prepare('SELECT forex_mode, info_mode FROM tvs WHERE agency_id = ? AND label = ?').get(agencyId, tvId)
+          const isForex = isForexTV || tvRow?.forex_mode === 1
+          const isInfo = isInfoTV || tvRow?.info_mode === 1
+
+          if (isInfo) {
+            if (!infoClients.has(agencyId)) infoClients.set(agencyId, new Set())
+            infoClients.get(agencyId).add(ws)
+            if (ws.readyState === 1) {
+              ws.send(JSON.stringify({ type: 'info_mode', enabled: true }))
+              const docs = db2.prepare('SELECT * FROM info_docs WHERE agency_id = ? ORDER BY side, position').all(agencyId)
+              const agencyRow = db2.prepare('SELECT info_rotation_seconds, info_on_time, info_off_time FROM agencies WHERE id = ?').get(agencyId)
+              ws.send(JSON.stringify({ type: 'info_docs', docs, rotation_seconds: agencyRow?.info_rotation_seconds ?? 5 }))
+              if (!shouldScreenBeOn(agencyRow?.info_on_time, agencyRow?.info_off_time)) {
+                ws.send(JSON.stringify({ type: 'info_power', on: false }))
+              }
+            }
+            return
+          }
 
           if (isForex) {
             forexClients.add(ws)
@@ -143,7 +192,30 @@ export function initWebSocket(httpServer) {
     ws.on('close', () => {
       updateAgents.delete(ws)
       forexClients.delete(ws)
-      if (agencyId && tvId) tvClients.delete(`${agencyId}:${tvId}`)
+      if (agencyId && infoClients.has(agencyId)) {
+        infoClients.get(agencyId).delete(ws)
+        if (infoClients.get(agencyId).size === 0) infoClients.delete(agencyId)
+      }
+      if (agencyId && tvId) {
+        const tvKey = `${agencyId}:${tvId}`
+        tvClients.delete(tvKey)
+        // Log uptime disconnect
+        try {
+          getDb().prepare(`UPDATE tv_uptime SET disconnected_at = datetime('now') WHERE agency_id = ? AND tv_label = ? AND disconnected_at IS NULL`).run(agencyId, tvId)
+        } catch {}
+        // Pornește timer 2 min pentru alertă offline
+        let agencyName = ''
+        try {
+          const row = getDb().prepare('SELECT name FROM agencies WHERE id = ?').get(agencyId)
+          agencyName = row?.name || `Agency ${agencyId}`
+        } catch {}
+        const timer = setTimeout(() => {
+          offlineTimers.delete(tvKey)
+          confirmedOffline.add(tvKey)
+          sendOfflineAlert(tvId, agencyName)
+        }, 2 * 60 * 1000)
+        offlineTimers.set(tvKey, { timer, agencyName, tvLabel: tvId })
+      }
       if (agencyId && clients.has(agencyId)) {
         clients.get(agencyId).delete(ws)
         if (clients.get(agencyId).size === 0) clients.delete(agencyId)
@@ -215,6 +287,44 @@ export function pushForexMode(agencyId, tvLabel, enabled) {
     } else {
       forexClients.delete(ws)
     }
+  }
+}
+
+export function pushInfoDocs(agencyId, docs, rotationSeconds) {
+  const msg = JSON.stringify({ type: 'info_docs', docs, rotation_seconds: rotationSeconds })
+  const agencyInfoClients = infoClients.get(String(agencyId))
+  if (!agencyInfoClients) return
+  for (const client of agencyInfoClients) {
+    if (client.readyState === 1) client.send(msg)
+  }
+}
+
+export function pushInfoPower(agencyId, on) {
+  const msg = JSON.stringify({ type: 'info_power', on })
+  const agencyInfoClients = infoClients.get(String(agencyId))
+  if (!agencyInfoClients) return
+  for (const client of agencyInfoClients) {
+    if (client.readyState === 1) client.send(msg)
+  }
+}
+
+export function pushInfoMode(agencyId, tvLabel, enabled) {
+  const key = `${agencyId}:${tvLabel}`
+  const ws = tvClients.get(key)
+  if (!ws || ws.readyState !== 1) return
+  ws.send(JSON.stringify({ type: 'info_mode', enabled }))
+  if (enabled) {
+    try {
+      const db = getDb()
+      const docs = db.prepare('SELECT * FROM info_docs WHERE agency_id = ? ORDER BY side, position').all(agencyId)
+      const agencyRow = db.prepare('SELECT info_rotation_seconds FROM agencies WHERE id = ?').get(agencyId)
+      ws.send(JSON.stringify({ type: 'info_docs', docs, rotation_seconds: agencyRow?.info_rotation_seconds ?? 5 }))
+      if (!infoClients.has(String(agencyId))) infoClients.set(String(agencyId), new Set())
+      infoClients.get(String(agencyId)).add(ws)
+    } catch {}
+  } else {
+    const agencyInfoClients = infoClients.get(String(agencyId))
+    if (agencyInfoClients) agencyInfoClients.delete(ws)
   }
 }
 

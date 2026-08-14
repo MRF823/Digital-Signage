@@ -5,7 +5,7 @@ const _params = new URLSearchParams(window.location.search)
 const AGENCY_ID = _params.get('agencyId') || import.meta.env.VITE_AGENCY_ID || '1'
 const TV_ID = _params.get('tvId') || import.meta.env.VITE_TV_ID || 'TV-1'
 const RECONNECT_MS = 10_000
-const PING_MS = 30_000
+const PING_MS = 15_000
 
 export function useWebSocket(onMessage) {
   const ws = useRef(null)

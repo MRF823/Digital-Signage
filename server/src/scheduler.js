@@ -1,5 +1,5 @@
 import { getDb } from './db.js'
-import { pushPlaylist, pushScreenPower } from './websocket.js'
+import { pushPlaylist, pushScreenPower, pushInfoPower } from './websocket.js'
 import { getActivePlaylist } from './routes/campaigns.js'
 
 // 0=Luni, 1=Marti, ..., 6=Duminica
@@ -44,6 +44,7 @@ export function shouldScreenBeOn(powerOnTime, powerOffTime) {
 // slotId activ per group (in memorie)
 const activeSlotPerGroup = {}
 const screenStatePerGroup = {}
+const infoScreenStatePerAgency = {}
 
 function getGroupDefaultPlaylist(db, groupId) {
   const firstMember = db.prepare('SELECT agency_id FROM group_members WHERE group_id = ? LIMIT 1').get(groupId)
@@ -94,6 +95,23 @@ function checkSchedules() {
   }
 }
 
+function checkInfoPower() {
+  try {
+    const db = getDb()
+    const agencies = db.prepare('SELECT id, info_on_time, info_off_time FROM agencies WHERE info_on_time IS NOT NULL AND info_off_time IS NOT NULL').all()
+    for (const agency of agencies) {
+      const shouldBeOn = shouldScreenBeOn(agency.info_on_time, agency.info_off_time)
+      if (infoScreenStatePerAgency[agency.id] !== shouldBeOn) {
+        infoScreenStatePerAgency[agency.id] = shouldBeOn
+        pushInfoPower(String(agency.id), shouldBeOn)
+        console.log(`Info agenție ${agency.id}: ecran ${shouldBeOn ? 'ON' : 'OFF'}`)
+      }
+    }
+  } catch (err) {
+    console.error('Info power scheduler error:', err)
+  }
+}
+
 function checkCampaigns() {
   try {
     const db = getDb()
@@ -109,9 +127,10 @@ function checkCampaigns() {
 
 export function initScheduler() {
   // Verifică schedule-uri și power la fiecare minut
-  setInterval(() => { checkSchedules(); checkPower() }, 60_000)
+  setInterval(() => { checkSchedules(); checkPower(); checkInfoPower() }, 60_000)
   checkSchedules()
   checkPower()
+  checkInfoPower()
 
   // Verifică campanii la miezul nopții
   const now = new Date()
