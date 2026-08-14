@@ -100,33 +100,13 @@ app.get('/api/reports/uptime', requireAuth, (req, res) => {
       ORDER BY connected_at
     `).all(agency_id, tv_label, dayEnd, dayStart)
 
-    // Calculează perioadele offline (golurile dintre sesiuni)
-    const offline = []
-    let totalOnlineSec = 0
+    // Fără date — nu știm dacă TV-ul a funcționat
+    if (sessions.length === 0) {
+      return res.json({ date, agency_id, tv_label, no_data: true, offline_periods: [], total_online_seconds: 0, total_offline_seconds: 0 })
+    }
 
     const clamp = (t, min, max) => t < min ? min : t > max ? max : t
     const toSec = t => new Date(t.replace(' ', 'T') + 'Z').getTime() / 1000
-
-    const dayStartSec = toSec(dayStart)
-    const dayEndSec = toSec(dayEnd)
-
-    // Perioadele online (clampate la ziua cerută)
-    const onlinePeriods = sessions.map(s => ({
-      from: clamp(toSec(s.connected_at), dayStartSec, dayEndSec),
-      to: clamp(s.disconnected_at ? toSec(s.disconnected_at) : Date.now() / 1000, dayStartSec, dayEndSec)
-    })).filter(p => p.to > p.from)
-
-    onlinePeriods.forEach(p => { totalOnlineSec += p.to - p.from })
-
-    // Golurile = perioade offline
-    let cursor = dayStartSec
-    for (const p of onlinePeriods) {
-      if (p.from > cursor) offline.push({ from: cursor, to: p.from })
-      cursor = Math.max(cursor, p.to)
-    }
-    const nowSec = Math.min(Date.now() / 1000, dayEndSec)
-    if (cursor < nowSec) offline.push({ from: cursor, to: nowSec })
-
     const fmt = sec => new Date(sec * 1000).toISOString().replace('T', ' ').slice(0, 19)
     const fmtDur = sec => {
       const h = Math.floor(sec / 3600)
@@ -134,14 +114,46 @@ app.get('/api/reports/uptime', requireAuth, (req, res) => {
       return h > 0 ? `${h}h ${m}min` : `${m}min`
     }
 
+    const dayStartSec = toSec(dayStart)
+    const dayEndSec = toSec(dayEnd)
+    const nowSec = Math.min(Date.now() / 1000, dayEndSec)
+
+    // Perioadele online (clampate la ziua cerută)
+    const onlinePeriods = sessions.map(s => ({
+      from: clamp(toSec(s.connected_at), dayStartSec, dayEndSec),
+      to: clamp(s.disconnected_at ? toSec(s.disconnected_at) : nowSec, dayStartSec, dayEndSec)
+    })).filter(p => p.to > p.from)
+
+    let totalOnlineSec = 0
+    onlinePeriods.forEach(p => { totalOnlineSec += p.to - p.from })
+
+    // Offline = golurile ÎNTRE sesiuni (nu de la 00:00 dacă n-avem date)
+    // Începem de la primul connect cunoscut, nu de la 00:00
+    const trackingStart = onlinePeriods[0]?.from ?? nowSec
+    const offline = []
+    let cursor = trackingStart
+    for (const p of onlinePeriods) {
+      if (p.from > cursor + 30) offline.push({ from: cursor, to: p.from }) // ignoră gap-uri < 30s (reconectări rapide)
+      cursor = Math.max(cursor, p.to)
+    }
+    // Dacă ultima sesiune e deschisă (connected, fără disconnect) — nu adăugăm offline după
+    const lastSession = sessions[sessions.length - 1]
+    if (lastSession.disconnected_at && cursor < nowSec) {
+      offline.push({ from: cursor, to: nowSec })
+    }
+
+    const totalOfflineSec = offline.reduce((s, p) => s + (p.to - p.from), 0)
+
     res.json({
       date,
       agency_id,
       tv_label,
+      no_data: false,
+      tracking_start: fmt(trackingStart),
       total_online_seconds: Math.round(totalOnlineSec),
       total_online_formatted: fmtDur(totalOnlineSec),
-      total_offline_seconds: Math.round(nowSec - dayStartSec - totalOnlineSec),
-      total_offline_formatted: fmtDur(Math.max(0, nowSec - dayStartSec - totalOnlineSec)),
+      total_offline_seconds: Math.round(totalOfflineSec),
+      total_offline_formatted: fmtDur(totalOfflineSec),
       offline_periods: offline.map(p => ({
         from: fmt(p.from),
         to: fmt(p.to),

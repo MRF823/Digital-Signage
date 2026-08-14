@@ -347,7 +347,7 @@ export default function Reports() {
                   </div>
 
                   {/* Bara uptime vizuală */}
-                  {(() => {
+                  {!d.no_data && (() => {
                     const total = d.total_online_seconds + d.total_offline_seconds
                     const pct = total > 0 ? Math.round((d.total_online_seconds / total) * 100) : 0
                     return (
@@ -364,10 +364,14 @@ export default function Reports() {
                     )
                   })()}
 
+                  {d.no_data && (
+                    <p className="text-xs text-gray-400 italic">Fără date — tracking-ul a pornit după această dată.</p>
+                  )}
+
                   {/* Perioade offline */}
-                  {d.offline_periods.length === 0 ? (
-                    <p className="text-xs text-green-600">Nicio perioadă de nefuncționare înregistrată.</p>
-                  ) : (
+                  {!d.no_data && d.offline_periods.length === 0 ? (
+                    <p className="text-xs text-green-600">✓ Nicio perioadă de nefuncționare înregistrată.</p>
+                  ) : !d.no_data && (
                     <div>
                       <p className="text-xs text-gray-400 font-medium mb-2">Perioade nefuncționare:</p>
                       <div className="space-y-1">
