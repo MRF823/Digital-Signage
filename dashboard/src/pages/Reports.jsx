@@ -339,10 +339,15 @@ export default function Reports() {
                       <p className="text-xs text-gray-400 mt-0.5">{tvLabel}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-green-600 font-semibold">✅ {d.total_online_formatted} online</p>
-                      {d.total_offline_seconds > 0 && (
-                        <p className="text-xs text-red-500 font-semibold">❌ {d.total_offline_formatted} offline</p>
-                      )}
+                      {d.no_data
+                        ? <p className="text-xs text-red-500 font-semibold">❌ offline</p>
+                        : <>
+                          <p className="text-xs text-green-600 font-semibold">✅ {d.total_online_formatted} online</p>
+                          {d.total_offline_seconds > 0 && (
+                            <p className="text-xs text-red-500 font-semibold">❌ {d.total_offline_formatted} offline</p>
+                          )}
+                        </>
+                      }
                     </div>
                   </div>
 
@@ -365,7 +370,7 @@ export default function Reports() {
                   })()}
 
                   {d.no_data && (
-                    <p className="text-xs text-gray-400 italic">Fără date — tracking-ul a pornit după această dată.</p>
+                    <p className="text-xs text-red-500 font-semibold">❌ Offline toată ziua</p>
                   )}
 
                   {/* Perioade offline */}
