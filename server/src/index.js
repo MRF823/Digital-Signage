@@ -108,8 +108,12 @@ app.get('/api/reports/uptime', requireAuth, (req, res) => {
 
     const clamp = (t, min, max) => t < min ? min : t > max ? max : t
     const toSec = t => new Date(t.replace(' ', 'T') + 'Z').getTime() / 1000
-    // Afișează ora României (Europe/Bucharest)
-    const fmt = sec => new Date(sec * 1000).toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest', hour: '2-digit', minute: '2-digit', hour12: false })
+    // Afișează ora României (UTC+3 vara / EEST)
+    const BUCHAREST_OFFSET = 3 * 3600 * 1000
+    const fmt = sec => {
+      const local = new Date(sec * 1000 + BUCHAREST_OFFSET)
+      return local.toISOString().slice(11, 16) // HH:MM
+    }
     const fmtDur = sec => {
       const h = Math.floor(sec / 3600)
       const m = Math.floor((sec % 3600) / 60)
