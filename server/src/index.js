@@ -130,8 +130,18 @@ app.get('/api/reports/uptime', requireAuth, (req, res) => {
       to: clamp(s.disconnected_at ? toSec(s.disconnected_at) : nowSec, dayStartSec, dayEndSec)
     })).filter(p => p.to > p.from)
 
+    // Merge perioade suprapuse (ex: sesiuni multiple cu null disconnected_at)
+    // înainte de a calcula totalul online — altfel se numără de mai multe ori
+    const merged = []
+    for (const p of onlinePeriods) {
+      if (merged.length === 0 || p.from > merged[merged.length - 1].to + 1) {
+        merged.push({ from: p.from, to: p.to })
+      } else {
+        merged[merged.length - 1].to = Math.max(merged[merged.length - 1].to, p.to)
+      }
+    }
     let totalOnlineSec = 0
-    onlinePeriods.forEach(p => { totalOnlineSec += p.to - p.from })
+    merged.forEach(p => { totalOnlineSec += p.to - p.from })
 
     // Offline = golurile ÎNTRE sesiuni (nu de la 00:00 dacă n-avem date)
     // Începem de la primul connect cunoscut, nu de la 00:00
