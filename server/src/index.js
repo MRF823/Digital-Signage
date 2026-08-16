@@ -89,8 +89,9 @@ app.get('/api/reports/uptime', requireAuth, (req, res) => {
   if (!agency_id || !tv_label || !date) return res.status(400).json({ error: 'agency_id, tv_label, date sunt obligatorii' })
   try {
     const db = getDb()
-    const dayStart = `${date} 00:00:00`
-    const dayEnd = `${date} 23:59:59`
+    // Ziua selectată în ora României (Europe/Bucharest = UTC+3 vara, UTC+2 iarna)
+    const dayStartSqlUtc = new Date(`${date}T00:00:00+03:00`).toISOString().replace('T', ' ').slice(0, 19)
+    const dayEndSqlUtc   = new Date(`${date}T23:59:59+03:00`).toISOString().replace('T', ' ').slice(0, 19)
 
     // Sesiuni care se suprapun cu ziua cerută
     const sessions = db.prepare(`
@@ -98,7 +99,7 @@ app.get('/api/reports/uptime', requireAuth, (req, res) => {
       WHERE agency_id = ? AND tv_label = ?
         AND connected_at <= ? AND (disconnected_at >= ? OR disconnected_at IS NULL)
       ORDER BY connected_at
-    `).all(agency_id, tv_label, dayEnd, dayStart)
+    `).all(agency_id, tv_label, dayEndSqlUtc, dayStartSqlUtc)
 
     // Fără date — nu știm dacă TV-ul a funcționat
     if (sessions.length === 0) {
@@ -107,15 +108,16 @@ app.get('/api/reports/uptime', requireAuth, (req, res) => {
 
     const clamp = (t, min, max) => t < min ? min : t > max ? max : t
     const toSec = t => new Date(t.replace(' ', 'T') + 'Z').getTime() / 1000
-    const fmt = sec => new Date(sec * 1000).toISOString().replace('T', ' ').slice(0, 19)
+    // Afișează ora României (Europe/Bucharest)
+    const fmt = sec => new Date(sec * 1000).toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest', hour: '2-digit', minute: '2-digit', hour12: false })
     const fmtDur = sec => {
       const h = Math.floor(sec / 3600)
       const m = Math.floor((sec % 3600) / 60)
       return h > 0 ? `${h}h ${m}min` : `${m}min`
     }
 
-    const dayStartSec = toSec(dayStart)
-    const dayEndSec = toSec(dayEnd)
+    const dayStartSec = new Date(`${date}T00:00:00+03:00`).getTime() / 1000
+    const dayEndSec   = new Date(`${date}T23:59:59+03:00`).getTime() / 1000
     const nowSec = Math.min(Date.now() / 1000, dayEndSec)
 
     // Perioadele online (clampate la ziua cerută)
