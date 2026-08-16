@@ -28,7 +28,20 @@ const updateAgents = new Set()
 export function initWebSocket(httpServer) {
   const wss = new WebSocketServer({ server: httpServer })
 
+  // Heartbeat: detectează conexiuni moarte (mini PC scos din priză) în max 60s
+  const heartbeatInterval = setInterval(() => {
+    wss.clients.forEach(ws => {
+      if (ws.isAlive === false) { ws.terminate(); return }
+      ws.isAlive = false
+      ws.ping()
+    })
+  }, 30_000)
+  wss.on('close', () => clearInterval(heartbeatInterval))
+
   wss.on('connection', (ws, req) => {
+    ws.isAlive = true
+    ws.on('pong', () => { ws.isAlive = true })
+
     let agencyId = null
     let tvId = null
 
