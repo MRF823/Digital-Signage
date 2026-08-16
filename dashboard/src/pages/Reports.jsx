@@ -383,7 +383,7 @@ export default function Reports() {
                         {d.offline_periods.map((p, i) => (
                           <div key={i} className="flex items-center justify-between text-xs bg-red-50 rounded px-3 py-1.5">
                             <span className="text-red-600 font-medium">
-                              {p.from.slice(11, 16)} – {p.to.slice(11, 16)}
+                              {p.from} – {p.to}
                             </span>
                             <span className="text-red-400">{p.duration_formatted}</span>
                           </div>
