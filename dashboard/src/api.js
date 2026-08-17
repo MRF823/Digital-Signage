@@ -100,6 +100,7 @@ export const uploadInfoDoc = (agencyId, file, side, onProgress) =>
     onUploadProgress: e => onProgress?.(Math.round((e.loaded * 100) / e.total)),
   }).then(r => r.data)
 export const deleteInfoDoc = (docId) => api.delete(`/api/info/doc/${docId}`)
+export const reorderInfoDocs = (agencyId, ids) => api.put(`/api/info/${agencyId}/reorder`, { ids }).then(r => r.data)
 export const setInfoRotation = (agencyId, seconds) => api.put(`/api/info/${agencyId}/rotation`, { seconds }).then(r => r.data)
 export const setInfoSchedule = (agencyId, on_time, off_time) => api.put(`/api/info/${agencyId}/schedule`, { on_time, off_time }).then(r => r.data)
 export const toggleInfoMode = (tvId) => api.post(`/api/info/tv/${tvId}/toggle`).then(r => r.data)

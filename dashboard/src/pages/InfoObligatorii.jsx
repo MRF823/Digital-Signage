@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { getAgencies, getInfoTVs, getInfoDocs, uploadInfoDoc, deleteInfoDoc, setInfoRotation, setInfoSchedule, toggleInfoMode } from '../api'
+import { getAgencies, getInfoTVs, getInfoDocs, uploadInfoDoc, deleteInfoDoc, reorderInfoDocs, setInfoRotation, setInfoSchedule, toggleInfoMode } from '../api'
 
 function isOnline(lastSeen) {
   if (!lastSeen) return false
@@ -49,12 +49,43 @@ function UploadButton({ agencyId, side, onUploaded }) {
   )
 }
 
-function DocList({ docs, onDelete }) {
+function DocList({ docs, agencyId, onDelete, onReorder }) {
+  const move = async (idx, dir) => {
+    const newDocs = [...docs]
+    const target = idx + dir
+    if (target < 0 || target >= newDocs.length) return
+    ;[newDocs[idx], newDocs[target]] = [newDocs[target], newDocs[idx]]
+    onReorder(newDocs)
+    try {
+      await reorderInfoDocs(agencyId, newDocs.map(d => d.id))
+    } catch {
+      onReorder(docs) // rollback
+    }
+  }
+
   return (
     <div className="space-y-1.5">
-      {docs.map(doc => (
-        <div key={doc.id} className="flex items-center justify-between gap-2 px-3 py-2 bg-slate-50 rounded-lg border border-slate-200">
-          <div className="flex items-center gap-2 min-w-0">
+      {docs.map((doc, idx) => (
+        <div key={doc.id} className="flex items-center gap-1 px-3 py-2 bg-slate-50 rounded-lg border border-slate-200">
+          <div className="flex flex-col gap-0.5 flex-shrink-0">
+            <button
+              onClick={() => move(idx, -1)}
+              disabled={idx === 0}
+              className="text-slate-400 hover:text-slate-700 disabled:opacity-20 leading-none"
+              title="Mută sus"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+            </button>
+            <button
+              onClick={() => move(idx, 1)}
+              disabled={idx === docs.length - 1}
+              className="text-slate-400 hover:text-slate-700 disabled:opacity-20 leading-none"
+              title="Mută jos"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+          </div>
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" className="flex-shrink-0">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
             </svg>
@@ -173,7 +204,12 @@ function AgencyCard({ agency, tv, initialData }) {
             </div>
           </div>
           {staticDocs.length > 0
-            ? <DocList docs={staticDocs} onDelete={handleDelete} />
+            ? <DocList
+                docs={staticDocs}
+                agencyId={agency.id}
+                onDelete={handleDelete}
+                onReorder={newStatic => setDocs(prev => [...newStatic, ...prev.filter(d => d.side === 'rotativ')])}
+              />
             : <p className="text-xs text-slate-400 italic mb-2">Niciun document</p>
           }
           <div className="mt-2">
@@ -190,7 +226,12 @@ function AgencyCard({ agency, tv, initialData }) {
             </div>
           </div>
           {rotativDocs.length > 0
-            ? <DocList docs={rotativDocs} onDelete={handleDelete} />
+            ? <DocList
+                docs={rotativDocs}
+                agencyId={agency.id}
+                onDelete={handleDelete}
+                onReorder={newRotativ => setDocs(prev => [...prev.filter(d => d.side === 'static'), ...newRotativ])}
+              />
             : <p className="text-xs text-slate-400 italic mb-2">Niciun document</p>
           }
           <div className="mt-2">

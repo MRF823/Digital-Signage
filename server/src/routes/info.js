@@ -120,6 +120,28 @@ router.put('/:agencyId/schedule', (req, res) => {
   }
 })
 
+// PUT /api/info/:agencyId/reorder — schimbă ordinea documentelor (array de id-uri în noua ordine)
+router.put('/:agencyId/reorder', (req, res) => {
+  try {
+    const agencyId = parseInt(req.params.agencyId, 10)
+    if (isNaN(agencyId)) return res.status(400).json({ error: 'Invalid agencyId' })
+    const { ids } = req.body
+    if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids must be an array' })
+    const db = getDb()
+    const update = db.prepare('UPDATE info_docs SET position = ? WHERE id = ? AND agency_id = ?')
+    const tx = db.transaction(() => {
+      ids.forEach((id, idx) => update.run(idx, id, agencyId))
+    })
+    tx()
+    const allDocs = db.prepare('SELECT * FROM info_docs WHERE agency_id = ? ORDER BY side, position').all(agencyId)
+    const agencyRow = db.prepare('SELECT info_rotation_seconds FROM agencies WHERE id = ?').get(agencyId)
+    pushInfoDocs(agencyId, allDocs, agencyRow?.info_rotation_seconds ?? 5)
+    res.json({ ok: true })
+  } catch {
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 // POST /api/info/tv/:tvId/toggle — activează/dezactivează info_mode
 router.post('/tv/:tvId/toggle', (req, res) => {
   try {
