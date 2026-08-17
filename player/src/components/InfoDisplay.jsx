@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import * as pdfjsLib from 'pdfjs-dist'
+import pdfjsWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).href
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerSrc
 
 const SERVER = import.meta.env.VITE_SERVER_URL || `http://${window.location.hostname}:4000`
 const AGENCY_ID = new URLSearchParams(window.location.search).get('agencyId') || '1'
