@@ -197,7 +197,7 @@ export default function Overview() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between">
+      <div className="mb-6 flex items-start justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-xl font-bold text-gray-800">Prezentare generală</h2>
           <p className="text-sm text-gray-400 mt-0.5">Status în timp real · actualizat la 15s</p>

@@ -168,10 +168,10 @@ function Sidebar() {
 
 function Layout({ children }) {
   return (
-    <div className="flex min-h-screen bg-slate-100">
+    <div className="flex min-h-screen bg-slate-100 overflow-x-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-auto">
-        <div className="max-w-6xl mx-auto p-8">
+      <main className="flex-1 overflow-auto min-w-0">
+        <div className="max-w-6xl mx-auto p-6 lg:p-8">
           {children}
         </div>
       </main>

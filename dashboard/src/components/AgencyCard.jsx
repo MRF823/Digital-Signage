@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import PlaylistModal from './PlaylistModal'
 import PreviewPlayer from './PreviewPlayer'
 import { addTv, deleteTv, deleteAgency, updateTvOrientation, renameAgency, updateAgencySettings } from '../api'
@@ -15,10 +15,23 @@ function tvStatus(tv) {
   return { online: false, label: timeLabel, detail }
 }
 
+const SERVER_ORIGIN = `${window.location.protocol}//${window.location.hostname}:4000`
+
 export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDeleted }) {
   const [showModal, setShowModal] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const [showTvPicker, setShowTvPicker] = useState(false)
+  const pickerRef = useRef(null)
   const [addingTv, setAddingTv] = useState(false)
+
+  useEffect(() => {
+    if (!showTvPicker) return
+    const handler = (e) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target)) setShowTvPicker(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showTvPicker])
   const [tvLabel, setTvLabel] = useState('')
   const [tvOrientation, setTvOrientation] = useState('landscape')
   const [tvError, setTvError] = useState('')
@@ -145,12 +158,41 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
           </div>
         </div>
         <div className="flex gap-2">
-          {agency.playlist?.length > 0 && (
-            <button onClick={() => setShowPreview(true)}
-              className="text-xs bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              Preview
-            </button>
+          {agency.tvs?.length > 0 && (
+            <div className="relative" ref={pickerRef}>
+              <button
+                onClick={() => {
+                  if (agency.tvs.length === 1) {
+                    window.open(`${SERVER_ORIGIN}/player/?agencyId=${agency.id}&tvId=${agency.tvs[0].id}`, '_blank')
+                  } else {
+                    setShowTvPicker(v => !v)
+                  }
+                }}
+                className="text-xs bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Preview
+                {agency.tvs.length > 1 && (
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                )}
+              </button>
+              {showTvPicker && agency.tvs.length > 1 && (
+                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-44 py-1">
+                  {agency.tvs.map(tv => (
+                    <button
+                      key={tv.id}
+                      onClick={() => {
+                        setShowTvPicker(false)
+                        window.open(`${SERVER_ORIGIN}/player/?agencyId=${agency.id}&tvId=${tv.id}`, '_blank')
+                      }}
+                      className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                      {tv.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
           {!groupName && (
             <button onClick={() => setShowModal(true)}
