@@ -1,10 +1,18 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
-import * as pdfjsLib from 'pdfjs-dist'
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`
 
 const SERVER = import.meta.env.VITE_SERVER_URL || `http://${window.location.hostname}:4000`
 const AGENCY_ID = new URLSearchParams(window.location.search).get('agencyId') || '1'
+
+// pdfjs încărcat dinamic din CDN — evită incompatibilitatea cu Vite 8/Rolldown
+const PDFJS_CDN = 'https://unpkg.com/pdfjs-dist@6.2.108/build'
+let _pdfjsLib = null
+async function getPdfjs() {
+  if (_pdfjsLib) return _pdfjsLib
+  const lib = await import(/* @vite-ignore */ `${PDFJS_CDN}/pdf.min.mjs`)
+  lib.GlobalWorkerOptions.workerSrc = `${PDFJS_CDN}/pdf.worker.min.mjs`
+  _pdfjsLib = lib
+  return lib
+}
 
 function docsSig(docs) {
   return docs.map(d => `${d.id}:${d.side}:${d.position}:${d.filename}`).join('|')
@@ -15,7 +23,8 @@ const pdfCache = new Map()
 
 async function loadPdf(url) {
   if (pdfCache.has(url)) return pdfCache.get(url)
-  const pdf = await pdfjsLib.getDocument(url).promise
+  const lib = await getPdfjs()
+  const pdf = await lib.getDocument(url).promise
   pdfCache.set(url, pdf)
   return pdf
 }
