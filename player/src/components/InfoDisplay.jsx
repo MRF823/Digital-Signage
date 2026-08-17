@@ -24,7 +24,7 @@ const pdfCache = new Map()
 async function loadPdf(url) {
   if (pdfCache.has(url)) return pdfCache.get(url)
   const lib = await getPdfjs()
-  const pdf = await lib.getDocument(url).promise
+  const pdf = await lib.getDocument({ url }).promise
   pdfCache.set(url, pdf)
   return pdf
 }
