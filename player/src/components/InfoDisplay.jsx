@@ -29,7 +29,7 @@ function PdfCanvas({ url, pageNum }) {
 
   useEffect(() => {
     let cancelled = false
-    ;(async () => {
+    const render = async () => {
       try {
         const pdf = await loadPdf(url)
         if (cancelled) return
@@ -38,6 +38,9 @@ function PdfCanvas({ url, pageNum }) {
         const canvas = canvasRef.current
         const container = containerRef.current
         if (!canvas || !container) return
+        // Așteaptă ca browser-ul să calculeze dimensiunile containerului
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
+        if (cancelled) return
         const w = container.clientWidth || 400
         const h = container.clientHeight || 500
         const vp = page.getViewport({ scale: 1 })
@@ -47,14 +50,17 @@ function PdfCanvas({ url, pageNum }) {
         canvas.height = scaled.height
         const ctx = canvas.getContext('2d')
         await page.render({ canvasContext: ctx, viewport: scaled }).promise
-      } catch {}
-    })()
+      } catch (e) {
+        console.error('[InfoDisplay] PDF render error:', url, e)
+      }
+    }
+    render()
     return () => { cancelled = true }
   }, [url, pageNum])
 
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-      <canvas ref={canvasRef} style={{ display: 'block' }} />
+      <canvas ref={canvasRef} style={{ display: 'block', maxWidth: '100%', maxHeight: '100%' }} />
     </div>
   )
 }
