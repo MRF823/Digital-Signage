@@ -36,7 +36,7 @@ async function loadPdf(url) {
   return pdf
 }
 
-function PdfCanvas({ url, pageNum }) {
+function PdfCanvas({ url, pageNum, fit = 'cover' }) {
   const containerRef = useRef(null)
   const canvasRef = useRef(null)
 
@@ -51,17 +51,22 @@ function PdfCanvas({ url, pageNum }) {
         const canvas = canvasRef.current
         const container = containerRef.current
         if (!canvas || !container) return
-        // Așteaptă ca browser-ul să calculeze dimensiunile containerului
         await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
         if (cancelled) return
         const w = container.clientWidth || 400
         const h = container.clientHeight || 500
-        const vp = page.getViewport({ scale: 1 })
-        // Cover: umple tot pătratul, conținutul poate fi ușor tăiat la margini
-        const scale = Math.max(w / vp.width, h / vp.height)
-        const scaled = page.getViewport({ scale })
-        canvas.width = w
-        canvas.height = h
+        const vp = page.getViewport({ scale: 1, rotation: 0 })
+        const scale = fit === 'contain'
+          ? Math.min(w / vp.width, h / vp.height)
+          : Math.max(w / vp.width, h / vp.height)
+        const scaled = page.getViewport({ scale, rotation: 0 })
+        if (fit === 'contain') {
+          canvas.width = scaled.width
+          canvas.height = scaled.height
+        } else {
+          canvas.width = w
+          canvas.height = h
+        }
         const ctx = canvas.getContext('2d')
         await page.render({ canvasContext: ctx, viewport: scaled }).promise
       } catch (e) {
@@ -70,10 +75,10 @@ function PdfCanvas({ url, pageNum }) {
     }
     render()
     return () => { cancelled = true }
-  }, [url, pageNum])
+  }, [url, pageNum, fit])
 
   return (
-    <div ref={containerRef} style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+    <div ref={containerRef} style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: 'white' }}>
       <canvas ref={canvasRef} style={{ display: 'block', maxWidth: '100%', maxHeight: '100%' }} />
     </div>
   )
@@ -207,6 +212,7 @@ export default function InfoDisplay({ docs = [], rotationSeconds = 5, powered = 
             key={`${currentRotDoc.filename}-p${rot.pageIdx}`}
             url={`${SERVER}/api/info/file/${currentRotDoc.filename}`}
             pageNum={rot.pageIdx}
+            fit="contain"
           />
         )}
       </div>
