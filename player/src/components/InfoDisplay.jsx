@@ -24,7 +24,11 @@ const pdfCache = new Map()
 async function loadPdf(url) {
   if (pdfCache.has(url)) return pdfCache.get(url)
   const lib = await getPdfjs()
-  const pdf = await lib.getDocument({ url }).promise
+  // Facem fetch ourselves (same-origin) → trimitem ArrayBuffer la pdfjs
+  // Evită mixed-content blocaj când pdfjs worker vine de pe CDN (https)
+  const resp = await fetch(url)
+  const data = await resp.arrayBuffer()
+  const pdf = await lib.getDocument({ data }).promise
   pdfCache.set(url, pdf)
   return pdf
 }
