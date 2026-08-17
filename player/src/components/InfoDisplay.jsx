@@ -170,14 +170,23 @@ export default function InfoDisplay({ docs = [], rotationSeconds = 5, powered = 
         gridAutoRows: '1fr',
         gap: '8px',
       }}>
-        {staticDocs.map(doc => (
-          <div key={doc.id} style={{ background: 'white', borderRadius: '4px', overflow: 'hidden' }}>
-            <PdfCanvas
-              url={`${SERVER}/api/info/file/${doc.filename}`}
-              pageNum={1}
-            />
-          </div>
-        ))}
+        {staticDocs.map((doc, i) => {
+          // Ultimul doc singur pe rând (nr. impar) → landscape, span toată linia
+          const isLandscape = staticDocs.length % 2 !== 0 && i === staticDocs.length - 1
+          return (
+            <div key={doc.id} style={{
+              background: 'white',
+              borderRadius: '4px',
+              overflow: 'hidden',
+              gridColumn: isLandscape ? '1 / -1' : undefined,
+            }}>
+              <PdfCanvas
+                url={`${SERVER}/api/info/file/${doc.filename}`}
+                pageNum={1}
+              />
+            </div>
+          )
+        })}
       </div>
 
       {/* Separator */}
