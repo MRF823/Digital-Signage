@@ -81,10 +81,10 @@ const IconSettings = () => (
 const NAV = [
   { to: '/', label: 'Overview', Icon: IconOverview, end: true },
   { to: '/content', label: 'Librărie Media', Icon: IconMedia },
+  { to: '/campaigns', label: 'Campanii', Icon: IconCampaigns },
   { to: '/agencies', label: 'Agenții', Icon: IconAgencies },
   { to: '/tvs', label: 'TV-uri', Icon: IconTVs },
   { to: '/groups', label: 'Grupuri', Icon: IconGroups },
-  { to: '/campaigns', label: 'Campanii', Icon: IconCampaigns },
   { to: '/map', label: 'Hartă', Icon: IconMap },
   { to: '/reports', label: 'Rapoarte', Icon: IconReports },
   { to: '/forex', label: 'Schimb Valutar', Icon: IconForex },
