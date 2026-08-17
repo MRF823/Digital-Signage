@@ -57,10 +57,11 @@ function PdfCanvas({ url, pageNum }) {
         const w = container.clientWidth || 400
         const h = container.clientHeight || 500
         const vp = page.getViewport({ scale: 1 })
-        const scale = Math.min(w / vp.width, h / vp.height) * 0.97
+        // Cover: umple tot pătratul, conținutul poate fi ușor tăiat la margini
+        const scale = Math.max(w / vp.width, h / vp.height)
         const scaled = page.getViewport({ scale })
-        canvas.width = scaled.width
-        canvas.height = scaled.height
+        canvas.width = w
+        canvas.height = h
         const ctx = canvas.getContext('2d')
         await page.render({ canvasContext: ctx, viewport: scaled }).promise
       } catch (e) {
