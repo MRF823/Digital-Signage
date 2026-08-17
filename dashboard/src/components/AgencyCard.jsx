@@ -163,7 +163,7 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
               <button
                 onClick={() => {
                   if (agency.tvs.length === 1) {
-                    window.open(`${SERVER_ORIGIN}/player/?agencyId=${agency.id}&tvId=${agency.tvs[0].id}`, '_blank')
+                    window.open(`${SERVER_ORIGIN}/player/?agencyId=${agency.id}&tvId=${encodeURIComponent(agency.tvs[0].label)}`, '_blank')
                   } else {
                     setShowTvPicker(v => !v)
                   }
@@ -182,7 +182,7 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
                       key={tv.id}
                       onClick={() => {
                         setShowTvPicker(false)
-                        window.open(`${SERVER_ORIGIN}/player/?agencyId=${agency.id}&tvId=${tv.id}`, '_blank')
+                        window.open(`${SERVER_ORIGIN}/player/?agencyId=${agency.id}&tvId=${encodeURIComponent(tv.label)}`, '_blank')
                       }}
                       className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                     >
@@ -271,16 +271,18 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
       )}
       {tvError && <p className="text-xs text-red-500 mb-2">{tvError}</p>}
 
-      <div className="flex flex-wrap gap-2">
-        {agency.playlist?.length === 0 && (
-          <span className="text-xs text-gray-400">Niciun conținut asignat.</span>
-        )}
-        {agency.playlist?.map((item, i) => (
-          <span key={i} className="text-xs bg-blue-50 border border-blue-200 text-blue-700 px-2 py-1 rounded">
-            {item.type === 'video' ? '🎬' : '🖼️'} {item.original_name}
-          </span>
-        ))}
-      </div>
+      {!groupName && (
+        <div className="flex flex-wrap gap-2">
+          {agency.playlist?.length === 0 && (
+            <span className="text-xs text-gray-400">Niciun conținut asignat.</span>
+          )}
+          {agency.playlist?.map((item, i) => (
+            <span key={i} className="text-xs bg-blue-50 border border-blue-200 text-blue-700 px-2 py-1 rounded">
+              {item.type === 'video' ? '🎬' : '🖼️'} {item.original_name}
+            </span>
+          ))}
+        </div>
+      )}
 
       {showPreview && agency.playlist?.length > 0 && (
         <PreviewPlayer items={agency.playlist} onClose={() => setShowPreview(false)} />
