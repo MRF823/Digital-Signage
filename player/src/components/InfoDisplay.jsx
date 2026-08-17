@@ -28,7 +28,10 @@ async function loadPdf(url) {
   // Evită mixed-content blocaj când pdfjs worker vine de pe CDN (https)
   const resp = await fetch(url)
   const data = await resp.arrayBuffer()
-  const pdf = await lib.getDocument({ data }).promise
+  const pdf = await lib.getDocument({
+    data,
+    wasmUrl: 'https://unpkg.com/pdfjs-dist@6.2.108/wasm/',
+  }).promise
   pdfCache.set(url, pdf)
   return pdf
 }
