@@ -65,7 +65,7 @@ export default function Content() {
       {previewing && <PreviewPlayer items={media} onClose={() => setPreviewing(false)} />}
 
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-800">Conținut Media</h2>
+        <h2 className="text-xl font-bold text-gray-800">Librărie Media</h2>
         {media.length > 0 && (
           <button onClick={() => setPreviewing(true)}
             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-4 py-2 rounded-lg">
