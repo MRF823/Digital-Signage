@@ -80,7 +80,7 @@ const IconSettings = () => (
 
 const NAV = [
   { to: '/', label: 'Overview', Icon: IconOverview, end: true },
-  { to: '/content', label: 'Conținut', Icon: IconMedia },
+  { to: '/content', label: 'Librărie Media', Icon: IconMedia },
   { to: '/agencies', label: 'Agenții', Icon: IconAgencies },
   { to: '/tvs', label: 'TV-uri', Icon: IconTVs },
   { to: '/groups', label: 'Grupuri', Icon: IconGroups },
