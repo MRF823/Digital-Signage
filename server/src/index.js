@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import { createServer } from 'http'
@@ -18,6 +19,7 @@ import settingsRoutes from './routes/settings.js'
 import { loginHandler, requireAuth } from './auth.js'
 import rateLimit from 'express-rate-limit'
 import { initScheduler } from './scheduler.js'
+import aiRoutes from './routes/ai.js'
 import { initRates, getCurrentRates } from './rates.js'
 import { initForex, getCurrentForexRates } from './forex.js'
 
@@ -240,6 +242,7 @@ app.use('/api/groups/:id/schedules', requireAuth, scheduleRoutes)
 app.use('/api/campaigns', requireAuth, campaignRoutes)
 app.use('/api/info', requireAuth, infoRoutes)
 app.use('/api/settings', requireAuth, settingsRoutes)
+app.use('/api/ai', requireAuth, aiRoutes)
 app.post('/api/players/reload', requireAuth, (req, res) => {
   pushReloadToAll()
   res.json({ ok: true })

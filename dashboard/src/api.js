@@ -108,6 +108,9 @@ export const toggleInfoMode = (tvId) => api.post(`/api/info/tv/${tvId}/toggle`).
 export const getSettings = () => api.get('/api/settings').then(r => r.data)
 export const updateSettings = (data) => api.put('/api/settings', data).then(r => r.data)
 
+export const aiChat = (message, history = []) => api.post('/api/ai/chat', { message, history }).then(r => r.data)
+export const aiAnomalies = () => api.get('/api/ai/anomalies').then(r => r.data)
+
 export const mediaUrl = (filename) => `${BASE}/api/media/${filename}`
 
 export default api
