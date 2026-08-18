@@ -174,8 +174,8 @@ function Layout({ children }) {
         <div className="flex-1 max-w-6xl mx-auto w-full p-6 lg:p-8">
           {children}
         </div>
-        <footer className="border-t border-slate-200 px-8 py-3 flex items-center justify-between text-xs text-slate-500">
-          <span>Copyright © 2026 <a href="https://funkymedia.ro" target="_blank" rel="noreferrer" className="text-teal-500 hover:underline">FunkyMedia.ro</a>. All rights reserved.</span>
+        <footer className="border-t border-slate-200 px-8 py-3 flex items-center justify-between text-sm font-medium text-slate-500">
+          <span>Copyright © 2026 <a href="https://funkymedia.ro" target="_blank" rel="noreferrer" className="text-teal-500 hover:underline font-semibold">FunkyMedia.ro</a>. All rights reserved.</span>
           <span>Digital Signage Platform <strong className="text-slate-600">v1.0</strong></span>
         </footer>
       </main>
