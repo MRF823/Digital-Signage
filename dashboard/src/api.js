@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const BASE = `http://${window.location.hostname}:4000`
+const BASE = window.location.hostname === 'localhost' ? 'http://localhost:4000' : ''
 
 const api = axios.create({ baseURL: BASE })
 
