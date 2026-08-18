@@ -170,10 +170,14 @@ function Layout({ children }) {
   return (
     <div className="flex min-h-screen bg-slate-100 overflow-x-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-auto min-w-0">
-        <div className="max-w-6xl mx-auto p-6 lg:p-8">
+      <main className="flex-1 overflow-auto min-w-0 flex flex-col">
+        <div className="flex-1 max-w-6xl mx-auto w-full p-6 lg:p-8">
           {children}
         </div>
+        <footer className="border-t border-slate-200 px-8 py-3 flex items-center justify-between text-xs text-slate-400">
+          <span>Copyright © 2026 <a href="https://funkymedia.ro" target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">FunkyMedia.ro</a> · Toate drepturile rezervate.</span>
+          <span>DisplayIQ · Digital Signage Platform v1.0</span>
+        </footer>
       </main>
     </div>
   )
