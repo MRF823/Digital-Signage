@@ -1,3 +1,5 @@
+import { mkdirSync, readdirSync, unlinkSync } from 'fs'
+import { resolve, join } from 'path'
 import { getDb } from './db.js'
 import { pushPlaylist, pushScreenPower, pushInfoPower } from './websocket.js'
 import { getActivePlaylist } from './routes/campaigns.js'
@@ -125,6 +127,28 @@ function checkCampaigns() {
   }
 }
 
+function backupDb() {
+  try {
+    const backupDir = resolve(process.cwd(), 'backups')
+    mkdirSync(backupDir, { recursive: true })
+    const date = new Date().toISOString().slice(0, 10)
+    const dest = join(backupDir, `signage-${date}.db`)
+    getDb().backup(dest).then(() => {
+      const files = readdirSync(backupDir)
+        .filter(f => f.startsWith('signage-') && f.endsWith('.db'))
+        .sort()
+      if (files.length > 7) {
+        files.slice(0, files.length - 7).forEach(f => {
+          try { unlinkSync(join(backupDir, f)) } catch {}
+        })
+      }
+      console.log(`Backup DB: ${dest}`)
+    }).catch(err => console.error('Backup DB error:', err))
+  } catch (err) {
+    console.error('Backup DB error:', err)
+  }
+}
+
 export function initScheduler() {
   // Verifică schedule-uri și power la fiecare minut
   setInterval(() => { checkSchedules(); checkPower(); checkInfoPower() }, 60_000)
@@ -141,6 +165,15 @@ export function initScheduler() {
     checkCampaigns()
     setInterval(checkCampaigns, 24 * 60 * 60 * 1000)
   }, nextMidnight - now)
+
+  // Backup DB zilnic la 02:00
+  const next2am = new Date(now)
+  if (now.getHours() >= 2) next2am.setDate(now.getDate() + 1)
+  next2am.setHours(2, 0, 0, 0)
+  setTimeout(() => {
+    backupDb()
+    setInterval(backupDb, 24 * 60 * 60 * 1000)
+  }, next2am - now)
 
   console.log('Scheduler pornit')
 }

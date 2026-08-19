@@ -24,13 +24,21 @@ import { initRates, getCurrentRates } from './rates.js'
 import { initForex, getCurrentForexRates } from './forex.js'
 
 const loginRateLimit = rateLimit({ windowMs: 15 * 60_000, max: 10 })
+const writeLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 30,
+  skip: (req) => !['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method),
+  message: { error: 'Prea multe cereri. Încearcă din nou în câteva secunde.' }
+})
 
 const app = express()
 const httpServer = createServer(app)
 
+app.set('trust proxy', 1)
 app.use(cors({ origin: true }))
 app.use(express.json())
-app.use(rateLimit({ windowMs: 60_000, max: 100 }))
+app.use(rateLimit({ windowMs: 60_000, max: 200 }))
+app.use(writeLimiter)
 
 initDb()
 initWebSocket(httpServer)
