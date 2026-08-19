@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, NavLink, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { reloadPlayers, syncMedia, getTokenPayload } from './api'
+import { useInactivityLogout } from './useInactivityLogout'
 import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
@@ -186,6 +187,8 @@ function Sidebar() {
 }
 
 function Layout({ children }) {
+  const { showWarning, secondsLeft, stayLoggedIn } = useInactivityLogout()
+
   return (
     <div className="flex min-h-screen bg-slate-100 overflow-x-hidden">
       <Sidebar />
@@ -198,6 +201,21 @@ function Layout({ children }) {
           <span>Digital Signage Platform <strong className="text-slate-600">v1.0</strong></span>
         </footer>
       </main>
+
+      {showWarning && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm text-center">
+            <div className="text-4xl mb-3">⏱️</div>
+            <h3 className="text-lg font-bold text-gray-800 mb-2">Sesiune inactivă</h3>
+            <p className="text-gray-500 text-sm mb-1">Vei fi delogat automat în</p>
+            <p className="text-3xl font-bold text-blue-600 mb-6">{secondsLeft}s</p>
+            <button onClick={stayLoggedIn}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl transition-colors">
+              Rămân conectat
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
