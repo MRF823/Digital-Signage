@@ -115,6 +115,22 @@ export function initDb(path = './signage.db') {
       position INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      role TEXT NOT NULL CHECK(role IN ('admin','operator','viewer')) DEFAULT 'viewer',
+      name TEXT NOT NULL DEFAULT '',
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      token TEXT UNIQUE NOT NULL,
+      expires_at TEXT NOT NULL,
+      used INTEGER NOT NULL DEFAULT 0
+    );
   `)
 
   // Migrări pentru coloane noi
@@ -156,6 +172,17 @@ export function initDb(path = './signage.db') {
   if (!adminExists) {
     const hash = bcrypt.hashSync(process.env.ADMIN_PASS || 'admin123', 10)
     db.prepare('INSERT INTO admin (username, password_hash) VALUES (?, ?)').run('admin', hash)
+  }
+
+  // Migrare admin → users (o singură dată)
+  const usersCount = db.prepare('SELECT COUNT(*) as c FROM users').get()
+  if (usersCount.c === 0) {
+    const admin = db.prepare('SELECT * FROM admin LIMIT 1').get()
+    if (admin) {
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@displayiq.ro'
+      db.prepare('INSERT INTO users (email, password_hash, role, name) VALUES (?, ?, ?, ?)').run(adminEmail, admin.password_hash, 'admin', 'Administrator')
+      console.log(`[users] Admin migrat cu email: ${adminEmail}`)
+    }
   }
 
   const agencyCount = db.prepare('SELECT COUNT(*) as c FROM agencies').get()

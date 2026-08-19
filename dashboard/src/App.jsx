@@ -1,7 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate, NavLink, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import { reloadPlayers, syncMedia } from './api'
+import { reloadPlayers, syncMedia, getTokenPayload } from './api'
 import Login from './pages/Login'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
+import Users from './pages/Users'
 import Overview from './pages/Overview'
 import Content from './pages/Content'
 import Agencies from './pages/Agencies'
@@ -85,24 +88,32 @@ const IconSettings = () => (
   </svg>
 )
 
+const IconUsers = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+  </svg>
+)
+
 const NAV = [
-  { to: '/', label: 'Overview', Icon: IconOverview, end: true },
-  { to: '/content', label: 'Librărie Media', Icon: IconMedia },
-  { to: '/campaigns', label: 'Campanii', Icon: IconCampaigns },
-  { to: '/groups', label: 'Grupuri', Icon: IconGroups },
-  { to: '/agencies', label: 'Agenții', Icon: IconAgencies },
-  { to: '/tvs', label: 'TV-uri', Icon: IconTVs },
-  { to: '/map', label: 'Hartă', Icon: IconMap },
-  { to: '/reports', label: 'Rapoarte', Icon: IconReports },
-  { to: '/forex', label: 'Schimb Valutar', Icon: IconForex },
-  { to: '/info', label: 'Info Obligatorii', Icon: IconInfo },
-  { to: '/ai', label: 'Asistent AI', Icon: IconAI },
-  { to: '/settings', label: 'Setări', Icon: IconSettings },
+  { to: '/', label: 'Overview', Icon: IconOverview, end: true, roles: ['admin','operator','viewer'] },
+  { to: '/content', label: 'Librărie Media', Icon: IconMedia, roles: ['admin','operator'] },
+  { to: '/campaigns', label: 'Campanii', Icon: IconCampaigns, roles: ['admin','operator'] },
+  { to: '/groups', label: 'Grupuri', Icon: IconGroups, roles: ['admin','operator'] },
+  { to: '/agencies', label: 'Agenții', Icon: IconAgencies, roles: ['admin','operator'] },
+  { to: '/tvs', label: 'TV-uri', Icon: IconTVs, roles: ['admin','operator'] },
+  { to: '/map', label: 'Hartă', Icon: IconMap, roles: ['admin','operator'] },
+  { to: '/reports', label: 'Rapoarte', Icon: IconReports, roles: ['admin','operator','viewer'] },
+  { to: '/forex', label: 'Schimb Valutar', Icon: IconForex, roles: ['admin','operator'] },
+  { to: '/info', label: 'Info Obligatorii', Icon: IconInfo, roles: ['admin','operator'] },
+  { to: '/ai', label: 'Asistent AI', Icon: IconAI, roles: ['admin','operator','viewer'] },
+  { to: '/users', label: 'Utilizatori', Icon: IconUsers, roles: ['admin'] },
+  { to: '/settings', label: 'Setări', Icon: IconSettings, roles: ['admin'] },
 ]
 
 function Sidebar() {
   const navigate = useNavigate()
   const logout = () => { localStorage.removeItem('token'); navigate('/login') }
+  const role = getTokenPayload()?.role || 'viewer'
   const [reloading, setReloading] = useState(false)
   const handleReload = async () => {
     setReloading(true)
@@ -132,9 +143,9 @@ function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         <p className="text-slate-500 text-xs font-semibold uppercase tracking-widest px-3 mb-2">Meniu</p>
-        {NAV.map(({ to, label, Icon, end }) => (
+        {NAV.filter(({ roles }) => roles.includes(role)).map(({ to, label, Icon, end }) => (
           <NavLink key={to} to={to} end={end}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors
@@ -200,6 +211,8 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/" element={<AuthGuard><Layout><Overview /></Layout></AuthGuard>} />
         <Route path="/content" element={<AuthGuard><Layout><Content /></Layout></AuthGuard>} />
         <Route path="/agencies" element={<AuthGuard><Layout><Agencies /></Layout></AuthGuard>} />
@@ -211,6 +224,7 @@ export default function App() {
         <Route path="/forex" element={<AuthGuard><Layout><ForexTVs /></Layout></AuthGuard>} />
         <Route path="/info" element={<AuthGuard><Layout><InfoObligatorii /></Layout></AuthGuard>} />
         <Route path="/ai" element={<AuthGuard><Layout><AI /></Layout></AuthGuard>} />
+        <Route path="/users" element={<AuthGuard><Layout><Users /></Layout></AuthGuard>} />
         <Route path="/settings" element={<AuthGuard><Layout><Settings /></Layout></AuthGuard>} />
       </Routes>
     </BrowserRouter>

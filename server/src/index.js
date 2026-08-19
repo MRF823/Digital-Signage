@@ -16,7 +16,8 @@ import scheduleRoutes from './routes/schedules.js'
 import campaignRoutes from './routes/campaigns.js'
 import infoRoutes, { serveInfoFile } from './routes/info.js'
 import settingsRoutes from './routes/settings.js'
-import { loginHandler, requireAuth } from './auth.js'
+import userRoutes from './routes/users.js'
+import { loginHandler, requireAuth, requireOperator, requireAdmin } from './auth.js'
 import rateLimit from 'express-rate-limit'
 import { initScheduler } from './scheduler.js'
 import aiRoutes from './routes/ai.js'
@@ -241,32 +242,34 @@ app.get('/api/upcoming-media', (req, res) => {
     res.status(500).json({ error: e.message })
   }
 })
-app.use('/api/media', requireAuth, mediaRoutes)
-app.use('/api/agencies', requireAuth, agencyRoutes)
-app.use('/api/agencies', requireAuth, playlistRoutes)
-app.use('/api/tvs', requireAuth, tvsRoutes)
-app.use('/api/groups', requireAuth, groupRoutes)
-app.use('/api/groups/:id/schedules', requireAuth, scheduleRoutes)
-app.use('/api/campaigns', requireAuth, campaignRoutes)
-app.use('/api/info', requireAuth, infoRoutes)
-app.use('/api/settings', requireAuth, settingsRoutes)
+app.use('/api/media', requireOperator, mediaRoutes)
+app.use('/api/agencies', requireOperator, agencyRoutes)
+app.use('/api/agencies', requireOperator, playlistRoutes)
+app.use('/api/tvs', requireOperator, tvsRoutes)
+app.use('/api/groups', requireOperator, groupRoutes)
+app.use('/api/groups/:id/schedules', requireOperator, scheduleRoutes)
+app.use('/api/campaigns', requireOperator, campaignRoutes)
+app.use('/api/info', requireOperator, infoRoutes)
+app.use('/api/settings', requireAdmin, settingsRoutes)
 app.use('/api/ai', requireAuth, aiRoutes)
-app.post('/api/players/reload', requireAuth, (req, res) => {
+app.use('/api/users', userRoutes)
+app.use('/api/auth', userRoutes)
+app.post('/api/players/reload', requireOperator, (req, res) => {
   pushReloadToAll()
   res.json({ ok: true })
 })
 
-app.post('/api/players/sync-media', requireAuth, (req, res) => {
+app.post('/api/players/sync-media', requireOperator, (req, res) => {
   pushSyncMediaToAll()
   res.json({ ok: true })
 })
 
-app.post('/api/players/trigger-update', requireAuth, (req, res) => {
+app.post('/api/players/trigger-update', requireOperator, (req, res) => {
   const count = pushTriggerUpdate()
   res.json({ ok: true, agents: count })
 })
 
-app.post('/api/players/reload-all', requireAuth, (req, res) => {
+app.post('/api/players/reload-all', requireOperator, (req, res) => {
   pushReloadToAll()
   res.json({ ok: true })
 })

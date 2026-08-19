@@ -69,3 +69,17 @@ export function sendReconnectedAlert(tvLabel, agencyName) {
     `TV-ul "${tvLabel}" de la agenția "${agencyName}" s-a reconectat.\n\nLa: ${time}\n\nAcest mesaj a fost trimis automat de DisplayIQ.`
   )
 }
+
+export async function sendPasswordReset(email, token) {
+  const appUrl = process.env.APP_URL || 'https://displayiq.funkymedia.ro'
+  const link = `${appUrl}/reset-password?token=${token}`
+  const nm = await getNodemailer()
+  const transport = createTransport(nm)
+  if (!transport) return
+  await transport.sendMail({
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    to: email,
+    subject: '[DisplayIQ] Resetare parolă',
+    text: `Ai solicitat resetarea parolei DisplayIQ.\n\nApasă pe linkul de mai jos:\n${link}\n\nLinkul expiră în 1 oră. Dacă nu ai solicitat resetarea, ignoră acest mesaj.`,
+  })
+}

@@ -21,8 +21,22 @@ api.interceptors.response.use(
   }
 )
 
-export const login = (username, password) =>
-  api.post('/api/login', { username, password }).then(r => r.data)
+export const login = (email, password) =>
+  api.post('/api/login', { email, password }).then(r => r.data)
+
+export const getMe = () => api.get('/api/users/me').then(r => r.data)
+export const getUsers = () => api.get('/api/users').then(r => r.data)
+export const createUser = (data) => api.post('/api/users', data).then(r => r.data)
+export const updateUser = (id, data) => api.patch(`/api/users/${id}`, data).then(r => r.data)
+export const deleteUser = (id) => api.delete(`/api/users/${id}`)
+export const forgotPassword = (email) => api.post('/api/auth/forgot-password', { email }).then(r => r.data)
+export const resetPassword = (token, password) => api.post('/api/auth/reset-password', { token, password }).then(r => r.data)
+
+export function getTokenPayload() {
+  const token = localStorage.getItem('token')
+  if (!token) return null
+  try { return JSON.parse(atob(token.split('.')[1])) } catch { return null }
+}
 
 export const getMedia = () => api.get('/api/media').then(r => r.data)
 export const uploadMedia = (file, onProgress) =>
