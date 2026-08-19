@@ -182,9 +182,9 @@ export default function Users() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
               <select value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
                 className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                <option value="viewer">Viewer</option>
-                <option value="operator">Operator</option>
                 <option value="admin">Admin</option>
+                <option value="operator">Operator</option>
+                <option value="viewer">Viewer</option>
               </select>
             </div>
             <div>
@@ -218,9 +218,9 @@ export default function Users() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
               <select value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
                 className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                <option value="viewer">Viewer</option>
-                <option value="operator">Operator</option>
                 <option value="admin">Admin</option>
+                <option value="operator">Operator</option>
+                <option value="viewer">Viewer</option>
               </select>
             </div>
             <div>
