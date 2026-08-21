@@ -253,7 +253,7 @@ export default function App() {
   }
 
   if (forexMode) {
-    return wrap(<ForexDisplay rates={forexRates?.rates} updatedAt={forexRates?.updatedAt} cecUpdatedAt={forexRates?.cecUpdatedAt} bnrUpdatedAt={forexRates?.bnrUpdatedAt} />)
+    return <ForexDisplay rates={forexRates?.rates} updatedAt={forexRates?.updatedAt} cecUpdatedAt={forexRates?.cecUpdatedAt} bnrUpdatedAt={forexRates?.bnrUpdatedAt} isPortrait={IS_PORTRAIT} />
   }
 
   if (!ready || playlist.length === 0) {

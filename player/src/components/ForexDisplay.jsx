@@ -23,14 +23,20 @@ function formatUpdated(iso) {
 const ORDER = ['EUR', 'USD', 'GBP', 'CAD', 'CHF', 'DKK', 'HUF', 'PLN', 'SEK']
 const MAIN = ['EUR', 'USD']
 
-export default function ForexDisplay({ rates, updatedAt }) {
+export default function ForexDisplay({ rates, updatedAt, isPortrait }) {
+  const rootStyle = isPortrait ? {
+    position: 'fixed',
+    width: '100vh', height: '100vw',
+    top: 'calc(50vh - 50vw)', left: 'calc(50vw - 50vh)',
+    transform: 'rotate(90deg)', transformOrigin: 'center center',
+    overflow: 'hidden',
+    background: '#1a2e20', display: 'flex', flexDirection: 'column', fontFamily: 'Arial, sans-serif',
+  } : {
+    position: 'fixed', inset: 0,
+    background: '#1a2e20', display: 'flex', flexDirection: 'column', fontFamily: 'Arial, sans-serif',
+  }
   return (
-    <div style={{
-      position: 'fixed', inset: 0,
-      background: '#1a2e20',
-      display: 'flex', flexDirection: 'column',
-      fontFamily: 'Arial, sans-serif',
-    }}>
+    <div style={rootStyle}>
       {/* Header */}
       <div style={{
         padding: '22px 24px 16px',
@@ -74,7 +80,6 @@ export default function ForexDisplay({ rates, updatedAt }) {
               alignItems: 'center',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: isMain ? 22 : 18, lineHeight: 1 }}>{meta.flag}</span>
                 <div>
                   <div style={{ color: '#fff', fontWeight: 700, fontSize: isMain ? 18 : 13 }}>{meta.name}</div>
                   <div style={{ color: 'rgba(255,255,255,0.38)', fontSize: 9, letterSpacing: 0.5 }}>{code}</div>
