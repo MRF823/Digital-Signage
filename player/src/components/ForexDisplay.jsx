@@ -20,14 +20,14 @@ function formatUpdated(iso) {
   return `${hh}:${mm} ▪ ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`
 }
 
-const ORDER = ['EUR', 'USD', 'GBP', 'CAD', 'CHF', 'DKK', 'HUF', 'PLN', 'SEK']
+const ORDER = ['EUR', 'USD', 'CHF', 'GBP', 'CAD', 'DKK', 'HUF', 'PLN', 'SEK']
 const MAIN = ['EUR', 'USD']
 
 export default function ForexDisplay({ rates, updatedAt, isPortrait }) {
   const rootStyle = isPortrait ? {
     position: 'fixed',
-    width: '100vh', height: '100vw',
-    top: 'calc(50vh - 50vw)', left: 'calc(50vw - 50vh)',
+    width: '100vh', height: '50vw',
+    top: 'calc(50vh - 25vw)', left: 'calc(75vw - 50vh)',
     transform: 'rotate(90deg)', transformOrigin: 'center center',
     overflow: 'hidden',
     background: '#1a2e20', display: 'flex', flexDirection: 'column', fontFamily: 'Arial, sans-serif',
@@ -106,7 +106,7 @@ export default function ForexDisplay({ rates, updatedAt, isPortrait }) {
         <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, textAlign: 'center', marginBottom: 6 }}>
           {updatedAt ? `Ultima actualizare: ${formatUpdated(updatedAt)}` : ''}
         </div>
-        <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: 9, lineHeight: 1.6, textAlign: 'left' }}>
+        <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: 12, lineHeight: 1.6, textAlign: 'left' }}>
           Cursurile CEC Bank se pot modifica de mai multe ori pe parcursul unei zile, în funcție de mișcările pieței valutare interbancare.<br />
           În cazul schimburilor valutare inițiate online, de persoane fizice, se aplică cursul valutar mai avantajos, valabil pe Internet și Mobile Banking.
         </div>
