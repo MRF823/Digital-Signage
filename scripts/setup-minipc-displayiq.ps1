@@ -9,19 +9,35 @@ $tvLabel  = Read-Host "Label TV exact ca in dashboard (ex: Tv Vitrina)"
 $repoDir = "C:\Users\$env:USERNAME\Digital-Signage"
 $serverDir = "$repoDir\server"
 
-# ── [1/5] Git clone repo ─────────────────────────────────────
+# ── [0/5] Verificare & instalare Git + Node.js ───────────────
 Write-Host ""
-Write-Host "[1/5] Descarcare Digital-Signage..." -ForegroundColor Cyan
+Write-Host "[0/5] Verificare Git si Node.js..." -ForegroundColor Cyan
 
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Write-Host "      Instalare Git via winget..." -ForegroundColor Yellow
     winget install Git.Git --accept-source-agreements --accept-package-agreements --silent
-    $env:PATH += ";C:\Program Files\Git\cmd"
+    $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
 }
+
+if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+    Write-Host "      Instalare Node.js via winget..." -ForegroundColor Yellow
+    winget install OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements --silent
+    $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
+}
+
+# Refresh PATH din nou ca sa prinda git si node proaspat instalate
+$env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
+
+Write-Host "      Git: $(git --version)" -ForegroundColor Green
+Write-Host "      Node: $(node --version)" -ForegroundColor Green
+
+# ── [1/5] Git clone repo ─────────────────────────────────────
+Write-Host ""
+Write-Host "[1/5] Descarcare Digital-Signage..." -ForegroundColor Cyan
 
 if (Test-Path $repoDir) {
     Write-Host "      Repo deja exista, actualizare..." -ForegroundColor Yellow
-    cd $repoDir
+    Set-Location $repoDir
     git pull
 } else {
     git clone https://github.com/MRF823/Digital-Signage.git $repoDir
@@ -30,13 +46,14 @@ Write-Host "      OK." -ForegroundColor Green
 
 # ── [2/5] npm install in server ──────────────────────────────
 Write-Host "[2/5] Instalare dependinte server..." -ForegroundColor Cyan
-cd $serverDir
+Set-Location $serverDir
 npm install --omit=dev
 Write-Host "      OK." -ForegroundColor Green
 
 # ── [3/5] Update agent via Task Scheduler (Node direct) ──────
 Write-Host "[3/5] Configurare update agent..." -ForegroundColor Cyan
-$node = (Get-Command node).Source
+$node = (Get-Command node -ErrorAction SilentlyContinue).Source
+if (-not $node) { $node = "node" }
 $action = New-ScheduledTaskAction -Execute $node -Argument "update-agent.cjs" -WorkingDirectory $serverDir
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
 $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit 0 -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
