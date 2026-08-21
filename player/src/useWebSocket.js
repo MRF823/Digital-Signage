@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 
-const SERVER_URL = import.meta.env.VITE_SERVER_WS || `ws://${window.location.hostname}:4000`
+const SERVER_URL = import.meta.env.VITE_SERVER_WS || `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}`
 const _params = new URLSearchParams(window.location.search)
 const AGENCY_ID = _params.get('agencyId') || import.meta.env.VITE_AGENCY_ID || '1'
 const TV_ID = _params.get('tvId') || import.meta.env.VITE_TV_ID || 'TV-1'
