@@ -64,10 +64,10 @@ Write-Host "      OK." -ForegroundColor Green
 # ── [4/5] Edge autostart (registry) ─────────────────────────
 Write-Host "[4/5] Configurare Edge autostart..." -ForegroundColor Cyan
 $tvEncoded = [Uri]::EscapeDataString($tvLabel)
-$url  = "https://displayiq.funkymedia.ro/player?agencyId=$agencyId&tvId=$tvEncoded"
+$url  = "https://displayiq.funkymedia.ro/player?agencyId=$agencyId&tvId=$tvEncoded&portrait=1"
 $edge = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 if (-not (Test-Path $edge)) { $edge = "C:\Program Files\Microsoft\Edge\Application\msedge.exe" }
-$cmd = "`"$edge`" --app=`"$url`" --start-maximized --no-first-run"
+$cmd = "`"$edge`" --app=`"$url`" --start-fullscreen --no-first-run"
 Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "BancaSign" -ErrorAction SilentlyContinue
 Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "DisplayIQ" -ErrorAction SilentlyContinue
 New-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "DisplayIQ" -Value $cmd -PropertyType String -Force | Out-Null

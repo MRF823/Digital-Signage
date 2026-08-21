@@ -18,6 +18,23 @@ function toLocalISO(date) {
   return local.toISOString().slice(0, 19)
 }
 
+const _urlParams = new URLSearchParams(window.location.search)
+const IS_PORTRAIT = _urlParams.get('portrait') === '1'
+const portraitStyle = IS_PORTRAIT ? {
+  position: 'fixed',
+  width: '100vh',
+  height: '100vw',
+  top: 'calc(50vh - 50vw)',
+  left: 'calc(50vw - 50vh)',
+  transform: 'rotate(90deg)',
+  transformOrigin: 'center center',
+  overflow: 'hidden',
+} : null
+
+function wrap(el) {
+  return IS_PORTRAIT ? <div style={portraitStyle}>{el}</div> : el
+}
+
 export default function App() {
   const { playlist, update } = usePlaylist()
   const { urls, ready, cachePlaylist } = useMediaCache()
@@ -222,7 +239,7 @@ export default function App() {
   }, [src, ready, playlist.length, advance])
 
   if (infoMode) {
-    return (
+    return wrap(
       <InfoDisplay
         docs={infoDocs}
         rotationSeconds={infoRotationSeconds}
@@ -236,12 +253,12 @@ export default function App() {
   }
 
   if (forexMode) {
-    return <ForexDisplay rates={forexRates?.rates} updatedAt={forexRates?.updatedAt} />
+    return wrap(<ForexDisplay rates={forexRates?.rates} updatedAt={forexRates?.updatedAt} cecUpdatedAt={forexRates?.cecUpdatedAt} bnrUpdatedAt={forexRates?.bnrUpdatedAt} />)
   }
 
   if (!ready || playlist.length === 0) {
-    return (
-      <div style={{ width: '100vw', height: '100vh', background: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    return wrap(
+      <div style={{ width: '100vh', height: '100vw', background: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '14px' }}>
           {connected ? 'Se încarcă...' : 'Conectare...'}
         </p>
@@ -250,7 +267,7 @@ export default function App() {
   }
   const tickerHeight = ratesData ? 88 : 0
 
-  return (
+  return wrap(
     <div style={{ position: 'fixed', inset: 0, background: 'black', display: 'flex', flexDirection: 'column' }}>
       <div style={{ position: 'fixed', top: 12, left: 12, zIndex: 200, display: 'flex', flexDirection: 'column', gap: '4px' }}>
         {showAgencyName && agencyName && (
