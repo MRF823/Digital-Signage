@@ -26,8 +26,8 @@ const MAIN = ['EUR', 'USD']
 export default function ForexDisplay({ rates, updatedAt, isPortrait }) {
   const rootStyle = isPortrait ? {
     position: 'fixed',
-    width: '100vh', height: '50vw',
-    top: 'calc(50vh - 25vw)', left: 'calc(75vw - 50vh)',
+    width: '100vh', height: '100vw',
+    top: 'calc(50vh - 50vw)', left: 'calc(50vw - 50vh)',
     transform: 'rotate(90deg)', transformOrigin: 'center center',
     overflow: 'hidden',
     background: '#1a2e20', display: 'flex', flexDirection: 'column', fontFamily: 'Arial, sans-serif',
