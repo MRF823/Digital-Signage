@@ -12,7 +12,7 @@ const CURRENCY_META = {
   PLN: { name: 'Zlot polonez', flag: '🇵🇱' },
   SEK: { name: 'Coroană suedeză', flag: '🇸🇪' },
 }
-const ORDER = ['EUR', 'USD', 'GBP', 'CAD', 'CHF', 'DKK', 'HUF', 'PLN', 'SEK']
+const ORDER = ['EUR', 'USD', 'CHF', 'GBP', 'CAD', 'DKK', 'HUF', 'PLN', 'SEK']
 const MONTHS = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie']
 
 function formatUpdated(iso) {
