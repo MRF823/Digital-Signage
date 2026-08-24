@@ -3,6 +3,7 @@ import { mediaUrl } from '../api'
 
 function PreviewModal({ item, onClose }) {
   const url = mediaUrl(item.filename)
+  const [loading, setLoading] = useState(true)
   return (
     <div
       className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
@@ -18,18 +19,27 @@ function PreviewModal({ item, onClose }) {
         >
           ✕
         </button>
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+          </div>
+        )}
         {item.type === 'video' ? (
           <video
             src={url}
             controls
             autoPlay
+            onCanPlay={() => setLoading(false)}
             className="w-full rounded-lg max-h-[80vh]"
+            style={{ opacity: loading ? 0 : 1 }}
           />
         ) : (
           <img
             src={url}
             alt={item.original_name}
+            onLoad={() => setLoading(false)}
             className="w-full rounded-lg max-h-[80vh] object-contain"
+            style={{ opacity: loading ? 0 : 1 }}
           />
         )}
         <p className="text-white text-sm text-center mt-3 opacity-70">{item.original_name}</p>
