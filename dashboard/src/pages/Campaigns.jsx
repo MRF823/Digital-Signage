@@ -15,7 +15,7 @@ function MediaPreviewModal({ item, onClose }) {
           </div>
         )}
         {item.type === 'video'
-          ? <video src={url} controls autoPlay onCanPlay={() => setLoading(false)} className="w-full rounded-lg max-h-[75vh]" style={{ opacity: loading ? 0 : 1 }} />
+          ? <video src={url} controls autoPlay onLoadedMetadata={() => setLoading(false)} className="w-full rounded-lg max-h-[75vh]" style={{ opacity: loading ? 0 : 1 }} />
           : <img src={url} alt={item.original_name} onLoad={() => setLoading(false)} className="w-full rounded-lg max-h-[75vh] object-contain" style={{ opacity: loading ? 0 : 1 }} />
         }
         <p className="text-white text-sm text-center mt-3 opacity-70">{item.original_name}</p>
