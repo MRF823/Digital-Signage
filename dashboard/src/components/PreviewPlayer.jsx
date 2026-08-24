@@ -62,18 +62,6 @@ function Ticker({ rates, updatedAt }) {
               </div>
             )
           })}
-        </div>
-        <div style={s.row('#fafaf9')}>
-          <span style={s.label('#854F0B')}>BNR REF.</span>
-          {CURRENCIES.map(c => (
-            <div key={c} style={s.cell}>
-              <span style={s.cur}>{c}</span>
-              {rates[c]?.reference != null
-                ? <span style={s.val('#854F0B')}>{rates[c].reference.toFixed(4)}</span>
-                : <span style={s.dash}>—</span>
-              }
-            </div>
-          ))}
           {lastUpdate && (
             <div style={{ marginLeft: 'auto', paddingLeft: 16, borderLeft: '1px solid rgba(0,0,0,0.06)', flexShrink: 0 }}>
               <span style={{ fontSize: 12, fontWeight: 600, color: '#111827', fontVariantNumeric: 'tabular-nums' }}>
