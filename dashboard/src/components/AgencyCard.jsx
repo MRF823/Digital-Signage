@@ -15,7 +15,7 @@ function tvStatus(tv) {
   return { online: false, label: timeLabel, detail }
 }
 
-const SERVER_ORIGIN = `${window.location.protocol}//${window.location.hostname}:4000`
+const SERVER_ORIGIN = window.location.origin
 
 export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDeleted }) {
   const [showModal, setShowModal] = useState(false)
