@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getCampaigns, createCampaign, deleteCampaign, getAgencies, getGroups, getMedia, mediaUrl } from '../api'
+import PreviewPlayer from '../components/PreviewPlayer'
 
 export default function Campaigns() {
   const [campaigns, setCampaigns] = useState([])
@@ -10,6 +11,7 @@ export default function Campaigns() {
   const [success, setSuccess] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [previewItems, setPreviewItems] = useState(null)
 
   const [form, setForm] = useState({
     name: '',
@@ -121,6 +123,8 @@ export default function Campaigns() {
 
   return (
     <div>
+      {previewItems && <PreviewPlayer items={previewItems} onClose={() => setPreviewItems(null)} />}
+
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-800">Campanii</h2>
         <button onClick={() => setShowForm(!showForm)}
@@ -276,10 +280,19 @@ export default function Campaigns() {
                   ))}
                 </div>
               </div>
-              <button onClick={() => Promise.all(c.ids.map(id => handleDelete(id)))}
-                className="text-red-500 hover:text-red-700 text-sm px-3 py-1 rounded-lg hover:bg-red-50 flex-shrink-0">
-                Șterge
-              </button>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {c.items?.length > 0 && (
+                  <button onClick={() => setPreviewItems(c.items)}
+                    className="text-xs bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    Preview
+                  </button>
+                )}
+                <button onClick={() => Promise.all(c.ids.map(id => handleDelete(id)))}
+                  className="text-red-500 hover:text-red-700 text-sm px-3 py-1 rounded-lg hover:bg-red-50">
+                  Șterge
+                </button>
+              </div>
             </div>
           ))}
         </div>
