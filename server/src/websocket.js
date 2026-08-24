@@ -4,6 +4,7 @@ import { getCurrentRates } from './rates.js'
 import { getCurrentForexRates } from './forex.js'
 import { shouldScreenBeOn } from './scheduler.js'
 import { sendOfflineAlert, sendReconnectedAlert } from './mailer.js'
+import { getActivePlaylist } from './playlist.js'
 
 // tvKey -> { timer, agencyName, tvLabel }
 const offlineTimers = new Map()
@@ -130,14 +131,8 @@ export function initWebSocket(httpServer) {
             return
           }
 
-          // TV normal — trimite playlist
-          const playlist = db2.prepare(`
-            SELECT pi.*, m.filename, m.original_name, m.type, m.duration_seconds
-            FROM playlist_items pi
-            JOIN media m ON m.id = pi.media_id
-            WHERE pi.agency_id = ?
-            ORDER BY pi.position
-          `).all(agencyId)
+          // TV normal — trimite playlist filtrat după label TV (sufix campanie)
+          const playlist = getActivePlaylist(agencyId, tvId)
 
           const groupRow = db2.prepare(`
             SELECT g.transition FROM groups g
@@ -354,5 +349,24 @@ export function pushPlaylist(agencyId, items, transition = 'fade') {
   if (!agencyClients) return
   for (const client of agencyClients) {
     if (client.readyState === 1) client.send(msg)
+  }
+}
+
+// Trimite fiecărui TV din agenție playlist-ul filtrat după label (pentru campanii cu sufix)
+export function pushPlaylistForAgency(agencyId, transition = 'fade') {
+  const db = getDb()
+  let agencyName = '', showAgencyName = true, showPlayerLabel = false
+  try {
+    const row = db.prepare('SELECT name, show_agency_name, show_player_label FROM agencies WHERE id = ?').get(agencyId)
+    agencyName = row?.name || ''
+    showAgencyName = row?.show_agency_name !== 0
+    showPlayerLabel = row?.show_player_label === 1
+  } catch {}
+
+  for (const [key, ws] of tvClients) {
+    if (!key.startsWith(`${agencyId}:`) || ws.readyState !== 1) continue
+    const tvLabel = key.slice(String(agencyId).length + 1)
+    const items = getActivePlaylist(agencyId, tvLabel)
+    ws.send(JSON.stringify({ type: 'playlist_update', items, transition, agencyName, showAgencyName, showPlayerLabel }))
   }
 }

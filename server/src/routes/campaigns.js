@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { getDb } from '../db.js'
-import { pushPlaylist } from '../websocket.js'
+import { getActivePlaylist } from '../playlist.js'
 
 const router = Router()
 
@@ -118,37 +118,6 @@ router.delete('/:id', (req, res) => {
   }
 })
 
-// Funcție apelată de scheduler — returnează playlist-ul activ pentru o agenție
-export function getActivePlaylist(agencyId) {
-  const db = getDb()
-  const now = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
-
-  // Caută campanie activă azi
-  const campaign = db.prepare(`
-    SELECT * FROM campaigns
-    WHERE agency_id = ? AND start_date <= ? AND end_date >= ?
-    ORDER BY start_date DESC
-    LIMIT 1
-  `).get(agencyId, now, now)
-
-  if (campaign) {
-    return db.prepare(`
-      SELECT ci.*, m.filename, m.original_name, m.type, m.duration_seconds
-      FROM campaign_items ci
-      JOIN media m ON m.id = ci.media_id
-      WHERE ci.campaign_id = ?
-      ORDER BY ci.position
-    `).all(campaign.id)
-  }
-
-  // Fallback — playlist default
-  return db.prepare(`
-    SELECT pi.*, m.filename, m.original_name, m.type, m.duration_seconds
-    FROM playlist_items pi
-    JOIN media m ON m.id = pi.media_id
-    WHERE pi.agency_id = ?
-    ORDER BY pi.position
-  `).all(agencyId)
-}
+export { getActivePlaylist }
 
 export default router

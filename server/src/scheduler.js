@@ -1,8 +1,8 @@
 import { mkdirSync, readdirSync, unlinkSync } from 'fs'
 import { resolve, join } from 'path'
 import { getDb } from './db.js'
-import { pushPlaylist, pushScreenPower, pushInfoPower } from './websocket.js'
-import { getActivePlaylist } from './routes/campaigns.js'
+import { pushPlaylist, pushScreenPower, pushInfoPower, pushPlaylistForAgency } from './websocket.js'
+import { getActivePlaylist } from './playlist.js'
 
 // 0=Luni, 1=Marti, ..., 6=Duminica
 function getCurrentDayAndTime() {
@@ -119,8 +119,7 @@ function checkCampaigns() {
     const db = getDb()
     const agencies = db.prepare('SELECT id FROM agencies').all()
     for (const agency of agencies) {
-      const items = getActivePlaylist(agency.id)
-      pushPlaylist(String(agency.id), items)
+      pushPlaylistForAgency(String(agency.id))
     }
   } catch (err) {
     console.error('Campaign scheduler error:', err)
