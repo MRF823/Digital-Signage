@@ -86,6 +86,7 @@ export const getCampaigns = () => api.get('/api/campaigns').then(r => r.data)
 export const getCampaignsByAgency = (agencyId) => api.get(`/api/campaigns/${agencyId}`).then(r => r.data)
 export const createCampaign = (data) => api.post('/api/campaigns', data).then(r => r.data)
 export const deleteCampaign = (id) => api.delete(`/api/campaigns/${id}`)
+export const updateCampaign = (id, data) => api.put(`/api/campaigns/${id}`, data).then(r => r.data)
 
 export const getRates = () => api.get('/api/rates').then(r => r.data)
 

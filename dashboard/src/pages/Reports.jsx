@@ -155,7 +155,9 @@ export default function Reports() {
       .finally(() => setLoading(false))
 
     // Uptime per TV — doar dacă e o singură zi
-    const singleDay = f && t && f === t ? f : (!f && !t ? new Date().toISOString().slice(0, 10) : null)
+    const _dn = new Date()
+    const _todayLocal = `${_dn.getFullYear()}-${String(_dn.getMonth()+1).padStart(2,'0')}-${String(_dn.getDate()).padStart(2,'0')}`
+    const singleDay = f && t && f === t ? f : (!f && !t ? _todayLocal : null)
     if (singleDay) {
       setUptimeLoading(true)
       // Obține TV-urile din agenția selectată sau toate
@@ -191,7 +193,8 @@ export default function Reports() {
     return () => { clearInterval(tick); clearInterval(refresh) }
   }, [agencyId, from, to, hasFiltered])
 
-  const today = new Date().toISOString().slice(0, 10)
+  const _d = new Date()
+  const today = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`
 
   // Perioada selectată în secunde
   const periodStart = from ? new Date(from + 'T00:00:00') : null

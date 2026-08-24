@@ -16,6 +16,11 @@ export default function VideoPlayer({ src, onEnded, seamless, onLoop }) {
       if (v) { v.currentTime = 0; v.play().catch(() => {}) }
       return
     }
+    const v = ref.current
+    if (v) {
+      v.pause()
+      v.style.visibility = 'hidden'
+    }
     onEnded?.()
   }
 

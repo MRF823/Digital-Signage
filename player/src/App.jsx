@@ -124,17 +124,16 @@ export default function App() {
       if (connectedRef.current) flushQueue(sendRef.current)
     }
 
-    playCountRef.current += 1
-    setPlayCount(playCountRef.current)
-
     const type = transitionType
     if (type === 'none') {
       playedAtRef.current = toLocalISO(new Date())
+      playCountRef.current += 1
       setIndex(i => {
         const n = (i + 1) % Math.max(playlist.length, 1)
         indexRef.current = n
         return n
       })
+      setPlayCount(playCountRef.current)
       fadingRef.current = false
       return
     }
@@ -142,11 +141,13 @@ export default function App() {
     setAnimClass(`t-exit-${type}`)
     setTimeout(() => {
       playedAtRef.current = toLocalISO(new Date())
+      playCountRef.current += 1
       setIndex(i => {
         const n = (i + 1) % Math.max(playlist.length, 1)
         indexRef.current = n
         return n
       })
+      setPlayCount(playCountRef.current)
       setAnimClass(`t-enter-${type}`)
       setTimeout(() => {
         setAnimClass('')
@@ -193,7 +194,9 @@ export default function App() {
       setScreenOn(msg.on)
     }
     if (msg.type === 'reload') {
-      window.location.reload()
+      const u = new URL(window.location.href)
+      u.searchParams.set('_t', Date.now())
+      window.location.replace(u.toString())
     }
   }, [update, cachePlaylist, advance])
 

@@ -3,6 +3,7 @@ import { resolve, join } from 'path'
 import { getDb } from './db.js'
 import { pushPlaylist, pushScreenPower, pushInfoPower, pushPlaylistForAgency } from './websocket.js'
 import { getActivePlaylist } from './playlist.js'
+import { todayRo } from './dateRo.js'
 
 // 0=Luni, 1=Marti, ..., 6=Duminica
 function getCurrentDayAndTime() {
@@ -130,7 +131,7 @@ function backupDb() {
   try {
     const backupDir = resolve(process.cwd(), 'backups')
     mkdirSync(backupDir, { recursive: true })
-    const date = new Date().toISOString().slice(0, 10)
+    const date = todayRo()
     const dest = join(backupDir, `signage-${date}.db`)
     getDb().backup(dest).then(() => {
       const files = readdirSync(backupDir)

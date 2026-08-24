@@ -22,6 +22,7 @@ import rateLimit from 'express-rate-limit'
 import { initScheduler } from './scheduler.js'
 import aiRoutes from './routes/ai.js'
 import { initRates, getCurrentRates } from './rates.js'
+import { todayRo, futureDateRo } from './dateRo.js'
 import { initForex, getCurrentForexRates } from './forex.js'
 
 const loginRateLimit = rateLimit({ windowMs: 15 * 60_000, max: 10 })
@@ -219,8 +220,8 @@ app.get('/api/upcoming-media', (req, res) => {
     const days = parseInt(req.query.days || '3', 10)
     if (!agencyId) return res.status(400).json({ error: 'agencyId required' })
 
-    const today = new Date().toISOString().slice(0, 10)
-    const future = new Date(Date.now() + days * 86400_000).toISOString().slice(0, 10)
+    const today = todayRo()
+    const future = futureDateRo(days)
 
     const campaigns = db.prepare(`
       SELECT id FROM campaigns
@@ -280,8 +281,19 @@ const __dirname = dirname(__filename)
 
 const playerDist = join(__dirname, '../../player/dist')
 if (existsSync(playerDist)) {
-  app.use('/player', express.static(playerDist))
+  app.use('/player', express.static(playerDist, {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+        res.setHeader('Pragma', 'no-cache')
+        res.setHeader('Expires', '0')
+      }
+    }
+  }))
   app.get(/^\/player/, (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+    res.setHeader('Pragma', 'no-cache')
+    res.setHeader('Expires', '0')
     res.sendFile(join(playerDist, 'index.html'), err => {
       if (err) res.status(503).send('Player temporarily unavailable')
     })

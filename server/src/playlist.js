@@ -1,4 +1,5 @@
 import { getDb } from './db.js'
+import { todayRo } from './dateRo.js'
 
 // Convenție: "Nume campanie - Tip TV" → campania merge DOAR pe TV-ul cu acel label
 // Fără sufix → merge pe toate TV-urile normale din agenție
@@ -10,11 +11,11 @@ function campaignMatchesTv(campaignName, tvLabel) {
 
 export function getActivePlaylist(agencyId, tvLabel = null) {
   const db = getDb()
-  const now = new Date().toISOString().slice(0, 10)
+  const now = todayRo()
 
   const campaigns = db.prepare(`
     SELECT * FROM campaigns
-    WHERE agency_id = ? AND start_date <= ? AND end_date >= ?
+    WHERE agency_id = ? AND start_date <= ? AND end_date > ?
     ORDER BY start_date DESC
   `).all(agencyId, now, now)
 

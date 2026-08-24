@@ -11,6 +11,7 @@
     "serve": "vite preview --port 5176 --host"
   },
   "dependencies": {
+    "pdfjs-dist": "^6.2.108",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },
