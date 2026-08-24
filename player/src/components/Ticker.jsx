@@ -65,29 +65,13 @@ export default function Ticker({ rates, updatedAt, cecUpdatedAt, bnrUpdatedAt })
         })}
       </div>
 
-      {/* Rând BNR */}
-      <div style={s.row('#fafaf9')}>
-        <span style={s.label('#854F0B')}>BNR REF.</span>
-        {CURRENCIES.map(c => (
-          <div key={c} style={s.cell}>
-            <span style={s.cur}>{c}</span>
-            {rates[c]?.reference != null
-              ? <span style={s.val('#854F0B')}>{rates[c].reference.toFixed(4)}</span>
-              : <span style={s.dash}>—</span>
-            }
-          </div>
-        ))}
-        {lastUpdate && (
-          <div style={{
-            marginLeft: 'auto', paddingLeft: 16, borderLeft: '1px solid rgba(0,0,0,0.06)',
-            flexShrink: 0, display: 'flex', alignItems: 'center',
-          }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#111827', fontVariantNumeric: 'tabular-nums' }}>
-              Ultima actualizare: {lastUpdate}
-            </span>
-          </div>
-        )}
-      </div>
+      {lastUpdate && (
+        <div style={{ padding: '4px 20px', background: '#fafaf9', display: 'flex', justifyContent: 'flex-end' }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', fontVariantNumeric: 'tabular-nums' }}>
+            Ultima actualizare: {lastUpdate}
+          </span>
+        </div>
+      )}
     </div>
   )
 }
