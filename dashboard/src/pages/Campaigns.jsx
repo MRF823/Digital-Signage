@@ -2,6 +2,28 @@ import { useState, useEffect } from 'react'
 import { getCampaigns, createCampaign, deleteCampaign, getAgencies, getGroups, getMedia, mediaUrl } from '../api'
 import PreviewPlayer from '../components/PreviewPlayer'
 
+function MediaPreviewModal({ item, onClose }) {
+  const [loading, setLoading] = useState(true)
+  const url = mediaUrl(item.filename)
+  return (
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[70]" onClick={onClose}>
+      <div className="relative max-w-3xl w-full mx-4" onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute -top-10 right-0 text-white text-2xl hover:text-gray-300">✕</button>
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+          </div>
+        )}
+        {item.type === 'video'
+          ? <video src={url} controls autoPlay onCanPlay={() => setLoading(false)} className="w-full rounded-lg max-h-[75vh]" style={{ opacity: loading ? 0 : 1 }} />
+          : <img src={url} alt={item.original_name} onLoad={() => setLoading(false)} className="w-full rounded-lg max-h-[75vh] object-contain" style={{ opacity: loading ? 0 : 1 }} />
+        }
+        <p className="text-white text-sm text-center mt-3 opacity-70">{item.original_name}</p>
+      </div>
+    </div>
+  )
+}
+
 export default function Campaigns() {
   const [campaigns, setCampaigns] = useState([])
   const [agencies, setAgencies] = useState([])
@@ -12,6 +34,7 @@ export default function Campaigns() {
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [previewItems, setPreviewItems] = useState(null)
+  const [mediaPreview, setMediaPreview] = useState(null)
 
   const [form, setForm] = useState({
     name: '',
@@ -124,6 +147,7 @@ export default function Campaigns() {
   return (
     <div>
       {previewItems && <PreviewPlayer items={previewItems} onClose={() => setPreviewItems(null)} />}
+      {mediaPreview && <MediaPreviewModal item={mediaPreview} onClose={() => setMediaPreview(null)} />}
 
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-800">Campanii</h2>
@@ -230,16 +254,34 @@ export default function Campaigns() {
             ) : (
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                 {media.map(m => {
-                  const selected = form.items.find(i => i.media_id === m.id)
+                  const selected = !!form.items.find(i => i.media_id === m.id)
+                  const url = mediaUrl(m.filename)
                   return (
-                    <div key={m.id} onClick={() => toggleMedia(m)}
-                      className={`cursor-pointer rounded-lg border-2 overflow-hidden transition-all
-                        ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200 hover:border-gray-400'}`}>
-                      {m.type === 'image'
-                        ? <img src={mediaUrl(m.filename)} className="w-full h-16 object-cover" />
-                        : <div className="w-full h-16 bg-gray-800 flex items-center justify-center text-white text-xs">▶ Video</div>
-                      }
-                      <p className="text-xs text-gray-600 p-1 truncate">{m.original_name}</p>
+                    <div key={m.id}
+                      className={`relative rounded-lg border-2 overflow-hidden transition-all
+                        ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'}`}>
+                      {/* Thumbnail */}
+                      <div className="relative h-20 bg-gray-100 group cursor-pointer" onClick={() => setMediaPreview(m)}>
+                        {m.type === 'image'
+                          ? <img src={url} className="w-full h-full object-cover" />
+                          : <video src={url} className="w-full h-full object-cover" preload="metadata" muted
+                              onLoadedMetadata={e => { e.target.currentTime = Math.min(1, e.target.duration * 0.1) }} />
+                        }
+                        {/* Play overlay */}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center">
+                          <span className="text-white text-2xl opacity-0 group-hover:opacity-100 transition-opacity drop-shadow">
+                            {m.type === 'video' ? '▶' : '🔍'}
+                          </span>
+                        </div>
+                      </div>
+                      {/* Checkbox selecție — stânga sus */}
+                      <div className="absolute top-1.5 left-1.5" onClick={() => toggleMedia(m)}>
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer transition-all
+                          ${selected ? 'bg-blue-600 border-blue-600' : 'bg-white/80 border-gray-400 hover:border-blue-400'}`}>
+                          {selected && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-600 px-1.5 py-1 truncate">{m.original_name}</p>
                     </div>
                   )
                 })}
