@@ -67,6 +67,7 @@ export default function MediaCard({ item, onDelete }) {
               className="w-full h-full object-cover"
               preload="metadata"
               muted
+              onLoadedMetadata={e => { e.target.currentTime = 1 }}
             />
           ) : (
             <img
