@@ -63,6 +63,13 @@ export default function Ticker({ rates, updatedAt, cecUpdatedAt, bnrUpdatedAt })
             </div>
           )
         })}
+        {lastUpdate && (
+          <div style={{ marginLeft: 'auto', paddingLeft: 16, borderLeft: '1px solid rgba(0,0,0,0.06)', flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#111827', fontVariantNumeric: 'tabular-nums' }}>
+              Ultima actualizare: {lastUpdate}
+            </span>
+          </div>
+        )}
       </div>
 
     </div>
