@@ -102,7 +102,7 @@ export function serveFile(req, res) {
       })
       createReadStream(filePath, { start, end }).pipe(res)
     } else {
-      res.writeHead(200, { 'Content-Length': stat.size, 'Content-Type': contentType })
+      res.writeHead(200, { 'Content-Length': stat.size, 'Content-Type': contentType, 'Accept-Ranges': 'bytes' })
       createReadStream(filePath).pipe(res)
     }
   } catch {
