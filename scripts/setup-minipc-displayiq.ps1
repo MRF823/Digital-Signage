@@ -65,7 +65,7 @@ Write-Host "      OK." -ForegroundColor Green
 Write-Host "[4/5] Configurare Edge autostart..." -ForegroundColor Cyan
 
 $tvEncoded = [Uri]::EscapeDataString($tvLabel)
-$url  = "http://92.5.28.167:4000/player?agencyId=$agencyId&tvId=$tvEncoded"
+$url  = "https://displayiq.funkymedia.ro/player?agencyId=$agencyId&tvId=$tvEncoded"
 $edge = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 if (-not (Test-Path $edge)) { $edge = "C:\Program Files\Microsoft\Edge\Application\msedge.exe" }
 
