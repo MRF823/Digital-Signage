@@ -17,9 +17,22 @@ function tvStatus(tv) {
 
 const SERVER_ORIGIN = window.location.origin
 
+function isPortraitTv(tvLabel) {
+  return tvLabel.toLowerCase().includes('schimb valutar')
+}
+
 function playerUrl(agencyId, tvLabel) {
-  const portrait = tvLabel.toLowerCase().includes('schimb valutar') ? '&portrait=1' : ''
+  const portrait = isPortraitTv(tvLabel) ? '&portrait=1' : ''
   return `${SERVER_ORIGIN}/player/?agencyId=${agencyId}&tvId=${encodeURIComponent(tvLabel)}${portrait}`
+}
+
+function openPreview(agencyId, tvLabel) {
+  const url = playerUrl(agencyId, tvLabel)
+  if (isPortraitTv(tvLabel)) {
+    window.open(url, '_blank', 'width=540,height=960,noopener')
+  } else {
+    window.open(url, '_blank')
+  }
 }
 
 export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDeleted }) {
@@ -168,7 +181,7 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
               <button
                 onClick={() => {
                   if (agency.tvs.length === 1) {
-                    window.open(playerUrl(agency.id, agency.tvs[0].label), '_blank')
+                    openPreview(agency.id, agency.tvs[0].label)
                   } else {
                     setShowTvPicker(v => !v)
                   }
@@ -187,7 +200,7 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
                       key={tv.id}
                       onClick={() => {
                         setShowTvPicker(false)
-                        window.open(playerUrl(agency.id, tv.label), '_blank')
+                        openPreview(agency.id, tv.label)
                       }}
                       className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                     >
