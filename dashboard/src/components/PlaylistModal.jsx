@@ -2,8 +2,30 @@ import { useState, useEffect } from 'react'
 import { DndContext, closestCenter } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { getMedia, setPlaylist } from '../api'
+import { getMedia, setPlaylist, mediaUrl } from '../api'
 import PreviewPlayer from './PreviewPlayer'
+
+function MediaQuickPreview({ item, onClose }) {
+  const [loading, setLoading] = useState(true)
+  const url = mediaUrl(item.filename)
+  return (
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[70]" onClick={onClose}>
+      <div className="relative max-w-3xl w-full mx-4" onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute -top-10 right-0 text-white text-2xl hover:text-gray-300">✕</button>
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+          </div>
+        )}
+        {item.type === 'video'
+          ? <video src={url} controls autoPlay onLoadedMetadata={() => setLoading(false)} className="w-full rounded-lg max-h-[75vh]" style={{ opacity: loading ? 0 : 1 }} />
+          : <img src={url} alt={item.original_name} onLoad={() => setLoading(false)} className="w-full rounded-lg max-h-[75vh] object-contain" style={{ opacity: loading ? 0 : 1 }} />
+        }
+        <p className="text-white text-sm text-center mt-3 opacity-70">{item.original_name}</p>
+      </div>
+    </div>
+  )
+}
 
 function SortableItem({ item, onRemove, onUpdateDuration }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id })
@@ -36,6 +58,7 @@ export default function PlaylistModal({ agency, current, onClose, onSaved }) {
   const [items, setItems] = useState(current)
   const [saving, setSaving] = useState(false)
   const [previewing, setPreviewing] = useState(false)
+  const [quickPreview, setQuickPreview] = useState(null)
 
   useEffect(() => { getMedia().then(setAllMedia) }, [])
 
@@ -93,6 +116,7 @@ export default function PlaylistModal({ agency, current, onClose, onSaved }) {
       {previewing && enrichedItems.length > 0 && (
         <PreviewPlayer items={enrichedItems} onClose={() => setPreviewing(false)} />
       )}
+      {quickPreview && <MediaQuickPreview item={quickPreview} onClose={() => setQuickPreview(null)} />}
 
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
         <div className="bg-gray-50 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
@@ -116,15 +140,23 @@ export default function PlaylistModal({ agency, current, onClose, onSaved }) {
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-3">Librărie media</p>
               <div className="flex flex-col gap-2">
                 {allMedia.map(m => (
-                  <button key={m.id} onClick={() => addItem(m)}
-                    className="text-left px-3 py-2 rounded-lg border text-sm transition-colors bg-gray-50 hover:bg-blue-50 hover:border-blue-300 border-gray-200 flex items-center justify-between gap-2">
-                    <span>{m.type === 'video' ? '🎬' : '🖼️'} {m.original_name}</span>
-                    {inPlaylistCount[m.id] > 0 && (
-                      <span className="shrink-0 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
-                        ×{inPlaylistCount[m.id]}
-                      </span>
-                    )}
-                  </button>
+                  <div key={m.id}
+                    className="rounded-lg border text-sm transition-colors bg-gray-50 hover:bg-blue-50 hover:border-blue-300 border-gray-200 flex items-center gap-2 pr-1">
+                    <button onClick={() => addItem(m)} className="text-left px-3 py-2 flex-1 flex items-center gap-2 min-w-0">
+                      <span className="truncate">{m.type === 'video' ? '🎬' : '🖼️'} {m.original_name}</span>
+                      {inPlaylistCount[m.id] > 0 && (
+                        <span className="shrink-0 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
+                          ×{inPlaylistCount[m.id]}
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setQuickPreview(m)}
+                      className="shrink-0 w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-slate-700 transition-colors"
+                      title="Previzualizează">
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>
