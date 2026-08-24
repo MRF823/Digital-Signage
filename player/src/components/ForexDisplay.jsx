@@ -24,19 +24,12 @@ const ORDER = ['EUR', 'USD', 'CHF', 'GBP', 'CAD', 'DKK', 'HUF', 'PLN', 'SEK']
 const MAIN = ['EUR', 'USD']
 
 export default function ForexDisplay({ rates, updatedAt, isPortrait }) {
-  const rootStyle = isPortrait ? {
-    position: 'fixed',
-    width: '100vh', height: '100vw',
-    top: 'calc(50vh - 50vw)', left: 'calc(50vw - 50vh)',
-    transform: 'rotate(90deg)', transformOrigin: 'center center',
-    overflow: 'hidden',
-    background: '#1a2e20', display: 'flex', flexDirection: 'column', fontFamily: 'Arial, sans-serif',
-  } : {
-    position: 'fixed', inset: 0,
-    background: '#1a2e20', display: 'flex', flexDirection: 'column', fontFamily: 'Arial, sans-serif',
-  }
-  return (
-    <div style={rootStyle}>
+  const inner = (
+    <div style={{
+      width: isPortrait ? 'min(56.25vh, 100vw)' : '100%',
+      height: '100%',
+      background: '#1a2e20', display: 'flex', flexDirection: 'column', fontFamily: 'Arial, sans-serif', overflow: 'hidden',
+    }}>
       {/* Header */}
       <div style={{
         padding: '22px 24px 16px',
@@ -111,6 +104,20 @@ export default function ForexDisplay({ rates, updatedAt, isPortrait }) {
           În cazul schimburilor valutare inițiate online, de persoane fizice, se aplică cursul valutar mai avantajos, valabil pe Internet și Mobile Banking.
         </div>
       </div>
+    </div>
+  )
+
+  if (isPortrait) {
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: 'black', display: 'flex', alignItems: 'stretch', justifyContent: 'center' }}>
+        {inner}
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0 }}>
+      {inner}
     </div>
   )
 }
