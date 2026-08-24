@@ -36,6 +36,12 @@ router.post('/upload', (req, res) => {
 
     const type = ALLOWED_TYPES[req.file.mimetype]
     const db = getDb()
+
+    const existing = db.prepare('SELECT id FROM media WHERE original_name = ?').get(req.file.originalname)
+    if (existing) {
+      deleteFile(req.file.filename)
+      return res.status(409).json({ error: `Fișierul "${req.file.originalname}" există deja în librărie.` })
+    }
     const result = db.prepare(`
       INSERT INTO media (filename, original_name, type, size_bytes)
       VALUES (?, ?, ?, ?)

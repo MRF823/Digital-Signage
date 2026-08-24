@@ -31,6 +31,11 @@ export default function Content() {
     setError('')
     setWarning('')
     for (const file of files) {
+      const duplicate = media.find(m => m.original_name === file.name)
+      if (duplicate) {
+        setError(`Fișierul "${file.name}" există deja în librărie. Șterge-l mai întâi dacă vrei să îl înlocuiești.`)
+        continue
+      }
       const warn = await checkImageAspectRatio(file)
       if (warn) {
         setWarning(warn)
@@ -46,7 +51,7 @@ export default function Content() {
       }
     }
     setProgress(null)
-  }, [])
+  }, [media])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
