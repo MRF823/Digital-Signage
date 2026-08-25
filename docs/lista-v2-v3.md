@@ -2,13 +2,13 @@
 
 ## V2 — Prioritate ridicată
 
-| # | Feature | Inspirat din | Site |
-|---|---|---|---|
-| 1 | Zero-touch deployment — mini PC se configurează singur după introducerea parolei WiFi | Kitcast | kitcast.tv |
-| 2 | Offline playback — redă din cache dacă serverul cade | NoviSign | novisign.com |
-| 3 | Monitoring ecrane — dashboard arată TV online/offline în timp real | Yodeck | yodeck.com |
-| 4 | Scheduling complet — dată start + dată stop exactă per playlist (ex: campanie 01 iulie → 31 iulie) + ore/zile diferite. Încarci campania din timp, se activează/dezactivează automat. Tranziție automată între campanii: când expiră A pornește B fără intervenție manuală. | Spectroo DMS | dms.getconnected.ro |
-| 17 | Playlist default (Filler Content) — playlist care rulează mereu pe TV când nu e nicio campanie activă programată. Campania se afișează peste default când e activă, după care TV-ul revine la default. Evită ecranul negru. | Yodeck | yodeck.com |
+| # | Feature | Status | Inspirat din | Site |
+|---|---|---|---|---|
+| 1 | Zero-touch deployment — mini PC se configurează singur după introducerea parolei WiFi | ⬜ | Kitcast | kitcast.tv |
+| 2 | Offline playback — redă din cache dacă serverul cade | ✅ | NoviSign | novisign.com |
+| 3 | Monitoring ecrane — dashboard arată TV online/offline în timp real | ✅ | Yodeck | yodeck.com |
+| 4 | **Campanii (Scheduling complet)** — creare campanie cu dată start + dată stop, playlist propriu (video + imagini, orice ordine, repetabile), targeting per tip TV din denumire (ex: "Credit - TV Vitrina" → merge doar pe TV-urile vitrina). Activare automată la 00:01, dezactivare la 00:00. Validare: min 1 zi durată, nu se suprapun 2 campanii pe același tip TV. Push automat pe TV-uri la salvare/ștergere. TV-ul revine automat la playlistul grupului după expirare. **✅ IMPLEMENTAT aug 2026** | ✅ | Spectroo DMS | dms.getconnected.ro |
+| 17 | Playlist default (Filler Content) — playlist care rulează mereu pe TV când nu e nicio campanie activă programată. Campania se afișează peste default când e activă, după care TV-ul revine la default. Evită ecranul negru. **✅ IMPLEMENTAT** (playlistul grupului e filler-ul implicit) | ✅ | Yodeck | yodeck.com |
 | 18 | Hartă locații agenții — dashboard arată o hartă cu toate agențiile CEC și statusul fiecăreia (online/offline). Util când ai 10 agenții în orașe diferite — vezi dintr-o privire care TV are probleme. | Yodeck | yodeck.com |
 | 19 | Web Pages — afișează o pagină web direct pe TV (ex: cec.ro/curs-valutar, sau orice URL). Alternativă simplă la scraping — browserul redă pagina live, fără cod suplimentar. | Yodeck | yodeck.com |
 | 20 | Transition Options — efecte vizuale între fișierele din playlist (fade, slide, etc.). Se setează per playlist. | Yodeck | yodeck.com |
@@ -25,6 +25,8 @@
 | 14 | Export Excel — rapoarte conținut/TV-uri | Spectroo DMS | dms.getconnected.ro |
 | 15 | Durată per item — cât timp stă fiecare imagine | Yodeck | yodeck.com |
 | 16 | Redesign dashboard — fond alb, sidebar, cards statistici, verde/roșu status TV | Yodeck/OptiSigns/ScreenCloud | yodeck.com / optisigns.com / screencloud.com |
+
+| 22 | **Tranziție campanie→grup autonomă (offline-safe)** — serverul trimite odată cu campania și playlistul de backup din grup + data expirării. Mini PC-ul setează un timer local și face schimbarea la miezul nopții indiferent dacă e WiFi sau nu. Modificări: `websocket.js` (adaugă `campaignEndDate` + `fallbackItems`) + `player/App.jsx` (timer local). Nu necesită acces fizic la mini PC — se deployează automat prin reload. | ⬜ | DisplayIQ | intern |
 
 ## V3 — Ulterior
 

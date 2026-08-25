@@ -55,6 +55,7 @@ export const addTv = (agencyId, label, orientation = 'landscape') => api.post(`/
 export const updateTvOrientation = (agencyId, tvId, orientation) => api.patch(`/api/agencies/${agencyId}/tvs/${tvId}`, { orientation }).then(r => r.data)
 export const deleteTv = (tvId) => api.delete(`/api/tvs/${tvId}`)
 export const getPlaylist = (agencyId) => api.get(`/api/agencies/${agencyId}/playlist`).then(r => r.data)
+export const getActivePlaylistForTv = (agencyId, tvLabel) => api.get(`/api/agencies/${agencyId}/active-playlist`, { params: { tvLabel } }).then(r => r.data)
 export const setPlaylist = (agencyId, items) =>
   api.post(`/api/agencies/${agencyId}/playlist`, { items }).then(r => r.data)
 

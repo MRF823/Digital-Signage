@@ -1,9 +1,17 @@
 import { getDb } from './db.js'
 import { todayRo } from './dateRo.js'
 
+// TV-uri speciale — niciodată nu primesc campanii de marketing
+function isSpecialTv(tvLabel) {
+  if (!tvLabel) return false
+  const l = tvLabel.toLowerCase()
+  return l.includes('schimb valutar') || l.includes('info obligatorii')
+}
+
 // Convenție: "Nume campanie - Tip TV" → campania merge DOAR pe TV-ul cu acel label
-// Fără sufix → merge pe toate TV-urile normale din agenție
+// Fără sufix → merge pe toate TV-urile NORMALE (nu schimb valutar, nu info obligatorii)
 function campaignMatchesTv(campaignName, tvLabel) {
+  if (isSpecialTv(tvLabel)) return false
   const match = campaignName.match(/ - (.+)$/i)
   if (!match) return true
   return match[1].trim().toLowerCase() === tvLabel.trim().toLowerCase()

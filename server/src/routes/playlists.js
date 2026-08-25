@@ -1,8 +1,22 @@
 import { Router } from 'express'
 import { getDb } from '../db.js'
 import { pushPlaylist } from '../websocket.js'
+import { getActivePlaylist } from '../playlist.js'
 
 const router = Router()
+
+// Returnează playlistul ACTIV per TV (campanie dacă e activă, altfel grupul)
+router.get('/:id/active-playlist', (req, res) => {
+  try {
+    const agencyId = parseInt(req.params.id, 10)
+    if (isNaN(agencyId)) return res.status(400).json({ error: 'Invalid agency id' })
+    const tvLabel = req.query.tvLabel || null
+    const items = getActivePlaylist(String(agencyId), tvLabel)
+    res.json(items)
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
 
 router.get('/:id/playlist', (req, res) => {
   try {

@@ -1,9 +1,38 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { DndContext, closestCenter } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { getCampaigns, createCampaign, updateCampaign, deleteCampaign, getAgencies, getGroups, getMedia, mediaUrl } from '../api'
 import PreviewPlayer from '../components/PreviewPlayer'
+
+function DateInput({ value, onChange, min }) {
+  const ref = useRef()
+  const [focused, setFocused] = useState(false)
+  const showPlaceholder = !value && !focused
+  return (
+    <div className="relative w-full">
+      <input
+        ref={ref}
+        type="date"
+        value={value}
+        min={min}
+        onChange={e => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+        style={showPlaceholder ? { color: 'transparent' } : {}}
+      />
+      {showPlaceholder && (
+        <span
+          onClick={() => ref.current?.showPicker?.() || ref.current?.focus()}
+          className="absolute inset-0 flex items-center px-3 text-sm text-gray-400 pointer-events-auto cursor-text select-none"
+        >
+          --/--/----
+        </span>
+      )}
+    </div>
+  )
+}
 
 function SortableItem({ item, onRemove, onUpdateDuration }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id })
@@ -347,15 +376,13 @@ export default function Campaigns() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Data start *</label>
-              <input type="date" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+              <DateInput value={form.start_date} onChange={v => setForm(f => ({ ...f, start_date: v }))} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Data final *</label>
-              <input type="date" value={form.end_date}
+              <DateInput value={form.end_date}
                 min={form.start_date ? (() => { const d = new Date(form.start_date + 'T12:00:00'); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` })() : undefined}
-                onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+                onChange={v => setForm(f => ({ ...f, end_date: v }))} />
             </div>
           </div>
 

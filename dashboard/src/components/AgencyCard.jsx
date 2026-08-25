@@ -26,13 +26,10 @@ function playerUrl(agencyId, tvLabel) {
   return `${SERVER_ORIGIN}/player/?agencyId=${agencyId}&tvId=${encodeURIComponent(tvLabel)}${portrait}`
 }
 
-function openPreview(agencyId, tvLabel) {
-  const url = playerUrl(agencyId, tvLabel)
-  if (isPortraitTv(tvLabel)) {
-    window.open(url, '_blank', 'width=540,height=960,noopener')
-  } else {
-    window.open(url, '_blank')
-  }
+// Schimb Valutar și Info Obligatorii au display special — deschidem playerul real în tab nou
+function isSpecialTv(tvLabel) {
+  const l = tvLabel.toLowerCase()
+  return l.includes('schimb valutar') || l.includes('info obligatorii')
 }
 
 export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDeleted }) {
@@ -123,6 +120,11 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
     onDeleted()
   }
 
+  const handlePreview = (tvLabel) => {
+    setShowTvPicker(false)
+    window.open(playerUrl(agency.id, tvLabel), '_blank')
+  }
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
       <div className="flex items-start justify-between mb-3">
@@ -181,7 +183,7 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
               <button
                 onClick={() => {
                   if (agency.tvs.length === 1) {
-                    openPreview(agency.id, agency.tvs[0].label)
+                    handlePreview(agency.tvs[0].label)
                   } else {
                     setShowTvPicker(v => !v)
                   }
@@ -198,10 +200,7 @@ export default function AgencyCard({ agency, groupName, onPlaylistSaved, onDelet
                   {agency.tvs.map(tv => (
                     <button
                       key={tv.id}
-                      onClick={() => {
-                        setShowTvPicker(false)
-                        openPreview(agency.id, tv.label)
-                      }}
+                      onClick={() => handlePreview(tv.label)}
                       className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                     >
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
