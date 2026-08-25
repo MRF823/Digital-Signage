@@ -143,9 +143,9 @@ export default function ForexDisplay({ rates, updatedAt }) {
         background: 'rgba(0,0,0,0.25)',
         flexShrink: 0,
       }}>
-        <div style={{ color: 'rgba(255,255,255,0.22)', fontSize: 11, lineHeight: 1.6 }}>
-          Cursurile CEC Bank se pot modifica de mai multe ori pe parcursul unei zile, în funcție de mișcările pieței valutare interbancare.
-          În cazul schimburilor valutare inițiate online, de persoane fizice, se aplică cursul valutar mai avantajos, valabil pe Internet și Mobile Banking.
+        <div style={{ color: 'rgba(255,255,255,0.22)', fontSize: 15, lineHeight: 1.6 }}>
+          <div>Cursurile CEC Bank se pot modifica de mai multe ori pe parcursul unei zile, în funcție de mișcările pieței valutare interbancare.</div>
+          <div>În cazul schimburilor valutare inițiate online, de persoane fizice, se aplică cursul valutar mai avantajos, valabil pe Internet și Mobile Banking.</div>
         </div>
       </div>
     </div>

@@ -44,8 +44,11 @@ async function updateForexRates() {
   const rates = await scrapeForexRates()
   if (!rates) return
 
-  currentForexRates = { rates, updatedAt: new Date().toISOString() }
-  console.log('[forex] actualizat la', new Date().toLocaleTimeString('ro-RO'), '—', Object.keys(rates).join(', '))
+  const ratesChanged = !currentForexRates || JSON.stringify(rates) !== JSON.stringify(currentForexRates.rates)
+  const updatedAt = ratesChanged ? new Date().toISOString() : currentForexRates.updatedAt
+
+  currentForexRates = { rates, updatedAt }
+  if (ratesChanged) console.log('[forex] curs modificat la', new Date().toLocaleTimeString('ro-RO'), '—', Object.keys(rates).join(', '))
   pushForexRates(currentForexRates)
 }
 
