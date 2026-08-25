@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || `http://${window.location.hostname}:4000`
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || window.location.origin
 const DB_NAME = 'signage-cache-v3'
 const STORE = 'media'
 

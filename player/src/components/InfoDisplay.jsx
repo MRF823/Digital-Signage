@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 
-const SERVER = import.meta.env.VITE_SERVER_URL || `http://${window.location.hostname}:4000`
+const SERVER = import.meta.env.VITE_SERVER_URL || window.location.origin
 const AGENCY_ID = new URLSearchParams(window.location.search).get('agencyId') || '1'
 
 // pdfjs încărcat dinamic din CDN — evită incompatibilitatea cu Vite 8/Rolldown
