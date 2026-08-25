@@ -48,8 +48,10 @@ async function updateForexRates() {
   const updatedAt = ratesChanged ? new Date().toISOString() : currentForexRates.updatedAt
 
   currentForexRates = { rates, updatedAt }
-  if (ratesChanged) console.log('[forex] curs modificat la', new Date().toLocaleTimeString('ro-RO'), '—', Object.keys(rates).join(', '))
-  pushForexRates(currentForexRates)
+  if (ratesChanged) {
+    console.log('[forex] curs modificat la', new Date().toLocaleTimeString('ro-RO'), '—', Object.keys(rates).join(', '))
+    pushForexRates(currentForexRates)
+  }
 }
 
 export function getCurrentForexRates() {
