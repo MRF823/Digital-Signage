@@ -18,7 +18,7 @@ function tvStatus(tv) {
 const SERVER_ORIGIN = window.location.origin
 
 function isPortraitTv(tvLabel) {
-  return tvLabel.toLowerCase().includes('schimb valutar')
+  return false
 }
 
 function playerUrl(agencyId, tvLabel) {

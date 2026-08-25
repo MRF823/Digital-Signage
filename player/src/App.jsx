@@ -256,7 +256,7 @@ export default function App() {
   }
 
   if (forexMode) {
-    return <ForexDisplay rates={forexRates?.rates} updatedAt={forexRates?.updatedAt} cecUpdatedAt={forexRates?.cecUpdatedAt} bnrUpdatedAt={forexRates?.bnrUpdatedAt} isPortrait={IS_PORTRAIT} />
+    return <ForexDisplay rates={forexRates?.rates} updatedAt={forexRates?.updatedAt} />
   }
 
   if (!ready || playlist.length === 0) {
