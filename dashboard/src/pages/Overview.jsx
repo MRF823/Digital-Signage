@@ -170,13 +170,9 @@ export default function Overview() {
     return !(a.playlist?.length > 0)
   })
 
-  const ratesDate = ratesTime ? new Date(ratesTime) : null
-  const time = ratesDate
-    ? ratesDate.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })
-    : null
-  const date = ratesDate
-    ? ratesDate.toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' })
-    : null
+  // ratesTime e "DD.MM.YYYY HH:MM" direct de la CEC — extragem fără conversie timezone
+  const time = ratesTime?.match(/(\d{2}:\d{2})$/)?.[1] || null
+  const date = ratesTime?.match(/^(\d{2}\.\d{2}\.\d{4})/)?.[1] || null
 
   const handleUpdate = async () => {
     setUpdating(true)

@@ -15,11 +15,11 @@ const CURRENCY_META = {
 const ORDER = ['EUR', 'USD', 'CHF', 'GBP', 'CAD', 'DKK', 'HUF', 'PLN', 'SEK']
 const MONTHS = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie']
 
-function formatUpdated(iso) {
-  const d = new Date(iso)
-  const hh = String(d.getHours()).padStart(2, '0')
-  const mm = String(d.getMinutes()).padStart(2, '0')
-  return `${hh}:${mm} ▪ ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`
+function formatUpdated(str) {
+  if (!str) return ''
+  const m = str.match(/(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}:\d{2})/)
+  if (!m) return str
+  return `${m[4]} ▪ ${parseInt(m[1])} ${MONTHS[parseInt(m[2]) - 1]} ${m[3]}`
 }
 
 function ForexRatesPanel({ rates, updatedAt }) {
@@ -121,7 +121,7 @@ export default function ForexTVs() {
         <div className="mb-6 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-green-500" />
           <span className="text-sm text-green-700 font-medium">
-            Cursuri CEC actualizate la {new Date(rates.updatedAt).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
+            Cursuri CEC actualizate la {rates.updatedAt?.match(/\d{2}:\d{2}$/)?.[0] || rates.updatedAt}
           </span>
           {rates.rates?.EUR && (
             <span className="text-sm text-green-600 ml-2">

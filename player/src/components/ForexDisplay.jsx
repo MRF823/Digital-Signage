@@ -12,12 +12,12 @@ const CURRENCY_META = {
 
 const MONTHS = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie']
 
-function formatUpdated(iso) {
-  if (!iso) return ''
-  const d = new Date(iso)
-  const hh = String(d.getHours()).padStart(2, '0')
-  const mm = String(d.getMinutes()).padStart(2, '0')
-  return `${hh}:${mm} · ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`
+function formatUpdated(str) {
+  if (!str) return ''
+  // format de la CEC: "DD.MM.YYYY HH:MM"
+  const m = str.match(/(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}:\d{2})/)
+  if (!m) return str
+  return `${m[4]} · ${parseInt(m[1])} ${MONTHS[parseInt(m[2]) - 1]} ${m[3]}`
 }
 
 const MAIN = ['EUR', 'USD', 'CHF', 'GBP']

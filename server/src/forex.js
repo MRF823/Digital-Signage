@@ -35,13 +35,9 @@ async function scrapeForexRates() {
 
     if (Object.keys(rates).length < 3) return null
 
-    // Extragem timestamp-ul publicat de CEC (ex: "26.08.2026 17:00")
+    // Extragem timestamp-ul publicat de CEC (ex: "26.08.2026 17:00") — stocăm ca string brut, fără conversie UTC
     const tsMatch = section.match(/(\d{2}\.\d{2}\.\d{4})\s+(\d{2}:\d{2})/)
-    let cecUpdatedAt = null
-    if (tsMatch) {
-      const [d, m, y] = tsMatch[1].split('.')
-      cecUpdatedAt = new Date(`${y}-${m}-${d}T${tsMatch[2]}:00`).toISOString()
-    }
+    const cecUpdatedAt = tsMatch ? `${tsMatch[1]} ${tsMatch[2]}` : null
 
     return { rates, cecUpdatedAt }
   } catch (err) {
