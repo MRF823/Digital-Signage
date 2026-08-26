@@ -33,7 +33,17 @@ async function scrapeForexRates() {
       }
     }
 
-    return Object.keys(rates).length >= 3 ? rates : null
+    if (Object.keys(rates).length < 3) return null
+
+    // Extragem timestamp-ul publicat de CEC (ex: "26.08.2026 17:00")
+    const tsMatch = section.match(/(\d{2}\.\d{2}\.\d{4})\s+(\d{2}:\d{2})/)
+    let cecUpdatedAt = null
+    if (tsMatch) {
+      const [d, m, y] = tsMatch[1].split('.')
+      cecUpdatedAt = new Date(`${y}-${m}-${d}T${tsMatch[2]}:00`).toISOString()
+    }
+
+    return { rates, cecUpdatedAt }
   } catch (err) {
     console.warn('[forex] scrape error:', err.message)
     return null
@@ -41,17 +51,24 @@ async function scrapeForexRates() {
 }
 
 async function updateForexRates() {
-  const rates = await scrapeForexRates()
-  if (!rates) return
+  const result = await scrapeForexRates()
+  if (!result) return
 
+  const { rates, cecUpdatedAt } = result
   const ratesChanged = !currentForexRates || JSON.stringify(rates) !== JSON.stringify(currentForexRates.rates)
-  const updatedAt = ratesChanged ? new Date().toISOString() : currentForexRates.updatedAt
+  const timestampChanged = cecUpdatedAt && cecUpdatedAt !== currentForexRates?.updatedAt
 
+  if (!ratesChanged && !timestampChanged) return
+
+  const updatedAt = cecUpdatedAt || currentForexRates?.updatedAt || new Date().toISOString()
   currentForexRates = { rates, updatedAt }
+
   if (ratesChanged) {
-    console.log('[forex] curs modificat la', new Date().toLocaleTimeString('ro-RO'), '—', Object.keys(rates).join(', '))
-    pushForexRates(currentForexRates)
+    console.log('[forex] curs modificat —', new Date().toLocaleTimeString('ro-RO'), '— CEC timestamp:', cecUpdatedAt)
+  } else {
+    console.log('[forex] timestamp actualizat:', cecUpdatedAt)
   }
+  pushForexRates(currentForexRates)
 }
 
 export function getCurrentForexRates() {
