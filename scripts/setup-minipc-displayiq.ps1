@@ -77,8 +77,33 @@ New-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Na
 
 Write-Host "      OK." -ForegroundColor Green
 
-# ── [5/6] Instalare AnyDesk ──────────────────────────────────
-Write-Host "[5/6] Instalare AnyDesk..." -ForegroundColor Cyan
+# ── Salvare AgencyId + TvId in registry (folosit de watchdog) ─
+$regPath = "HKCU:\Software\DisplayIQ"
+if (-not (Test-Path $regPath)) { New-Item -Path $regPath -Force | Out-Null }
+Set-ItemProperty -Path $regPath -Name "AgencyId" -Value $agencyId
+Set-ItemProperty -Path $regPath -Name "TvId"     -Value $tvLabel
+
+# ── [4.5] Auto Healing — watchdog Edge ───────────────────────
+Write-Host "[4.5] Configurare watchdog (Auto Healing)..." -ForegroundColor Cyan
+$psExe = "powershell.exe"
+$watchdogScript = "$repoDir\scripts\watchdog.ps1"
+$watchdogAction = New-ScheduledTaskAction -Execute $psExe -Argument "-NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$watchdogScript`""
+$watchdogTrigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+$watchdogSettings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit 0 -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 2)
+Register-ScheduledTask -TaskName "DisplayIQ-Watchdog" -Action $watchdogAction -Trigger $watchdogTrigger -Settings $watchdogSettings -RunLevel Highest -Force | Out-Null
+Start-ScheduledTask -TaskName "DisplayIQ-Watchdog"
+Write-Host "      OK — watchdog activ." -ForegroundColor Green
+
+# ── [5/7] Weekly Reboot duminica 03:00 ───────────────────────
+Write-Host "[5/7] Configurare repornire automata saptamanala..." -ForegroundColor Cyan
+$rebootAction = New-ScheduledTaskAction -Execute "shutdown.exe" -Argument "/r /f /t 0"
+$rebootTrigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At "03:00"
+$rebootSettings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 5)
+Register-ScheduledTask -TaskName "DisplayIQ-WeeklyReboot" -Action $rebootAction -Trigger $rebootTrigger -Settings $rebootSettings -RunLevel Highest -Force | Out-Null
+Write-Host "      OK — repornire duminica 03:00." -ForegroundColor Green
+
+# ── [6/7] Instalare AnyDesk ──────────────────────────────────
+Write-Host "[6/7] Instalare AnyDesk..." -ForegroundColor Cyan
 winget install AnyDeskSoftwareGmbH.AnyDesk --accept-source-agreements --accept-package-agreements --silent
 if ($LASTEXITCODE -eq 0) {
     Write-Host "      AnyDesk instalat OK." -ForegroundColor Green
@@ -87,7 +112,7 @@ if ($LASTEXITCODE -eq 0) {
 }
 
 # ── [6/6] Setari Windows ─────────────────────────────────────
-Write-Host "[6/6] Dezactivare sleep, screensaver, hibernare..." -ForegroundColor Cyan
+Write-Host "[7/7] Dezactivare sleep, screensaver, hibernare..." -ForegroundColor Cyan
 powercfg /change standby-timeout-ac 0
 powercfg /change standby-timeout-dc 0
 powercfg /change monitor-timeout-ac 0

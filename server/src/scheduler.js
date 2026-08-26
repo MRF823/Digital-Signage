@@ -4,6 +4,7 @@ import { getDb } from './db.js'
 import { pushPlaylist, pushScreenPower, pushInfoPower, pushPlaylistForAgency } from './websocket.js'
 import { getActivePlaylist } from './playlist.js'
 import { todayRo } from './dateRo.js'
+import { sendOfflineAlert, sendReconnectedAlert } from './mailer.js'
 
 // 0=Luni, 1=Marti, ..., 6=Duminica
 function getCurrentDayAndTime() {
@@ -48,6 +49,42 @@ export function shouldScreenBeOn(powerOnTime, powerOffTime) {
 const activeSlotPerGroup = {}
 const screenStatePerGroup = {}
 const infoScreenStatePerAgency = {}
+
+// Early Warning — TV-uri pentru care s-a trimis deja alertă offline (anti-spam)
+const offlineAlertedTvs = new Set()
+
+const OFFLINE_THRESHOLD_MS = 10 * 60 * 1000 // 10 minute
+
+function checkTvOffline() {
+  try {
+    const db = getDb()
+    const tvs = db.prepare(`
+      SELECT t.id, t.label, t.last_seen_at, a.name as agency_name
+      FROM tvs t
+      JOIN agencies a ON a.id = t.agency_id
+      WHERE t.last_seen_at IS NOT NULL
+    `).all()
+
+    const now = Date.now()
+    for (const tv of tvs) {
+      const lastSeen = new Date(tv.last_seen_at + 'Z').getTime()
+      const isOffline = (now - lastSeen) > OFFLINE_THRESHOLD_MS
+      const key = `${tv.id}`
+
+      if (isOffline && !offlineAlertedTvs.has(key)) {
+        offlineAlertedTvs.add(key)
+        console.log(`[early-warning] TV offline: ${tv.label} — ${tv.agency_name}`)
+        sendOfflineAlert(tv.label, tv.agency_name)
+      } else if (!isOffline && offlineAlertedTvs.has(key)) {
+        offlineAlertedTvs.delete(key)
+        console.log(`[early-warning] TV reconectat: ${tv.label} — ${tv.agency_name}`)
+        sendReconnectedAlert(tv.label, tv.agency_name)
+      }
+    }
+  } catch (err) {
+    console.error('Early warning error:', err)
+  }
+}
 
 function getGroupDefaultPlaylist(db, groupId) {
   const firstMember = db.prepare('SELECT agency_id FROM group_members WHERE group_id = ? LIMIT 1').get(groupId)
@@ -155,6 +192,10 @@ export function initScheduler() {
   checkSchedules()
   checkPower()
   checkInfoPower()
+
+  // Early Warning — verifică TV-uri offline la fiecare 5 minute
+  setInterval(checkTvOffline, 5 * 60_000)
+  setTimeout(checkTvOffline, 60_000) // primul check după 1 min (să se conecteze TV-urile la boot)
 
   // Verifică campanii la miezul nopții
   const now = new Date()
