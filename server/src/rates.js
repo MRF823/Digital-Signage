@@ -33,7 +33,12 @@ async function scrapeCEC() {
       if (!isNaN(buy) && !isNaN(sell)) rates[code] = { buy, sell }
     }
 
-    return Object.keys(rates).length >= 1 ? rates : null
+    if (Object.keys(rates).length < 1) return null
+
+    const tsMatch = html.match(/(\d{2}\.\d{2}\.\d{4})\s+(\d{2}:\d{2})/)
+    const cecUpdatedAt = tsMatch ? `${tsMatch[1]} ${tsMatch[2]}` : null
+
+    return { rates, cecUpdatedAt }
   } catch (err) {
     console.warn('CEC scrape error:', err.message)
     return null
@@ -70,23 +75,28 @@ async function fetchBNR() {
 }
 
 async function updateRates() {
-  const [cec, bnr] = await Promise.all([scrapeCEC(), fetchBNR()])
-  if (!cec && !bnr) return
+  const [cecResult, bnr] = await Promise.all([scrapeCEC(), fetchBNR()])
+  if (!cecResult && !bnr) return
+
+  const cecRates = cecResult?.rates
+  const cecUpdatedAt = cecResult?.cecUpdatedAt
 
   const rates = {}
   for (const currency of CURRENCIES) {
     rates[currency] = {
-      buy: cec?.[currency]?.buy ?? null,
-      sell: cec?.[currency]?.sell ?? null,
+      buy: cecRates?.[currency]?.buy ?? null,
+      sell: cecRates?.[currency]?.sell ?? null,
       reference: bnr?.[currency] ?? null,
     }
   }
 
   const json = JSON.stringify(rates)
-  if (json === lastRatesJson) return
+  const timestampChanged = cecUpdatedAt && cecUpdatedAt !== currentRates?.updatedAt
+  if (json === lastRatesJson && !timestampChanged) return
 
   lastRatesJson = json
-  currentRates = { rates, updatedAt: new Date().toISOString() }
+  const updatedAt = cecUpdatedAt || currentRates?.updatedAt || new Date().toISOString()
+  currentRates = { rates, updatedAt }
   console.log('[rates] actualizat la', new Date().toLocaleTimeString('ro-RO'))
   pushRatesToAll(currentRates)
 }
