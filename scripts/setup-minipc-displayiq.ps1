@@ -77,8 +77,17 @@ New-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Na
 
 Write-Host "      OK." -ForegroundColor Green
 
-# ── [5/5] Setari Windows ─────────────────────────────────────
-Write-Host "[5/5] Dezactivare sleep, screensaver, hibernare..." -ForegroundColor Cyan
+# ── [5/6] Instalare AnyDesk ──────────────────────────────────
+Write-Host "[5/6] Instalare AnyDesk..." -ForegroundColor Cyan
+winget install AnyDeskSoftwareGmbH.AnyDesk --accept-source-agreements --accept-package-agreements --silent
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "      AnyDesk instalat OK." -ForegroundColor Green
+} else {
+    Write-Host "      AnyDesk deja instalat sau eroare — verifica manual." -ForegroundColor Yellow
+}
+
+# ── [6/6] Setari Windows ─────────────────────────────────────
+Write-Host "[6/6] Dezactivare sleep, screensaver, hibernare..." -ForegroundColor Cyan
 powercfg /change standby-timeout-ac 0
 powercfg /change standby-timeout-dc 0
 powercfg /change monitor-timeout-ac 0
