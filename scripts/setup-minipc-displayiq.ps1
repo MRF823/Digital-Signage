@@ -111,13 +111,23 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "      AnyDesk deja instalat sau eroare — verifica manual." -ForegroundColor Yellow
 }
 
-# ── [6/6] Setari Windows ─────────────────────────────────────
-Write-Host "[7/7] Dezactivare sleep, screensaver, hibernare..." -ForegroundColor Cyan
+# ── [7/7] Setari Windows ─────────────────────────────────────
+Write-Host "[7/7] Dezactivare sleep, screensaver, hibernare + ascundere taskbar..." -ForegroundColor Cyan
 powercfg /change standby-timeout-ac 0
 powercfg /change standby-timeout-dc 0
 powercfg /change monitor-timeout-ac 0
 powercfg /change monitor-timeout-dc 0
 powercfg /change hibernate-timeout-ac 0
+
+# Ascunde taskbar automat (auto-hide)
+$regTaskbar = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\StuckRects3"
+$settings = (Get-ItemProperty -Path $regTaskbar).Settings
+$settings[8] = 3  # bit auto-hide
+Set-ItemProperty -Path $regTaskbar -Name Settings -Value $settings
+Stop-Process -Name explorer -Force
+Start-Sleep -Seconds 2
+Start-Process explorer
+
 Write-Host "      OK." -ForegroundColor Green
 
 Write-Host ""
