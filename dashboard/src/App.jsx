@@ -99,7 +99,7 @@ const NAV = [
   { to: '/', label: 'Overview', Icon: IconOverview, end: true, roles: ['admin','operator','viewer'] },
   { to: '/content', label: 'Librărie Media', Icon: IconMedia, roles: ['admin','operator'] },
   { to: '/campaigns', label: 'Campanii', Icon: IconCampaigns, roles: ['admin','operator'] },
-  { to: '/groups', label: 'Grupuri', Icon: IconGroups, roles: ['admin','operator'] },
+  { to: '/groups', label: 'Grupuri TV Vitrina', Icon: IconGroups, roles: ['admin','operator'] },
   { to: '/agencies', label: 'Agenții', Icon: IconAgencies, roles: ['admin','operator'] },
   { to: '/tvs', label: 'TV-uri', Icon: IconTVs, roles: ['admin','operator'] },
   { to: '/map', label: 'Hartă', Icon: IconMap, roles: ['admin','operator'] },
