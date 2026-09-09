@@ -3,8 +3,8 @@
 #  Rulare: PowerShell ca Administrator (Win+R → powershell → Ctrl+Shift+Enter)
 # ============================================================
 
-$agencyId = Read-Host "Agency ID (ex: 12 pentru Ana Tower)"
-$tvLabel  = Read-Host "Label TV exact ca in dashboard (ex: Tv Vitrina)"
+$agencyId = if ($env:DISPLAYIQ_AGENCY) { $env:DISPLAYIQ_AGENCY } else { Read-Host "Agency ID (ex: 12 pentru Ana Tower)" }
+$tvLabel  = if ($env:DISPLAYIQ_TV)     { $env:DISPLAYIQ_TV }     else { Read-Host "Label TV exact ca in dashboard (ex: Tv Vitrina)" }
 
 $repoDir = "C:\Users\$env:USERNAME\Digital-Signage"
 $serverDir = "$repoDir\server"
