@@ -201,7 +201,6 @@ export default function TVs() {
                   const { line1, line2 } = formatLastSeen(tv.last_seen_at)
                   const isExp = expanded === tv.id
                   const isFirst = tvIdx === 0
-                  const isLast = tvIdx === g.tvs.length - 1
 
                   const anydeskVal = anydeskEdit[tv.id] !== undefined ? anydeskEdit[tv.id] : (tv.anydesk_id ?? '')
 
@@ -210,12 +209,9 @@ export default function TVs() {
                       key={tv.id}
                       className={`transition-colors ${on ? 'hover:bg-gray-50' : 'bg-red-50/30 hover:bg-red-50/60'}`}
                     >
-                      {/* Agenție — rowspan, apare doar pe primul TV din grup */}
-                      {isFirst && (
-                        <td
-                          rowSpan={g.tvs.length}
-                          className={`px-5 py-4 align-top border-r border-gray-100 ${!isLast ? 'border-b-0' : ''}`}
-                        >
+                      {/* Agenție — afișat pe fiecare rând, fără rowspan */}
+                      <td className="px-5 py-4 border-r border-gray-100">
+                        {isFirst ? (
                           <div className="flex items-start gap-1.5">
                             <span className="text-gray-400 mt-0.5 flex-shrink-0"><IconLocation /></span>
                             <div>
@@ -224,8 +220,8 @@ export default function TVs() {
                               {g.city && <p className="text-xs text-gray-400">{g.city}</p>}
                             </div>
                           </div>
-                        </td>
-                      )}
+                        ) : null}
+                      </td>
 
                       {/* Denumire */}
                       <td className="px-5 py-4">
