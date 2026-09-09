@@ -91,6 +91,17 @@ function DocList({ docs, agencyId, onDelete, onReorder }) {
             </svg>
             <span className="text-sm text-slate-700 truncate">{doc.original_name}</span>
           </div>
+          <a
+            href={`/api/info/file/${doc.filename}`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-slate-400 hover:text-blue-500 transition-colors flex-shrink-0"
+            title="Vizualizează PDF"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </a>
           <button
             onClick={() => onDelete(doc.id)}
             className="text-slate-400 hover:text-red-500 transition-colors flex-shrink-0"
