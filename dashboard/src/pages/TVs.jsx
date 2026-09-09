@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getAgencies, getGroups } from '../api'
+import { getAgencies, getGroups, updateTvAnydesk } from '../api'
 
 function isOnline(tv) {
   if (!tv.last_seen_at) return false
@@ -52,6 +52,8 @@ export default function TVs() {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
   const [expanded, setExpanded] = useState(null)
+  const [anydeskEdit, setAnydeskEdit] = useState({}) // tvId -> string
+  const [anydeskSaving, setAnydeskSaving] = useState({})
 
   const load = () =>
     Promise.all([getAgencies(), getGroups()]).then(([agencies, groups]) => {
@@ -103,6 +105,19 @@ export default function TVs() {
       (tv.city || '').toLowerCase().includes(q) ||
       (tv.group_name || '').toLowerCase().includes(q)
     )
+
+  async function saveAnydesk(tv) {
+    const val = anydeskEdit[tv.id] ?? tv.anydesk_id ?? ''
+    setAnydeskSaving(s => ({ ...s, [tv.id]: true }))
+    try {
+      await updateTvAnydesk(tv.id, val)
+      setRows(prev => prev.map(r => r.id === tv.id ? { ...r, anydesk_id: val || null } : r))
+    } catch {
+      alert('Eroare la salvare.')
+    } finally {
+      setAnydeskSaving(s => ({ ...s, [tv.id]: false }))
+    }
+  }
 
   return (
     <div>
@@ -181,14 +196,16 @@ export default function TVs() {
               })
 
               return groups.flatMap(g =>
-                g.tvs.map((tv, tvIdx) => {
+                g.tvs.flatMap((tv, tvIdx) => {
                   const on = isOnline(tv)
                   const { line1, line2 } = formatLastSeen(tv.last_seen_at)
                   const isExp = expanded === tv.id
                   const isFirst = tvIdx === 0
                   const isLast = tvIdx === g.tvs.length - 1
 
-                  return (
+                  const anydeskVal = anydeskEdit[tv.id] !== undefined ? anydeskEdit[tv.id] : (tv.anydesk_id ?? '')
+
+                  const mainRow = (
                     <tr
                       key={tv.id}
                       className={`transition-colors ${on ? 'hover:bg-gray-50' : 'bg-red-50/30 hover:bg-red-50/60'}`}
@@ -271,7 +288,7 @@ export default function TVs() {
                       <td className="px-5 py-4">
                         <button
                           onClick={() => setExpanded(isExp ? null : tv.id)}
-                          className="text-gray-300 hover:text-blue-500 transition-colors"
+                          className={`transition-colors ${isExp ? 'text-blue-500' : 'text-gray-300 hover:text-blue-500'}`}
                           title="Detalii"
                         >
                           <IconInfo />
@@ -279,6 +296,44 @@ export default function TVs() {
                       </td>
                     </tr>
                   )
+
+                  const detailRow = isExp ? (
+                    <tr key={`detail-${tv.id}`} className="bg-blue-50/40 border-b border-blue-100">
+                      <td colSpan={7} className="px-8 py-4">
+                        <div className="flex flex-wrap items-center gap-6 text-sm">
+                          <div>
+                            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">TV ID</span>
+                            <p className="font-mono text-gray-700 mt-0.5">{tv.id}</p>
+                          </div>
+                          <div>
+                            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Agenție ID</span>
+                            <p className="font-mono text-gray-700 mt-0.5">{tv.agency_id}</p>
+                          </div>
+                          <div className="flex items-end gap-2">
+                            <div>
+                              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide block">AnyDesk ID</label>
+                              <input
+                                type="text"
+                                value={anydeskVal}
+                                onChange={e => setAnydeskEdit(s => ({ ...s, [tv.id]: e.target.value }))}
+                                placeholder="ex: 1 081 912 898"
+                                className="mt-0.5 border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400 w-44"
+                              />
+                            </div>
+                            <button
+                              onClick={() => saveAnydesk(tv)}
+                              disabled={anydeskSaving[tv.id]}
+                              className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                            >
+                              {anydeskSaving[tv.id] ? '...' : 'Salvează'}
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : null
+
+                  return [mainRow, detailRow].filter(Boolean)
                 })
               )
             })()}

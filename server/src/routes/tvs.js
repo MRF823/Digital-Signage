@@ -38,6 +38,19 @@ router.get('/forex', (req, res) => {
   res.json(tvs)
 })
 
+router.patch('/:tvId/anydesk', (req, res) => {
+  try {
+    const db = getDb()
+    const tv = db.prepare('SELECT id FROM tvs WHERE id = ?').get(req.params.tvId)
+    if (!tv) return res.status(404).json({ error: 'TV not found' })
+    const anydesk_id = (req.body.anydesk_id || '').trim() || null
+    db.prepare('UPDATE tvs SET anydesk_id = ? WHERE id = ?').run(anydesk_id, tv.id)
+    res.json({ ok: true, anydesk_id })
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 router.patch('/:tvId/forex', (req, res) => {
   const db = getDb()
   const tv = db.prepare('SELECT * FROM tvs t JOIN agencies a ON a.id = t.agency_id WHERE t.id = ?').get(req.params.tvId)

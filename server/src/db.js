@@ -145,6 +145,7 @@ export function initDb(path = './signage.db') {
   try { db.exec('ALTER TABLE agencies ADD COLUMN address TEXT') } catch {}
   try { db.exec('ALTER TABLE tvs ADD COLUMN forex_mode INTEGER NOT NULL DEFAULT 0') } catch {}
   try { db.exec('ALTER TABLE tvs ADD COLUMN info_mode INTEGER NOT NULL DEFAULT 0') } catch {}
+  try { db.exec('ALTER TABLE tvs ADD COLUMN anydesk_id TEXT') } catch {}
   try { db.exec('ALTER TABLE agencies ADD COLUMN info_rotation_seconds INTEGER NOT NULL DEFAULT 5') } catch {}
   try { db.exec('ALTER TABLE agencies ADD COLUMN info_on_time TEXT') } catch {}
   try { db.exec('ALTER TABLE agencies ADD COLUMN info_off_time TEXT') } catch {}
