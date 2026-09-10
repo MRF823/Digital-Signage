@@ -23,7 +23,7 @@ function isPortraitTv(tvLabel) {
 
 function playerUrl(agencyId, tvLabel) {
   const portrait = isPortraitTv(tvLabel) ? '&portrait=1' : ''
-  return `${SERVER_ORIGIN}/player/?agencyId=${agencyId}&tvId=${encodeURIComponent(tvLabel)}${portrait}`
+  return `${SERVER_ORIGIN}/player/?agencyId=${agencyId}&tvId=${encodeURIComponent(tvLabel)}${portrait}&preview=1`
 }
 
 // Schimb Valutar și Info Obligatorii au display special — deschidem playerul real în tab nou

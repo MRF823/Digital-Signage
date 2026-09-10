@@ -4,6 +4,7 @@ const SERVER_URL = import.meta.env.VITE_SERVER_WS || `${window.location.protocol
 const _params = new URLSearchParams(window.location.search)
 const AGENCY_ID = _params.get('agencyId') || import.meta.env.VITE_AGENCY_ID || '1'
 const TV_ID = _params.get('tvId') || import.meta.env.VITE_TV_ID || 'TV-1'
+const IS_PREVIEW = _params.get('preview') === '1'
 const RECONNECT_MS = 10_000
 const PING_MS = 15_000
 
@@ -24,7 +25,7 @@ export function useWebSocket(onMessage) {
     socket.onopen = () => {
       if (ws.current !== socket) { socket.close(); return }
       setConnected(true)
-      socket.send(JSON.stringify({ type: 'register', agencyId: AGENCY_ID, tvId: TV_ID }))
+      socket.send(JSON.stringify({ type: 'register', agencyId: AGENCY_ID, tvId: TV_ID, preview: IS_PREVIEW }))
       pingTimer.current = setInterval(() => {
         if (socket.readyState === WebSocket.OPEN) {
           socket.send(JSON.stringify({ type: 'ping' }))

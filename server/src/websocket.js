@@ -45,6 +45,7 @@ export function initWebSocket(httpServer) {
 
     let agencyId = null
     let tvId = null
+    let isPreview = false
     let uptimeRowId = null
 
     ws.on('message', (raw) => {
@@ -59,48 +60,55 @@ export function initWebSocket(httpServer) {
       if (msg.type === 'register') {
         agencyId = String(msg.agencyId)
         tvId = msg.tvId
+        isPreview = msg.preview === true
 
         if (!clients.has(agencyId)) clients.set(agencyId, new Set())
         clients.get(agencyId).add(ws)
-        tvClients.set(`${agencyId}:${tvId}`, ws)
+        // Preview-urile nu intră în tvClients — nu suprascriu conexiunea TV-ului real
+        if (!isPreview) tvClients.set(`${agencyId}:${tvId}`, ws)
 
-        const tvKey = `${agencyId}:${tvId}`
-        if (offlineTimers.has(tvKey)) {
-          // Reconectat înainte ca alerta să fie trimisă — anulăm silențios
-          const { timer } = offlineTimers.get(tvKey)
-          clearTimeout(timer)
-          offlineTimers.delete(tvKey)
-        } else if (confirmedOffline.has(tvKey)) {
-          // Reconectat după ce alerta offline a fost trimisă — trimite reconectare
-          confirmedOffline.delete(tvKey)
-          let agencyName = ''
-          try {
-            const row = getDb().prepare('SELECT name FROM agencies WHERE id = ?').get(agencyId)
-            agencyName = row?.name || `Agency ${agencyId}`
-          } catch {}
-          sendReconnectedAlert(tvId, agencyName)
+        if (!isPreview) {
+          const tvKey = `${agencyId}:${tvId}`
+          if (offlineTimers.has(tvKey)) {
+            const { timer } = offlineTimers.get(tvKey)
+            clearTimeout(timer)
+            offlineTimers.delete(tvKey)
+          } else if (confirmedOffline.has(tvKey)) {
+            confirmedOffline.delete(tvKey)
+            let agencyName = ''
+            try {
+              const row = getDb().prepare('SELECT name FROM agencies WHERE id = ?').get(agencyId)
+              agencyName = row?.name || `Agency ${agencyId}`
+            } catch {}
+            sendReconnectedAlert(tvId, agencyName)
+          }
         }
 
         try {
           const db2 = getDb()
           const ip = req.socket.remoteAddress
 
-          // Log uptime connect — reținem rowId ca să închidem DOAR această sesiune la disconnect
-          const uptimeInsert = db2.prepare(`INSERT INTO tv_uptime (agency_id, tv_label, connected_at) VALUES (?, ?, datetime('now'))`)
-          uptimeRowId = uptimeInsert.run(agencyId, tvId).lastInsertRowid
+          // Preview-ul nu scrie în tv_uptime și nu actualizează last_seen_at
+          if (!isPreview) {
+            // Log uptime connect — reținem rowId ca să închidem DOAR această sesiune la disconnect
+            const uptimeInsert = db2.prepare(`INSERT INTO tv_uptime (agency_id, tv_label, connected_at) VALUES (?, ?, datetime('now'))`)
+            uptimeRowId = uptimeInsert.run(agencyId, tvId).lastInsertRowid
+          }
 
           // Auto-asignare mod după label
           const isForexTV = typeof tvId === 'string' && tvId.toLowerCase() === 'tv schimb valutar'
           const isInfoTV = typeof tvId === 'string' && tvId.toLowerCase() === 'tv info obligatorii'
-          if (isForexTV) {
-            db2.prepare(`UPDATE tvs SET forex_mode = 1, last_seen_at = datetime('now'), ip_address = ? WHERE agency_id = ? AND label = ?`)
-              .run(ip, agencyId, tvId)
-          } else if (isInfoTV) {
-            db2.prepare(`UPDATE tvs SET info_mode = 1, last_seen_at = datetime('now'), ip_address = ? WHERE agency_id = ? AND label = ?`)
-              .run(ip, agencyId, tvId)
-          } else {
-            db2.prepare(`UPDATE tvs SET last_seen_at = datetime('now'), ip_address = ? WHERE agency_id = ? AND label = ?`)
-              .run(ip, agencyId, tvId)
+          if (!isPreview) {
+            if (isForexTV) {
+              db2.prepare(`UPDATE tvs SET forex_mode = 1, last_seen_at = datetime('now'), ip_address = ? WHERE agency_id = ? AND label = ?`)
+                .run(ip, agencyId, tvId)
+            } else if (isInfoTV) {
+              db2.prepare(`UPDATE tvs SET info_mode = 1, last_seen_at = datetime('now'), ip_address = ? WHERE agency_id = ? AND label = ?`)
+                .run(ip, agencyId, tvId)
+            } else {
+              db2.prepare(`UPDATE tvs SET last_seen_at = datetime('now'), ip_address = ? WHERE agency_id = ? AND label = ?`)
+                .run(ip, agencyId, tvId)
+            }
           }
 
           // Verifică modul din DB (label are prioritate față de flag-ul din DB)
@@ -187,7 +195,7 @@ export function initWebSocket(httpServer) {
       }
 
       if (msg.type === 'ping') {
-        if (agencyId && tvId) {
+        if (agencyId && tvId && !isPreview) {
           try {
             getDb().prepare(`UPDATE tvs SET last_seen_at = datetime('now') WHERE agency_id = ? AND label = ?`)
               .run(agencyId, tvId)
