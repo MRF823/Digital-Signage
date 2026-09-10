@@ -45,6 +45,7 @@ export function initWebSocket(httpServer) {
 
     let agencyId = null
     let tvId = null
+    let uptimeRowId = null
 
     ws.on('message', (raw) => {
       let msg
@@ -84,8 +85,9 @@ export function initWebSocket(httpServer) {
           const db2 = getDb()
           const ip = req.socket.remoteAddress
 
-          // Log uptime connect
-          db2.prepare(`INSERT INTO tv_uptime (agency_id, tv_label, connected_at) VALUES (?, ?, datetime('now'))`).run(agencyId, tvId)
+          // Log uptime connect — reținem rowId ca să închidem DOAR această sesiune la disconnect
+          const uptimeInsert = db2.prepare(`INSERT INTO tv_uptime (agency_id, tv_label, connected_at) VALUES (?, ?, datetime('now'))`)
+          uptimeRowId = uptimeInsert.run(agencyId, tvId).lastInsertRowid
 
           // Auto-asignare mod după label
           const isForexTV = typeof tvId === 'string' && tvId.toLowerCase() === 'tv schimb valutar'
@@ -207,9 +209,11 @@ export function initWebSocket(httpServer) {
       if (agencyId && tvId) {
         const tvKey = `${agencyId}:${tvId}`
         tvClients.delete(tvKey)
-        // Log uptime disconnect
+        // Log uptime disconnect — folosim rowId specific sesiunii, nu agency+label (evită să închidă sesiunea TV-ului real)
         try {
-          getDb().prepare(`UPDATE tv_uptime SET disconnected_at = datetime('now') WHERE agency_id = ? AND tv_label = ? AND disconnected_at IS NULL`).run(agencyId, tvId)
+          if (uptimeRowId) {
+            getDb().prepare(`UPDATE tv_uptime SET disconnected_at = datetime('now') WHERE id = ?`).run(uptimeRowId)
+          }
         } catch {}
         // Pornește timer 2 min pentru alertă offline
         let agencyName = ''
