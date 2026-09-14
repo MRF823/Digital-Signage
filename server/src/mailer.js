@@ -55,7 +55,7 @@ async function send(subject, text) {
 }
 
 export function sendOfflineAlert(tvLabel, agencyName) {
-  const time = new Date().toLocaleString('ro-RO')
+  const time = new Date().toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest' })
   return send(
     `[DisplayIQ] TV offline: ${tvLabel} — ${agencyName}`,
     `TV-ul "${tvLabel}" de la agenția "${agencyName}" este offline.\n\nDetectat la: ${time}\n\nAcest mesaj a fost trimis automat de DisplayIQ.`
@@ -63,7 +63,7 @@ export function sendOfflineAlert(tvLabel, agencyName) {
 }
 
 export function sendReconnectedAlert(tvLabel, agencyName) {
-  const time = new Date().toLocaleString('ro-RO')
+  const time = new Date().toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest' })
   return send(
     `[DisplayIQ] TV reconectat: ${tvLabel} — ${agencyName}`,
     `TV-ul "${tvLabel}" de la agenția "${agencyName}" s-a reconectat.\n\nLa: ${time}\n\nAcest mesaj a fost trimis automat de DisplayIQ.`
