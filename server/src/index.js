@@ -56,7 +56,8 @@ app.get('/api/stats', requireAuth, (req, res) => {
     const db = getDb()
     const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString().slice(0, 19)
     const { count } = db.prepare('SELECT COUNT(*) as count FROM play_log WHERE played_at >= ?').get(since)
-    res.json({ plays_24h: count })
+    const { active_files } = db.prepare('SELECT COUNT(DISTINCT media_id) as active_files FROM playlist_items').get()
+    res.json({ plays_24h: count, active_files })
   } catch (e) {
     res.status(500).json({ error: e.message })
   }

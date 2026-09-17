@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getAgencies, getGroups, getMedia, getCampaigns, getRates, getStats, triggerUpdate } from '../api'
+import { getAgencies, getGroups, getCampaigns, getRates, getStats, triggerUpdate } from '../api'
 
 function isOnline(tv) {
   if (!tv.last_seen_at) return false
@@ -126,17 +126,18 @@ export default function Overview() {
   const [updateMsg, setUpdateMsg] = useState('')
 
   const load = async () => {
-    const [ag, gr, med, camp] = await Promise.all([
+    const [ag, gr, camp] = await Promise.all([
       getAgencies().catch(() => []),
       getGroups().catch(() => []),
-      getMedia().catch(() => []),
       getCampaigns().catch(() => []),
     ])
     setAgencies(ag)
     setGroups(gr)
-    setMediaCount(med.length)
     setActiveCampaigns(camp.filter(isActiveCampaign).length)
-    getStats().then(s => setPlays24h(s.plays_24h ?? 0)).catch(() => {})
+    getStats().then(s => {
+      setPlays24h(s.plays_24h ?? 0)
+      setMediaCount(s.active_files ?? 0)
+    }).catch(() => {})
   }
 
   const loadRates = () =>
