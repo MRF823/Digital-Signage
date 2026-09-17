@@ -49,6 +49,7 @@ export function initWebSocket(httpServer) {
     let tvId = null
     let isPreview = new URLSearchParams(_urlQuery).get('preview') === '1'
     let uptimeRowId = null
+    console.log(`[WS] new connection req.url=${req.url} isPreviewFromUrl=${isPreview}`)
 
     ws.on('message', (raw) => {
       let msg
@@ -63,6 +64,7 @@ export function initWebSocket(httpServer) {
         agencyId = String(msg.agencyId)
         tvId = msg.tvId
         isPreview = isPreview || msg.preview === true
+        console.log(`[WS] register agencyId=${agencyId} tvId=${tvId} msg.preview=${msg.preview} isPreview=${isPreview}`)
 
         if (!clients.has(agencyId)) clients.set(agencyId, new Set())
         clients.get(agencyId).add(ws)
