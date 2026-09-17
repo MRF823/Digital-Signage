@@ -67,6 +67,11 @@ export function initWebSocket(httpServer) {
         agencyId = String(msg.agencyId)
         tvId = msg.tvId
         isPreview = isPreview || msg.preview === true
+        // Detecție sigură prin prefix tvId — funcționează indiferent de IS_PREVIEW din browser
+        if (typeof tvId === 'string' && tvId.startsWith('__preview__')) {
+          isPreview = true
+          tvId = tvId.slice('__preview__'.length)
+        }
         console.log(`[WS] register agencyId=${agencyId} tvId=${tvId} msg.preview=${msg.preview} isPreview=${isPreview}`)
 
         if (!clients.has(agencyId)) clients.set(agencyId, new Set())
