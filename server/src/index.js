@@ -282,12 +282,10 @@ const __dirname = dirname(__filename)
 const playerDist = join(__dirname, '../../player/dist')
 if (existsSync(playerDist)) {
   app.use('/player', express.static(playerDist, {
-    setHeaders: (res, filePath) => {
-      if (filePath.endsWith('.html')) {
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
-        res.setHeader('Pragma', 'no-cache')
-        res.setHeader('Expires', '0')
-      }
+    setHeaders: (res) => {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+      res.setHeader('Pragma', 'no-cache')
+      res.setHeader('Expires', '0')
     }
   }))
   app.get(/^\/player/, (req, res) => {

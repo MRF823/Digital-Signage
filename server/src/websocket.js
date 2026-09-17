@@ -43,14 +43,16 @@ export function initWebSocket(httpServer) {
     ws.isAlive = true
     ws.on('pong', () => { ws.isAlive = true })
 
-    // Detectează preview din Referer header (cel mai fiabil — conține URL-ul complet al paginii player)
-    const _referer = req.headers['referer'] || req.headers['origin'] || ''
+    // Detectează preview din path-ul WebSocket (/ws-preview) — sigur, nu poate fi ignorat de cache
+    const _wsPath = req.url?.split('?')[0] || '/'
     const _urlQuery = req.url?.includes('?') ? req.url.split('?')[1] : ''
     let agencyId = null
     let tvId = null
-    let isPreview = _referer.includes('preview=1') || new URLSearchParams(_urlQuery).get('preview') === '1'
+    let isPreview = _wsPath === '/ws-preview' ||
+                    new URLSearchParams(_urlQuery).get('preview') === '1' ||
+                    (req.headers['referer'] || '').includes('preview=1')
     let uptimeRowId = null
-    console.log(`[WS] new connection referer=${_referer} req.url=${req.url} isPreview=${isPreview}`)
+    console.log(`[WS] conn path=${_wsPath} isPreview=${isPreview}`)
 
     ws.on('message', (raw) => {
       let msg
