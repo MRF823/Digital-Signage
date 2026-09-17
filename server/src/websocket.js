@@ -43,9 +43,11 @@ export function initWebSocket(httpServer) {
     ws.isAlive = true
     ws.on('pong', () => { ws.isAlive = true })
 
+    // Detectează preview din URL-ul WS — failsafe dacă player-ul vechi nu trimite flag-ul în register
+    const _urlQuery = req.url?.includes('?') ? req.url.split('?')[1] : ''
     let agencyId = null
     let tvId = null
-    let isPreview = false
+    let isPreview = new URLSearchParams(_urlQuery).get('preview') === '1'
     let uptimeRowId = null
 
     ws.on('message', (raw) => {
@@ -60,7 +62,7 @@ export function initWebSocket(httpServer) {
       if (msg.type === 'register') {
         agencyId = String(msg.agencyId)
         tvId = msg.tvId
-        isPreview = msg.preview === true
+        isPreview = isPreview || msg.preview === true
 
         if (!clients.has(agencyId)) clients.set(agencyId, new Set())
         clients.get(agencyId).add(ws)
@@ -216,25 +218,28 @@ export function initWebSocket(httpServer) {
       }
       if (agencyId && tvId) {
         const tvKey = `${agencyId}:${tvId}`
-        tvClients.delete(tvKey)
-        // Log uptime disconnect — folosim rowId specific sesiunii, nu agency+label (evită să închidă sesiunea TV-ului real)
-        try {
-          if (uptimeRowId) {
-            getDb().prepare(`UPDATE tv_uptime SET disconnected_at = datetime('now') WHERE id = ?`).run(uptimeRowId)
-          }
-        } catch {}
-        // Pornește timer 2 min pentru alertă offline
-        let agencyName = ''
-        try {
-          const row = getDb().prepare('SELECT name FROM agencies WHERE id = ?').get(agencyId)
-          agencyName = row?.name || `Agency ${agencyId}`
-        } catch {}
-        const timer = setTimeout(() => {
-          offlineTimers.delete(tvKey)
-          confirmedOffline.add(tvKey)
-          sendOfflineAlert(tvId, agencyName)
-        }, 2 * 60 * 1000)
-        offlineTimers.set(tvKey, { timer, agencyName, tvLabel: tvId })
+        // Preview-ul nu atinge tvClients, uptime sau timere offline — nu simulează deconectarea unui TV real
+        if (!isPreview) {
+          tvClients.delete(tvKey)
+          // Log uptime disconnect — folosim rowId specific sesiunii, nu agency+label (evită să închidă sesiunea TV-ului real)
+          try {
+            if (uptimeRowId) {
+              getDb().prepare(`UPDATE tv_uptime SET disconnected_at = datetime('now') WHERE id = ?`).run(uptimeRowId)
+            }
+          } catch {}
+          // Pornește timer 2 min pentru alertă offline
+          let agencyName = ''
+          try {
+            const row = getDb().prepare('SELECT name FROM agencies WHERE id = ?').get(agencyId)
+            agencyName = row?.name || `Agency ${agencyId}`
+          } catch {}
+          const timer = setTimeout(() => {
+            offlineTimers.delete(tvKey)
+            confirmedOffline.add(tvKey)
+            sendOfflineAlert(tvId, agencyName)
+          }, 2 * 60 * 1000)
+          offlineTimers.set(tvKey, { timer, agencyName, tvLabel: tvId })
+        }
       }
       if (agencyId && clients.has(agencyId)) {
         clients.get(agencyId).delete(ws)
