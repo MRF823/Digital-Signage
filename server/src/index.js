@@ -300,8 +300,19 @@ if (existsSync(playerDist)) {
 
 const dashDist = join(__dirname, '../../dashboard/dist')
 if (existsSync(dashDist)) {
-  app.use(express.static(dashDist))
+  app.use(express.static(dashDist, {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('index.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+        res.setHeader('Pragma', 'no-cache')
+        res.setHeader('Expires', '0')
+      }
+    }
+  }))
   app.get(/.*/, (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+    res.setHeader('Pragma', 'no-cache')
+    res.setHeader('Expires', '0')
     res.sendFile(join(dashDist, 'index.html'), err => {
       if (err) res.status(503).send('Dashboard temporarily unavailable')
     })
