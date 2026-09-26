@@ -102,6 +102,9 @@ export function initWebSocket(httpServer) {
 
           // Preview-ul nu scrie în tv_uptime și nu actualizează last_seen_at
           if (!isPreview) {
+            // Închide sesiuni zombie (conexiuni pierdute fără disconnect event) înainte de a înregistra una nouă
+            db2.prepare(`UPDATE tv_uptime SET disconnected_at = datetime('now') WHERE agency_id = ? AND tv_label = ? AND disconnected_at IS NULL`)
+              .run(agencyId, tvId)
             // Log uptime connect — reținem rowId ca să închidem DOAR această sesiune la disconnect
             const uptimeInsert = db2.prepare(`INSERT INTO tv_uptime (agency_id, tv_label, connected_at) VALUES (?, ?, datetime('now'))`)
             uptimeRowId = uptimeInsert.run(agencyId, tvId).lastInsertRowid
