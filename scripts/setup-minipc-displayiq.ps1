@@ -65,8 +65,8 @@ Write-Host "      Descarca update-agent.cjs de pe VPS..." -ForegroundColor Yello
 Invoke-WebRequest -Uri "http://92.5.28.167:4000/update-agent.cjs" -OutFile "$serverDir\update-agent.cjs"
 
 # Creeaza agent-config.json FARA BOM (Out-File adauga BOM si strica JSON.parse)
-[System.IO.File]::WriteAllText("$repoDir\agent-config.json", "{`"agencyId`":`"$agencyId`"}")
-Write-Host "      agent-config.json creat (agencyId=$agencyId)" -ForegroundColor Green
+[System.IO.File]::WriteAllText("$repoDir\agent-config.json", "{`"agencyId`":`"$agencyId`",`"tvLabel`":`"$tvLabel`"}")
+Write-Host "      agent-config.json creat (agencyId=$agencyId, tvLabel=$tvLabel)" -ForegroundColor Green
 
 # Opreste agentul vechi daca ruleaza
 pm2 stop DisplayIQ-Agent 2>$null
