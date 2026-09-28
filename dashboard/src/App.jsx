@@ -95,6 +95,13 @@ const IconUsers = () => (
   </svg>
 )
 
+const ROLE_LABEL = { admin: 'Admin', operator: 'Operator', viewer: 'Viewer' }
+const ROLE_BADGE = {
+  admin: 'bg-purple-500/20 text-purple-300',
+  operator: 'bg-blue-500/20 text-blue-300',
+  viewer: 'bg-slate-500/20 text-slate-400',
+}
+
 const NAV = [
   { to: '/', label: 'Overview', Icon: IconOverview, end: true, roles: ['admin','operator','viewer'] },
   { to: '/content', label: 'Librărie Media', Icon: IconMedia, roles: ['admin','operator'] },
@@ -107,7 +114,6 @@ const NAV = [
   { to: '/forex', label: 'Schimb Valutar', Icon: IconForex, roles: ['admin','operator'] },
   { to: '/info', label: 'Info Obligatorii', Icon: IconInfo, roles: ['admin','operator'] },
   { to: '/ai', label: 'Asistent AI', Icon: IconAI, roles: ['admin','operator','viewer'] },
-  { to: '/users', label: 'Utilizatori', Icon: IconUsers, roles: ['admin'] },
   { to: '/settings', label: 'Setări', Icon: IconSettings, roles: ['admin'] },
 ]
 
@@ -141,6 +147,29 @@ function Sidebar() {
         </div>
         <p className="text-slate-500 text-xs mt-1 ml-0.5">Digital Signage</p>
         <span className="mt-1.5 inline-block text-xs font-mono bg-slate-800 text-slate-400 px-2 py-0.5 rounded">Dashboard · :{window.location.port}</span>
+        <div className="mt-3 pt-3 border-t border-slate-700/50 flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center shrink-0">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-slate-300 text-xs font-medium truncate">{getTokenPayload()?.name || getTokenPayload()?.email || 'Utilizator'}</p>
+          </div>
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${ROLE_BADGE[role] || ROLE_BADGE.viewer}`}>
+            {ROLE_LABEL[role] || role}
+          </span>
+        </div>
+        {role === 'admin' && (
+          <NavLink to="/users"
+            className={({ isActive }) =>
+              `mt-2 flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors
+               ${isActive ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`
+            }>
+            <IconUsers />
+            Utilizatori
+          </NavLink>
+        )}
       </div>
 
       {/* Navigation */}
@@ -206,8 +235,14 @@ function Layout({ children }) {
   )
 }
 
-function AuthGuard({ children }) {
-  return localStorage.getItem('token') ? children : <Navigate to="/login" replace />
+const ROUTE_ROLES = Object.fromEntries(NAV.map(({ to, roles }) => [to, roles]))
+
+function RoleGuard({ path, children }) {
+  if (!localStorage.getItem('token')) return <Navigate to="/login" replace />
+  const role = getTokenPayload()?.role || 'viewer'
+  const allowed = ROUTE_ROLES[path] ?? ['admin']
+  if (!allowed.includes(role)) return <Navigate to="/" replace />
+  return children
 }
 
 export default function App() {
@@ -217,19 +252,19 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/" element={<AuthGuard><Layout><Overview /></Layout></AuthGuard>} />
-        <Route path="/content" element={<AuthGuard><Layout><Content /></Layout></AuthGuard>} />
-        <Route path="/agencies" element={<AuthGuard><Layout><Agencies /></Layout></AuthGuard>} />
-        <Route path="/tvs" element={<AuthGuard><Layout><TVs /></Layout></AuthGuard>} />
-        <Route path="/groups" element={<AuthGuard><Layout><Groups /></Layout></AuthGuard>} />
-        <Route path="/campaigns" element={<AuthGuard><Layout><Campaigns /></Layout></AuthGuard>} />
-        <Route path="/map" element={<AuthGuard><Layout><MapPage /></Layout></AuthGuard>} />
-        <Route path="/reports" element={<AuthGuard><Layout><Reports /></Layout></AuthGuard>} />
-        <Route path="/forex" element={<AuthGuard><Layout><ForexTVs /></Layout></AuthGuard>} />
-        <Route path="/info" element={<AuthGuard><Layout><InfoObligatorii /></Layout></AuthGuard>} />
-        <Route path="/ai" element={<AuthGuard><Layout><AI /></Layout></AuthGuard>} />
-        <Route path="/users" element={<AuthGuard><Layout><Users /></Layout></AuthGuard>} />
-        <Route path="/settings" element={<AuthGuard><Layout><Settings /></Layout></AuthGuard>} />
+        <Route path="/" element={<RoleGuard path="/"><Layout><Overview /></Layout></RoleGuard>} />
+        <Route path="/content" element={<RoleGuard path="/content"><Layout><Content /></Layout></RoleGuard>} />
+        <Route path="/agencies" element={<RoleGuard path="/agencies"><Layout><Agencies /></Layout></RoleGuard>} />
+        <Route path="/tvs" element={<RoleGuard path="/tvs"><Layout><TVs /></Layout></RoleGuard>} />
+        <Route path="/groups" element={<RoleGuard path="/groups"><Layout><Groups /></Layout></RoleGuard>} />
+        <Route path="/campaigns" element={<RoleGuard path="/campaigns"><Layout><Campaigns /></Layout></RoleGuard>} />
+        <Route path="/map" element={<RoleGuard path="/map"><Layout><MapPage /></Layout></RoleGuard>} />
+        <Route path="/reports" element={<RoleGuard path="/reports"><Layout><Reports /></Layout></RoleGuard>} />
+        <Route path="/forex" element={<RoleGuard path="/forex"><Layout><ForexTVs /></Layout></RoleGuard>} />
+        <Route path="/info" element={<RoleGuard path="/info"><Layout><InfoObligatorii /></Layout></RoleGuard>} />
+        <Route path="/ai" element={<RoleGuard path="/ai"><Layout><AI /></Layout></RoleGuard>} />
+        <Route path="/users" element={<RoleGuard path="/users"><Layout><Users /></Layout></RoleGuard>} />
+        <Route path="/settings" element={<RoleGuard path="/settings"><Layout><Settings /></Layout></RoleGuard>} />
       </Routes>
     </BrowserRouter>
   )
