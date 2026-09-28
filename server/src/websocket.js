@@ -23,6 +23,13 @@ const forexClients = new Set()
 // Map: agencyId (string) -> Set cu TV-urile info obligatorii conectate
 const infoClients = new Map()
 
+// Map: agencyId (string) -> diagnostics object (ultimele date trimise de mini PC)
+const agentDiagnostics = new Map()
+
+export function getAgentDiagnostics(agencyId) {
+  return agentDiagnostics.get(String(agencyId)) || null
+}
+
 // Set of update agent connections
 const updateAgents = new Set()
 
@@ -60,6 +67,11 @@ export function initWebSocket(httpServer) {
 
       if (msg.type === 'register_update_agent') {
         updateAgents.add(ws)
+        return
+      }
+
+      if (msg.type === 'agent_diagnostics' && msg.agencyId && msg.data) {
+        agentDiagnostics.set(String(msg.agencyId), { ...msg.data, receivedAt: new Date().toISOString() })
         return
       }
 

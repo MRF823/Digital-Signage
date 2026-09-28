@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getAgencies, getGroups, updateTvAnydesk } from '../api'
+import { getAgencies, getGroups, updateTvAnydesk, getDiagnostics } from '../api'
 
 function isOnline(tv) {
   if (!tv.last_seen_at) return false
@@ -16,6 +16,12 @@ function formatLastSeen(dateStr) {
   if (diff < 3_600_000) return { line1: `${Math.round(diff / 60_000)} min`, line2 }
   if (diff < 86_400_000) return { line1: `${Math.round(diff / 3_600_000)} ore`, line2 }
   return { line1: `${Math.round(diff / 86_400_000)} zile`, line2 }
+}
+
+function formatUptime(seconds) {
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min`
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} ore`
+  return `${Math.floor(seconds / 86400)} zile`
 }
 
 const IconMonitor = () => (
@@ -54,6 +60,7 @@ export default function TVs() {
   const [expanded, setExpanded] = useState(null)
   const [anydeskEdit, setAnydeskEdit] = useState({}) // tvId -> string
   const [anydeskSaving, setAnydeskSaving] = useState({})
+  const [diagCache, setDiagCache] = useState({}) // agencyId -> diag data
 
   const load = () =>
     Promise.all([getAgencies(), getGroups()]).then(([agencies, groups]) => {
@@ -283,7 +290,15 @@ export default function TVs() {
                       {/* Acțiuni */}
                       <td className="px-5 py-4">
                         <button
-                          onClick={() => setExpanded(isExp ? null : tv.id)}
+                          onClick={() => {
+                            const next = isExp ? null : tv.id
+                            setExpanded(next)
+                            if (next && !diagCache[tv.agency_id]) {
+                              getDiagnostics(tv.agency_id).then(d => {
+                                if (d) setDiagCache(c => ({ ...c, [tv.agency_id]: d }))
+                              }).catch(() => {})
+                            }
+                          }}
                           className={`transition-colors ${isExp ? 'text-blue-500' : 'text-gray-300 hover:text-blue-500'}`}
                           title="Detalii"
                         >
@@ -293,9 +308,11 @@ export default function TVs() {
                     </tr>
                   )
 
+                  const diag = diagCache[tv.agency_id] || null
                   const detailRow = isExp ? (
                     <tr key={`detail-${tv.id}`} className="bg-blue-50/40 border-b border-blue-100">
-                      <td colSpan={7} className="px-8 py-4">
+                      <td colSpan={7} className="px-8 py-4 space-y-3">
+                        {/* Linia 1: TV ID, Agenție ID, AnyDesk */}
                         <div className="flex flex-wrap items-center gap-6 text-sm">
                           <div>
                             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">TV ID</span>
@@ -324,6 +341,45 @@ export default function TVs() {
                               {anydeskSaving[tv.id] ? '...' : 'Salvează'}
                             </button>
                           </div>
+                        </div>
+
+                        {/* Linia 2: Diagnostice mini PC */}
+                        <div className="border-t border-blue-100 pt-3">
+                          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-2">Diagnostice Mini PC</span>
+                          {diag ? (
+                            <div className="flex flex-wrap gap-4 text-sm">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-gray-400">🖥</span>
+                                <span className="text-gray-500">CPU:</span>
+                                <span className="font-medium text-gray-700">{diag.cpu != null ? `${diag.cpu}%` : '—'}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-gray-400">💾</span>
+                                <span className="text-gray-500">RAM liber:</span>
+                                <span className="font-medium text-gray-700">{diag.ramFreeGB != null ? `${diag.ramFreeGB} GB` : '—'}{diag.ramTotalGB ? ` / ${diag.ramTotalGB} GB` : ''}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-gray-400">📶</span>
+                                <span className="text-gray-500">WiFi:</span>
+                                <span className="font-medium text-gray-700">{diag.wifiSsid || '—'}{diag.wifiSignal != null ? ` (${diag.wifiSignal}%)` : ''}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-gray-400">🌐</span>
+                                <span className="text-gray-500">Edge:</span>
+                                <span className={`font-medium ${diag.edgeRunning ? 'text-green-600' : 'text-red-500'}`}>{diag.edgeRunning == null ? '—' : diag.edgeRunning ? 'Rulează' : 'Oprit'}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-gray-400">⏱</span>
+                                <span className="text-gray-500">Uptime:</span>
+                                <span className="font-medium text-gray-700">{diag.uptimeSeconds != null ? formatUptime(diag.uptimeSeconds) : '—'}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 ml-auto">
+                                <span className="text-xs text-gray-400">Actualizat: {diag.receivedAt ? new Date(diag.receivedAt).toLocaleTimeString('ro-RO', {hour:'2-digit',minute:'2-digit'}) : '—'}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-400 italic">Date indisponibile — mini PC-ul nu a trimis diagnostice încă.</p>
+                          )}
                         </div>
                       </td>
                     </tr>

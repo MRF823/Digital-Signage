@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { existsSync } from 'fs'
 import { initDb, getDb } from './db.js'
-import { initWebSocket, pushReloadToAll, pushSyncMediaToAll, pushTriggerUpdate } from './websocket.js'
+import { initWebSocket, pushReloadToAll, pushSyncMediaToAll, pushTriggerUpdate, getAgentDiagnostics } from './websocket.js'
 import mediaRoutes, { serveFile } from './routes/media.js'
 import agencyRoutes from './routes/agencies.js'
 import playlistRoutes from './routes/playlists.js'
@@ -256,6 +256,12 @@ app.use('/api/settings', requireAdmin, settingsRoutes)
 app.use('/api/ai', requireAuth, aiRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/auth', userRoutes)
+
+app.get('/api/diagnostics/:agencyId', requireAuth, (req, res) => {
+  const diag = getAgentDiagnostics(req.params.agencyId)
+  res.json(diag || null)
+})
+
 app.post('/api/players/reload', requireOperator, (req, res) => {
   pushReloadToAll()
   res.json({ ok: true })

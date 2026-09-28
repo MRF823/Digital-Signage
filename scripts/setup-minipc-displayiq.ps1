@@ -50,22 +50,42 @@ Set-Location $serverDir
 npm install --omit=dev
 Write-Host "      OK." -ForegroundColor Green
 
-# ── [3/5] Update agent via Task Scheduler (Node direct) ──────
-Write-Host "[3/5] Configurare update agent..." -ForegroundColor Cyan
-$node = (Get-Command node -ErrorAction SilentlyContinue).Source
-if (-not $node) { $node = "node" }
-$action = New-ScheduledTaskAction -Execute $node -Argument "update-agent.cjs" -WorkingDirectory $serverDir
-$trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
-$settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit 0 -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
-Register-ScheduledTask -TaskName "DisplayIQ-UpdateAgent" -Action $action -Trigger $trigger -Settings $settings -RunLevel Highest -Force | Out-Null
-Start-ScheduledTask -TaskName "DisplayIQ-UpdateAgent"
-Write-Host "      OK." -ForegroundColor Green
+# ── [3/5] DisplayIQ Agent via PM2 ────────────────────────────
+Write-Host "[3/5] Configurare DisplayIQ-Agent (pm2)..." -ForegroundColor Cyan
+
+# Instalare pm2 daca lipseste
+if (-not (Get-Command pm2 -ErrorAction SilentlyContinue)) {
+    Write-Host "      Instalare pm2..." -ForegroundColor Yellow
+    npm install -g pm2
+    $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
+}
+
+# Descarca update-agent.cjs de pe VPS (versiunea GitHub e veche — fara diagnostice)
+Write-Host "      Descarca update-agent.cjs de pe VPS..." -ForegroundColor Yellow
+Invoke-WebRequest -Uri "http://92.5.28.167:4000/update-agent.cjs" -OutFile "$serverDir\update-agent.cjs"
+
+# Creeaza agent-config.json FARA BOM (Out-File adauga BOM si strica JSON.parse)
+[System.IO.File]::WriteAllText("$repoDir\agent-config.json", "{`"agencyId`":`"$agencyId`"}")
+Write-Host "      agent-config.json creat (agencyId=$agencyId)" -ForegroundColor Green
+
+# Opreste agentul vechi daca ruleaza
+pm2 stop DisplayIQ-Agent 2>$null
+pm2 delete DisplayIQ-Agent 2>$null
+
+# Porneste agentul
+Set-Location $repoDir
+pm2 start server/update-agent.cjs --name DisplayIQ-Agent
+pm2 save
+
+Write-Host "      OK — DisplayIQ-Agent pornit si salvat." -ForegroundColor Green
 
 # ── [4/5] Edge autostart (registry) ─────────────────────────
 Write-Host "[4/5] Configurare Edge autostart..." -ForegroundColor Cyan
 
 $tvEncoded = [Uri]::EscapeDataString($tvLabel)
-$url  = "https://displayiq.funkymedia.ro/player?agencyId=$agencyId&tvId=$tvEncoded"
+$portraitTvs = @("TV Schimb Valutar", "TV Info Obligatorii")
+$portrait = if ($portraitTvs -contains $tvLabel) { "&portrait=1" } else { "" }
+$url  = "https://displayiq.funkymedia.ro/player?agencyId=$agencyId&tvId=$tvEncoded$portrait"
 $edge = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 if (-not (Test-Path $edge)) { $edge = "C:\Program Files\Microsoft\Edge\Application\msedge.exe" }
 
