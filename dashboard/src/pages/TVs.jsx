@@ -60,7 +60,7 @@ export default function TVs() {
   const [expanded, setExpanded] = useState(null)
   const [anydeskEdit, setAnydeskEdit] = useState({}) // tvId -> string
   const [anydeskSaving, setAnydeskSaving] = useState({})
-  const [diagCache, setDiagCache] = useState({}) // agencyId -> diag data
+  const [diagCache, setDiagCache] = useState({}) // `${agencyId}:${tvLabel}` -> diag data
 
   const load = () =>
     Promise.all([getAgencies(), getGroups()]).then(([agencies, groups]) => {
@@ -293,9 +293,10 @@ export default function TVs() {
                           onClick={() => {
                             const next = isExp ? null : tv.id
                             setExpanded(next)
-                            if (next && !diagCache[tv.agency_id]) {
-                              getDiagnostics(tv.agency_id).then(d => {
-                                if (d) setDiagCache(c => ({ ...c, [tv.agency_id]: d }))
+                            const diagKey = `${tv.agency_id}:${tv.label}`
+                            if (next && !diagCache[diagKey]) {
+                              getDiagnostics(tv.agency_id, tv.label).then(d => {
+                                if (d) setDiagCache(c => ({ ...c, [diagKey]: d }))
                               }).catch(() => {})
                             }
                           }}
@@ -308,7 +309,7 @@ export default function TVs() {
                     </tr>
                   )
 
-                  const diag = diagCache[tv.agency_id] || null
+                  const diag = diagCache[`${tv.agency_id}:${tv.label}`] || null
                   const detailRow = isExp ? (
                     <tr key={`detail-${tv.id}`} className="bg-blue-50/40 border-b border-blue-100">
                       <td colSpan={7} className="px-8 py-4 space-y-3">

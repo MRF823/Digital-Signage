@@ -13,9 +13,11 @@ const CONFIG_FILE = path.join(__dirname, '..', 'agent-config.json')
 
 // Citeste agencyId din agent-config.json (git-ignored, specific per mini PC)
 let agencyId = null
+let tvLabel = null
 try {
   const cfg = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'))
   agencyId = String(cfg.agencyId)
+  tvLabel = cfg.tvLabel || null
 } catch {}
 
 function log(msg) {
@@ -107,7 +109,7 @@ function runUpdate() {
 async function sendDiagnostics() {
   if (!activeWs || activeWs.readyState !== WebSocket.OPEN || !agencyId) return
   const data = await collectDiagnostics()
-  activeWs.send(JSON.stringify({ type: 'agent_diagnostics', agencyId, data }))
+  activeWs.send(JSON.stringify({ type: 'agent_diagnostics', agencyId, tvLabel, data }))
 }
 
 function connect() {
@@ -147,5 +149,5 @@ function connect() {
 // Trimite diagnostice la fiecare 5 minute
 setInterval(sendDiagnostics, 5 * 60 * 1000)
 
-log(`Update agent pornit (agencyId=${agencyId || 'neconfigurat'})`)
+log(`Update agent pornit (agencyId=${agencyId || 'neconfigurat'}, tvLabel=${tvLabel || 'neconfigurat'})`)
 connect()

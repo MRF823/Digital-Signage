@@ -258,7 +258,8 @@ app.use('/api/users', userRoutes)
 app.use('/api/auth', userRoutes)
 
 app.get('/api/diagnostics/:agencyId', requireAuth, (req, res) => {
-  const diag = getAgentDiagnostics(req.params.agencyId)
+  const { tvLabel } = req.query
+  const diag = getAgentDiagnostics(req.params.agencyId, tvLabel)
   res.json(diag || null)
 })
 

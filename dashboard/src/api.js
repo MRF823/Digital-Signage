@@ -29,7 +29,7 @@ export const getUsers = () => api.get('/api/users').then(r => r.data)
 export const createUser = (data) => api.post('/api/users', data).then(r => r.data)
 export const updateUser = (id, data) => api.patch(`/api/users/${id}`, data).then(r => r.data)
 export const deleteUser = (id) => api.delete(`/api/users/${id}`)
-export const getDiagnostics = (agencyId) => api.get(`/api/diagnostics/${agencyId}`).then(r => r.data)
+export const getDiagnostics = (agencyId, tvLabel) => api.get(`/api/diagnostics/${agencyId}`, { params: tvLabel ? { tvLabel } : {} }).then(r => r.data)
 export const forgotPassword = (email) => api.post('/api/auth/forgot-password', { email }).then(r => r.data)
 export const resetPassword = (token, password) => api.post('/api/auth/reset-password', { token, password }).then(r => r.data)
 

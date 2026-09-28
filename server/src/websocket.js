@@ -23,11 +23,16 @@ const forexClients = new Set()
 // Map: agencyId (string) -> Set cu TV-urile info obligatorii conectate
 const infoClients = new Map()
 
-// Map: agencyId (string) -> diagnostics object (ultimele date trimise de mini PC)
+// Map: `${agencyId}:${tvLabel}` -> diagnostics object (ultimele date trimise de mini PC)
 const agentDiagnostics = new Map()
 
-export function getAgentDiagnostics(agencyId) {
-  return agentDiagnostics.get(String(agencyId)) || null
+export function getAgentDiagnostics(agencyId, tvLabel) {
+  if (tvLabel) return agentDiagnostics.get(`${agencyId}:${tvLabel}`) || null
+  // fallback: cauta orice cheie cu agencyId (compatibilitate)
+  for (const [key, val] of agentDiagnostics) {
+    if (key.startsWith(`${agencyId}:`)) return val
+  }
+  return null
 }
 
 // Set of update agent connections
@@ -71,7 +76,8 @@ export function initWebSocket(httpServer) {
       }
 
       if (msg.type === 'agent_diagnostics' && msg.agencyId && msg.data) {
-        agentDiagnostics.set(String(msg.agencyId), { ...msg.data, receivedAt: new Date().toISOString() })
+        const key = msg.tvLabel ? `${msg.agencyId}:${msg.tvLabel}` : String(msg.agencyId)
+        agentDiagnostics.set(key, { ...msg.data, receivedAt: new Date().toISOString() })
         return
       }
 
