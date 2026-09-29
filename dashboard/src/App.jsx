@@ -153,8 +153,13 @@ function Sidebar() {
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
             </svg>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-slate-300 text-xs font-medium truncate">{getTokenPayload()?.name || getTokenPayload()?.email || 'Utilizator'}</p>
+          <div className="flex-1 min-w-0 relative group">
+            <p className="text-slate-300 text-xs font-medium truncate">{getTokenPayload()?.email || getTokenPayload()?.name || 'Utilizator'}</p>
+            <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-50">
+              <div className="bg-slate-900 text-slate-200 text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap border border-slate-700">
+                {getTokenPayload()?.email || getTokenPayload()?.name || ''}
+              </div>
+            </div>
           </div>
           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${ROLE_BADGE[role] || ROLE_BADGE.viewer}`}>
             {ROLE_LABEL[role] || role}
