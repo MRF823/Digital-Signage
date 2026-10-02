@@ -149,6 +149,7 @@ export function initDb(path = './signage.db') {
   try { db.exec('ALTER TABLE agencies ADD COLUMN info_rotation_seconds INTEGER NOT NULL DEFAULT 5') } catch {}
   try { db.exec('ALTER TABLE agencies ADD COLUMN info_on_time TEXT') } catch {}
   try { db.exec('ALTER TABLE agencies ADD COLUMN info_off_time TEXT') } catch {}
+  try { db.exec(`CREATE TABLE IF NOT EXISTS offline_alerts (tv_key TEXT PRIMARY KEY, sent_at TEXT NOT NULL DEFAULT (datetime('now')))`) } catch {}
 
   // Coordonate implicite per oraș
   const cityCoords = {

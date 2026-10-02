@@ -8,8 +8,7 @@ import { getActivePlaylist } from './playlist.js'
 
 // tvKey -> { timer, agencyName, tvLabel }
 const offlineTimers = new Map()
-// tvKeys pentru care alerta offline a fost deja trimisă (așteptăm reconectare)
-const confirmedOffline = new Set()
+// tvKeys pentru care alerta offline a fost deja trimisă — persisted în DB (supraviețuiește restart server)
 
 // Map: agencyId (string) -> Set of WebSocket clients
 const clients = new Map()
@@ -103,14 +102,16 @@ export function initWebSocket(httpServer) {
             const { timer } = offlineTimers.get(tvKey)
             clearTimeout(timer)
             offlineTimers.delete(tvKey)
-          } else if (confirmedOffline.has(tvKey)) {
-            confirmedOffline.delete(tvKey)
-            let agencyName = ''
+          } else {
             try {
-              const row = getDb().prepare('SELECT name FROM agencies WHERE id = ?').get(agencyId)
-              agencyName = row?.name || `Agency ${agencyId}`
+              const db = getDb()
+              const wasOffline = db.prepare('SELECT 1 FROM offline_alerts WHERE tv_key = ?').get(tvKey)
+              if (wasOffline) {
+                db.prepare('DELETE FROM offline_alerts WHERE tv_key = ?').run(tvKey)
+                const row = db.prepare('SELECT name FROM agencies WHERE id = ?').get(agencyId)
+                sendReconnectedAlert(tvId, row?.name || `Agency ${agencyId}`)
+              }
             } catch {}
-            sendReconnectedAlert(tvId, agencyName)
           }
         }
 
@@ -266,7 +267,7 @@ export function initWebSocket(httpServer) {
           } catch {}
           const timer = setTimeout(() => {
             offlineTimers.delete(tvKey)
-            confirmedOffline.add(tvKey)
+            try { getDb().prepare(`INSERT OR REPLACE INTO offline_alerts (tv_key) VALUES (?)`).run(tvKey) } catch {}
             sendOfflineAlert(tvId, agencyName)
           }, 2 * 60 * 1000)
           offlineTimers.set(tvKey, { timer, agencyName, tvLabel: tvId })
