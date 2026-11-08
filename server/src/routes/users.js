@@ -103,7 +103,7 @@ router.post('/forgot-password', async (req, res) => {
 router.post('/reset-password', (req, res) => {
   const { token, password } = req.body
   if (!token || !password) return res.status(400).json({ error: 'Token și parolă obligatorii' })
-  if (password.length < 6) return res.status(400).json({ error: 'Parola trebuie să aibă minim 6 caractere' })
+  if (password.length < 12) return res.status(400).json({ error: 'Parola trebuie să aibă minim 12 caractere' })
   try {
     const db = getDb()
     const reset = db.prepare('SELECT * FROM password_reset_tokens WHERE token = ? AND used = 0').get(token)

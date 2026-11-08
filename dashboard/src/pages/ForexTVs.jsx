@@ -25,18 +25,15 @@ function formatUpdated(str) {
 function ForexRatesPanel({ rates, updatedAt }) {
   return (
     <div style={{ background: '#1a2e20', borderRadius: 16, overflow: 'hidden', fontFamily: 'Arial, sans-serif' }}>
-      {/* Header */}
       <div style={{ padding: '18px 16px 12px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <div style={{ color: '#fff', fontSize: 22, fontWeight: 900, letterSpacing: 2 }}>CEC BANK</div>
         <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10, letterSpacing: 2, marginTop: 3 }}>CURSURI DE SCHIMB VALUTAR</div>
       </div>
-      {/* Antet tabel */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px', padding: '6px 12px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
         {['VALUTĂ','CUMPĂRĂM','VINDEM'].map((h, i) => (
           <span key={h} style={{ color: 'rgba(255,255,255,0.4)', fontSize: 8, fontWeight: 700, letterSpacing: 1.5, textAlign: i === 0 ? 'left' : 'center' }}>{h}</span>
         ))}
       </div>
-      {/* Rânduri */}
       {ORDER.map(code => {
         const meta = CURRENCY_META[code]
         const r = rates?.[code]
@@ -59,7 +56,6 @@ function ForexRatesPanel({ rates, updatedAt }) {
           </div>
         )
       })}
-      {/* Footer */}
       <div style={{ padding: '6px 12px 8px', borderTop: '1px solid rgba(255,255,255,0.08)', background: 'rgba(0,0,0,0.2)' }}>
         <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: 600, textAlign: 'center', marginBottom: 4 }}>
           {updatedAt ? `Ultima actualizare: ${formatUpdated(updatedAt)}` : ''}
@@ -106,25 +102,26 @@ export default function ForexTVs() {
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
-      <p className="text-slate-500">Se încarcă...</p>
+      <p style={{ color: 'var(--fg-3)' }}>Se încarcă...</p>
     </div>
   )
 
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-slate-900">Schimb Valutar</h1>
-        <p className="text-slate-500 text-sm mt-1">TV-uri de schimb valutar din agenții</p>
+        <h1 className="text-2xl font-semibold" style={{ color: 'var(--fg)' }}>Schimb Valutar</h1>
+        <p className="text-sm mt-1" style={{ color: 'var(--fg-3)' }}>TV-uri de schimb valutar din agenții</p>
       </div>
 
       {rates?.updatedAt && (
-        <div className="mb-6 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+        <div className="mb-6 p-3 rounded-lg flex items-center gap-2"
+          style={{ background: 'var(--chip-on-bg)', border: '1px solid rgba(16,185,129,0.25)' }}>
           <div className="w-2 h-2 rounded-full bg-green-500" />
-          <span className="text-sm text-green-700 font-medium">
+          <span className="text-sm font-medium" style={{ color: 'var(--chip-on-fg)' }}>
             Cursuri CEC actualizate la {rates.updatedAt?.match(/\d{2}:\d{2}$/)?.[0] || rates.updatedAt}
           </span>
           {rates.rates?.EUR && (
-            <span className="text-sm text-green-600 ml-2">
+            <span className="text-sm ml-2" style={{ color: 'var(--chip-on-fg)' }}>
               EUR {rates.rates.EUR.buy?.toFixed(4)} / {rates.rates.EUR.sell?.toFixed(4)}
             </span>
           )}
@@ -132,27 +129,29 @@ export default function ForexTVs() {
       )}
 
       {!rates?.updatedAt && (
-        <div className="mb-6 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2">
+        <div className="mb-6 p-3 rounded-lg flex items-center gap-2"
+          style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}>
           <div className="w-2 h-2 rounded-full bg-amber-500" />
-          <span className="text-sm text-amber-700">Cursurile forex nu sunt disponibile momentan</span>
+          <span className="text-sm" style={{ color: 'var(--warn)' }}>Cursurile forex nu sunt disponibile momentan</span>
         </div>
       )}
 
       <div className="flex gap-6 items-start">
 
-        {/* Stânga — lista agenții */}
         <div className="flex-1 space-y-3">
           {agencies.map(agency => {
             const tv = forexTvs.find(t => t.agency_id === agency.id)
             const online = tv ? isOnline(tv.last_seen_at) : false
 
             return (
-              <div key={agency.id} className="bg-white border border-slate-200 rounded-xl px-4 py-3 flex items-center justify-between">
+              <div key={agency.id} className="rounded-xl px-4 py-3 flex items-center justify-between"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                 <div className="flex items-center gap-3">
-                  <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${tv ? (online ? 'bg-green-500' : 'bg-slate-300') : 'bg-slate-200'}`} />
+                  <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${tv ? (online ? 'bg-green-500' : '') : ''}`}
+                    style={tv ? (online ? {} : { background: 'var(--fg-3)' }) : { background: 'var(--border)' }} />
                   <div>
-                    <p className="text-sm font-medium text-slate-800">{agency.name}</p>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-sm font-medium" style={{ color: 'var(--fg)' }}>{agency.name}</p>
+                    <p className="text-xs" style={{ color: 'var(--fg-3)' }}>
                       {tv
                         ? online ? 'Online' : tv.last_seen_at ? `Ultima dată: ${new Date(tv.last_seen_at + 'Z').toLocaleString('ro-RO')}` : 'Niciodată conectat'
                         : 'Niciun TV schimb valutar'}
@@ -173,7 +172,6 @@ export default function ForexTVs() {
           })}
         </div>
 
-        {/* Dreapta — cursuri live */}
         <div className="w-80 flex-shrink-0">
           <ForexRatesPanel rates={rates?.rates} updatedAt={rates?.updatedAt} />
         </div>

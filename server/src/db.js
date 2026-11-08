@@ -150,6 +150,15 @@ export function initDb(path = './signage.db') {
   try { db.exec('ALTER TABLE agencies ADD COLUMN info_on_time TEXT') } catch {}
   try { db.exec('ALTER TABLE agencies ADD COLUMN info_off_time TEXT') } catch {}
   try { db.exec(`CREATE TABLE IF NOT EXISTS offline_alerts (tv_key TEXT PRIMARY KEY, sent_at TEXT NOT NULL DEFAULT (datetime('now')))`) } catch {}
+  try { db.exec(`CREATE TABLE IF NOT EXISTS activity_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_email TEXT NOT NULL,
+    user_name TEXT NOT NULL,
+    action TEXT NOT NULL,
+    details TEXT,
+    ip TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`) } catch {}
 
   // Coordonate implicite per oraș
   const cityCoords = {

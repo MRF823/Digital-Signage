@@ -48,59 +48,75 @@ export default function Agencies() {
     setGeocoding(false)
   }
 
+  const inp = (w) => ({ height:36, padding:'0 12px', border:'1px solid var(--border)', borderRadius:8,
+    background:'var(--surface)', color:'var(--fg)', fontSize:13, outline:'none', width: w })
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-800">Agenții ({agencies.length})</h2>
+    <div style={{ padding:24 }}>
+      {/* Header */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+        <div>
+          <h1 style={{ fontFamily:'Plus Jakarta Sans, sans-serif', fontWeight:800, fontSize:22, color:'var(--fg)', margin:0 }}>
+            Agenții
+          </h1>
+          <p style={{ fontSize:13, color:'var(--fg-3)', marginTop:3 }}>{agencies.length} agenții înregistrate</p>
+        </div>
         <button onClick={() => setShowForm(v => !v)}
-          className="bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold px-4 py-2 rounded-lg">
+          style={{ display:'inline-flex', alignItems:'center', gap:6, height:36, padding:'0 16px',
+            background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer' }}>
           + Agenție nouă
         </button>
       </div>
 
+      {/* Form */}
       {showForm && (
         <form onSubmit={handleCreate}
-          className="bg-white border border-blue-100 rounded-xl p-4 mb-4 flex flex-wrap gap-3 items-end shadow-sm">
+          style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12,
+            padding:16, marginBottom:16, display:'flex', flexWrap:'wrap', gap:12, alignItems:'flex-end',
+            boxShadow:'var(--shadow-sm)' }}>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Nume agenție</label>
+            <label style={{ display:'block', fontSize:11, color:'var(--fg-3)', marginBottom:4, fontWeight:600 }}>Nume agenție</label>
             <input value={newName} onChange={e => setNewName(e.target.value)}
-              placeholder='ex: "Agenția Floreasca"'
-              className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-56" />
+              placeholder='"Agenția Floreasca"' style={inp(200)} />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Oraș</label>
+            <label style={{ display:'block', fontSize:11, color:'var(--fg-3)', marginBottom:4, fontWeight:600 }}>Oraș</label>
             <input value={newCity} onChange={e => setNewCity(e.target.value)}
-              placeholder='ex: "București"'
-              className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-40" />
+              placeholder='"București"' style={inp(140)} />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Adresă <span className="text-gray-400">(pentru hartă)</span></label>
+            <label style={{ display:'block', fontSize:11, color:'var(--fg-3)', marginBottom:4, fontWeight:600 }}>
+              Adresă <span style={{ fontWeight:400, color:'var(--fg-3)' }}>(hartă)</span>
+            </label>
             <input value={newAddress} onChange={e => setNewAddress(e.target.value)}
-              placeholder='ex: "Str. Victoriei 10, București"'
-              className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-72" />
+              placeholder='"Str. Victoriei 10, București"' style={inp(260)} />
           </div>
           <button type="submit" disabled={geocoding}
-            className="bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-blue-800 disabled:opacity-60">
-            {geocoding ? 'Se caută pe hartă...' : 'Creează'}
+            style={{ height:36, padding:'0 16px', background:'var(--accent)', color:'#fff', border:'none',
+              borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer', opacity:geocoding?.6:1 }}>
+            {geocoding ? 'Se caută...' : 'Creează'}
           </button>
           <button type="button" onClick={() => setShowForm(false)}
-            className="text-sm text-gray-400 hover:text-gray-600">
+            style={{ fontSize:13, color:'var(--fg-3)', background:'none', border:'none', cursor:'pointer' }}>
             Anulează
           </button>
-          {formError && <p className="text-xs text-red-500 w-full">{formError}</p>}
+          {formError && <p style={{ fontSize:12, color:'#DC2626', width:'100%', margin:0 }}>{formError}</p>}
         </form>
       )}
 
-      <div className="mb-4">
+      {/* Search */}
+      <div style={{ marginBottom:16 }}>
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Caută agenție, oraș, adresă..."
-          className="w-full border border-gray-200 rounded-full px-4 py-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white shadow-sm"
+          style={{ width:'100%', height:38, padding:'0 16px', border:'1px solid var(--border)', borderRadius:99,
+            background:'var(--surface)', color:'var(--fg)', fontSize:13, outline:'none', boxSizing:'border-box' }}
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Grid */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(480px, 1fr))', gap:16 }}>
         {agencies
           .filter(a => {
             const q = search.toLowerCase()

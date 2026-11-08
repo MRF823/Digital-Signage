@@ -55,17 +55,22 @@ function PdfCanvas({ url, pageNum, fit = 'cover' }) {
         if (cancelled) return
         const w = container.clientWidth || 400
         const h = container.clientHeight || 500
-        const vp = page.getViewport({ scale: 1, rotation: 0 })
-        const scale = fit === 'contain'
+        const dpr = Math.max(window.devicePixelRatio || 1, 2)
+        const vp = page.getViewport({ scale: 1, rotation: page.rotate })
+        const baseScale = fit === 'contain'
           ? Math.min(w / vp.width, h / vp.height)
           : Math.max(w / vp.width, h / vp.height)
-        const scaled = page.getViewport({ scale, rotation: 0 })
+        const scaled = page.getViewport({ scale: baseScale * dpr, rotation: page.rotate })
         if (fit === 'contain') {
           canvas.width = scaled.width
           canvas.height = scaled.height
+          canvas.style.width  = (scaled.width  / dpr) + 'px'
+          canvas.style.height = (scaled.height / dpr) + 'px'
         } else {
-          canvas.width = w
-          canvas.height = h
+          canvas.width = w * dpr
+          canvas.height = h * dpr
+          canvas.style.width  = w + 'px'
+          canvas.style.height = h + 'px'
         }
         const ctx = canvas.getContext('2d')
         await page.render({ canvasContext: ctx, viewport: scaled }).promise
@@ -188,6 +193,7 @@ export default function InfoDisplay({ docs = [], rotationSeconds = 5, powered = 
               <PdfCanvas
                 url={`${SERVER}/api/info/file/${doc.filename}`}
                 pageNum={1}
+                fit="contain"
               />
             </div>
           )

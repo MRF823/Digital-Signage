@@ -15,23 +15,25 @@ import PreviewPlayer from '../components/PreviewPlayer'
 function SortableItem({ item, onRemove, onUpdateDuration }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id })
   return (
-    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }}
-      className="flex items-center gap-3 bg-white border rounded-lg px-3 py-2 shadow-sm">
-      <span {...attributes} {...listeners} className="cursor-grab text-gray-400">⠿</span>
-      <span className="text-lg">{item.type === 'video' ? '🎬' : '🖼️'}</span>
-      <span className="text-sm flex-1 truncate">{item.original_name}</span>
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition,
+      display:'flex', alignItems:'center', gap:10, background:'var(--surface)',
+      border:'1px solid var(--border)', borderRadius:8, padding:'8px 12px' }}>
+      <span {...attributes} {...listeners} style={{ cursor:'grab', color:'var(--fg-3)', fontSize:14 }}>⠿</span>
+      <span style={{ fontSize:16 }}>{item.type === 'video' ? '🎬' : '🖼️'}</span>
+      <span style={{ fontSize:13, flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', color:'var(--fg-2)' }}>{item.original_name}</span>
       {item.type === 'image' && (
-        <div className="flex items-center gap-1 shrink-0">
+        <div style={{ display:'flex', alignItems:'center', gap:4, flexShrink:0 }}>
           <input
             type="number" min="1" max="300"
             value={item.display_duration_seconds ?? 10}
             onChange={e => onUpdateDuration(item.id, parseInt(e.target.value, 10) || 10)}
-            className="w-14 text-xs border rounded px-1.5 py-1 text-center focus:outline-none focus:ring-1 focus:ring-blue-400"
+            style={{ width:52, fontSize:12, border:'1px solid var(--border)', borderRadius:5, padding:'2px 6px',
+              textAlign:'center', background:'var(--surface)', color:'var(--fg)', outline:'none' }}
           />
-          <span className="text-xs text-gray-400">sec</span>
+          <span style={{ fontSize:12, color:'var(--fg-3)' }}>sec</span>
         </div>
       )}
-      <button onClick={() => onRemove(item.id)} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+      <button onClick={() => onRemove(item.id)} style={{ fontSize:12, color:'#F87171', background:'none', border:'none', cursor:'pointer' }}>✕</button>
     </div>
   )
 }
@@ -92,44 +94,57 @@ export default function Groups() {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-800">Grupuri ({groups.length})</h2>
+    <div style={{ padding:24 }}>
+      {/* Header */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+        <div>
+          <h1 style={{ fontFamily:'Plus Jakarta Sans, sans-serif', fontWeight:800, fontSize:22, color:'var(--fg)', margin:0 }}>
+            Grupuri
+          </h1>
+          <p style={{ fontSize:13, color:'var(--fg-3)', marginTop:3 }}>{groups.length} grupuri configurate</p>
+        </div>
         <button onClick={() => setShowForm(v => !v)}
-          className="bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold px-4 py-2 rounded-lg">
+          style={{ display:'inline-flex', alignItems:'center', gap:6, height:36, padding:'0 16px',
+            background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer' }}>
           + Grup nou
         </button>
       </div>
 
+      {/* Form */}
       {showForm && (
         <form onSubmit={handleCreate}
-          className="bg-white border border-blue-100 rounded-xl p-4 mb-4 flex flex-wrap gap-3 items-end shadow-sm">
+          style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12,
+            padding:16, marginBottom:16, display:'flex', flexWrap:'wrap', gap:12, alignItems:'flex-end',
+            boxShadow:'var(--shadow-sm)' }}>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Nume grup</label>
+            <label style={{ display:'block', fontSize:11, color:'var(--fg-3)', marginBottom:4, fontWeight:600 }}>Nume grup</label>
             <input value={newName} onChange={e => setNewName(e.target.value)}
-              placeholder='ex: "Nord București"'
-              className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-64" />
+              placeholder='"Nord București"'
+              style={{ height:36, padding:'0 12px', border:'1px solid var(--border)', borderRadius:8,
+                background:'var(--surface)', color:'var(--fg)', fontSize:13, outline:'none', width:240 }} />
           </div>
           <button type="submit"
-            className="bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-blue-800">
+            style={{ height:36, padding:'0 16px', background:'var(--accent)', color:'#fff', border:'none',
+              borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer' }}>
             Creează
           </button>
           <button type="button" onClick={() => setShowForm(false)}
-            className="text-sm text-gray-400 hover:text-gray-600">
+            style={{ fontSize:13, color:'var(--fg-3)', background:'none', border:'none', cursor:'pointer' }}>
             Anulează
           </button>
-          {formError && <p className="text-xs text-red-500 w-full">{formError}</p>}
+          {formError && <p style={{ fontSize:12, color:'#DC2626', width:'100%', margin:0 }}>{formError}</p>}
         </form>
       )}
 
       {groups.length === 0 && (
-        <div className="bg-white rounded-xl border border-dashed border-gray-200 p-8 text-center text-gray-400">
-          <p className="text-sm">Niciun grup creat.</p>
-          <p className="text-xs mt-1">Creează un grup și adaugă agenții pentru a le asigna un playlist comun.</p>
+        <div style={{ background:'var(--surface)', border:'2px dashed var(--border)', borderRadius:12,
+          padding:'48px 24px', textAlign:'center', color:'var(--fg-3)' }}>
+          <p style={{ fontSize:14, margin:0 }}>Niciun grup creat.</p>
+          <p style={{ fontSize:12.5, marginTop:6 }}>Creează un grup și adaugă agenții pentru a le asigna un playlist comun.</p>
         </div>
       )}
 
-      <div className="flex flex-col gap-4">
+      <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
         {groups.map(group => (
           <GroupCard
             key={group.id}
@@ -188,12 +203,8 @@ function GroupCard({ group, ungroupedAgencies, onAddAgency, onRemoveAgency, onDe
     if (!editName.trim() || editName.trim() === group.name) { setEditingName(false); return }
     try {
       await renameGroup(group.id, editName.trim())
-      setEditingName(false)
-      setRenameError('')
-      onTransitionChange?.()
-    } catch (err) {
-      setRenameError(err?.response?.data?.error || 'Eroare la redenumire.')
-    }
+      setEditingName(false); setRenameError(''); onTransitionChange?.()
+    } catch (err) { setRenameError(err?.response?.data?.error || 'Eroare la redenumire.') }
   }
 
   const handleTransition = async (val) => {
@@ -209,8 +220,7 @@ function GroupCard({ group, ungroupedAgencies, onAddAgency, onRemoveAgency, onDe
   }
 
   const handleClearPower = async () => {
-    setPowerOn('')
-    setPowerOff('')
+    setPowerOn(''); setPowerOff('')
     await updateGroupPower(group.id, null, null).catch(() => {})
   }
 
@@ -221,132 +231,138 @@ function GroupCard({ group, ungroupedAgencies, onAddAgency, onRemoveAgency, onDe
   const handleAdd = async () => {
     if (selected.length === 0) return
     setAdding(true)
-    for (const id of selected) {
-      await onAddAgency(group.id, id)
-    }
-    setSelected([])
-    setShowAddAgency(false)
-    setAdding(false)
+    for (const id of selected) await onAddAgency(group.id, id)
+    setSelected([]); setShowAddAgency(false); setAdding(false)
   }
 
+  const chip = (bg, color, border) => ({ display:'inline-flex', alignItems:'center', gap:4, fontSize:12, fontWeight:500,
+    padding:'3px 10px', borderRadius:99, background:bg, color, border: border || 'none' })
+
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+    <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12,
+      boxShadow:'var(--shadow-sm)', overflow:'hidden' }}>
       {showPreview && group.playlist?.length > 0 && (
-        <PreviewPlayer items={group.playlist} onClose={() => setShowPreview(false)} />
+        <PreviewPlayer items={group.playlist} onClose={() => setShowPreview(false)}
+          portrait={group.agencies?.some(a => a.tvs?.some(t => t.orientation === 'portrait'))} />
       )}
-      <div className="flex items-start justify-between mb-3">
+
+      {/* Header */}
+      <div style={{ padding:'14px 16px', borderBottom:'1px solid var(--border)', display:'flex',
+        alignItems:'flex-start', justifyContent:'space-between', gap:8, flexWrap:'wrap' }}>
         <div>
           {editingName ? (
-            <form onSubmit={handleRename} className="flex items-center gap-2">
-              <input
-                autoFocus
-                value={editName}
-                onChange={e => { setEditName(e.target.value); setRenameError('') }}
-                className="border rounded-lg px-2 py-1 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 w-48"
-              />
-              <button type="submit" className="text-xs bg-blue-700 text-white px-2 py-1 rounded-lg">Salvează</button>
-              <button type="button" onClick={() => { setEditingName(false); setEditName(group.name); setRenameError('') }} className="text-xs text-gray-400 hover:text-gray-600">Anulează</button>
-              {renameError && <p className="text-xs text-red-500">{renameError}</p>}
+            <form onSubmit={handleRename} style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <input autoFocus value={editName} onChange={e => { setEditName(e.target.value); setRenameError('') }}
+                style={{ height:30, padding:'0 10px', border:'1px solid var(--border)', borderRadius:6,
+                  background:'var(--surface)', color:'var(--fg)', fontSize:13, fontWeight:700, outline:'none', width:180 }} />
+              <button type="submit" style={{ height:28, padding:'0 10px', background:'var(--accent)', color:'#fff',
+                border:'none', borderRadius:6, fontSize:12, fontWeight:600, cursor:'pointer' }}>Salvează</button>
+              <button type="button" onClick={() => { setEditingName(false); setEditName(group.name); setRenameError('') }}
+                style={{ fontSize:12, color:'var(--fg-3)', background:'none', border:'none', cursor:'pointer' }}>Anulează</button>
+              {renameError && <span style={{ fontSize:11.5, color:'#DC2626' }}>{renameError}</span>}
             </form>
           ) : (
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-gray-800">{group.name}</h3>
-              <button onClick={() => { setEditingName(true); setEditName(group.name) }} className="text-xs text-gray-400 hover:text-blue-600" title="Redenumește">✏️</button>
+            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <span style={{ fontFamily:'Plus Jakarta Sans, sans-serif', fontWeight:800, fontSize:15, color:'var(--fg)' }}>{group.name}</span>
+              <button onClick={() => { setEditingName(true); setEditName(group.name) }}
+                style={{ fontSize:11, color:'var(--fg-3)', background:'none', border:'none', cursor:'pointer' }}>✏️</button>
             </div>
           )}
-          <p className="text-xs text-gray-400">
+          <p style={{ fontSize:12, color:'var(--fg-3)', marginTop:2 }}>
             {group.agencies.length} {group.agencies.length === 1 ? 'agenție' : 'agenții'}
           </p>
         </div>
-        <div className="flex gap-2 flex-wrap items-center">
+
+        {/* Actions */}
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center' }}>
           {/* Transition selector */}
-          <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden text-xs">
+          <div style={{ display:'flex', border:'1px solid var(--border)', borderRadius:6, overflow:'hidden' }}>
             {TRANSITIONS.map(t => (
-              <button
-                key={t.value}
-                onClick={() => handleTransition(t.value)}
-                title={`Tranziție: ${t.label}`}
-                className={`px-2.5 py-1.5 font-medium transition-colors
-                  ${transition === t.value
-                    ? 'bg-indigo-600 text-white'
-                    : 'text-gray-500 hover:bg-gray-100'}`}>
+              <button key={t.value} onClick={() => handleTransition(t.value)}
+                style={{ padding:'4px 10px', fontSize:11.5, fontWeight:600, border:'none', cursor:'pointer',
+                  background: transition === t.value ? '#4F46E5' : 'var(--surface)',
+                  color: transition === t.value ? '#fff' : 'var(--fg-2)' }}>
                 {t.label}
               </button>
             ))}
           </div>
           {group.playlist?.length > 0 && (
             <button onClick={() => setShowPreview(true)}
-              className="text-xs bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              style={{ display:'inline-flex', alignItems:'center', gap:5, height:28, padding:'0 10px',
+                background:'#2563EB', color:'#fff', border:'none', borderRadius:6, fontSize:12, fontWeight:600, cursor:'pointer' }}>
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               Preview
             </button>
           )}
           <button onClick={() => onSchedule(group)}
-            className="text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-lg">
+            style={{ height:28, padding:'0 10px', background:'rgba(124,58,237,.08)', color:'#7C3AED',
+              border:'1px solid rgba(124,58,237,.2)', borderRadius:6, fontSize:12, fontWeight:600, cursor:'pointer' }}>
             ⏰ Scheduling
           </button>
           <button onClick={() => onPlaylist(group)}
-            className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-lg">
+            style={{ height:28, padding:'0 10px', background:'rgba(37,99,235,.07)', color:'var(--accent)',
+              border:'1px solid rgba(37,99,235,.15)', borderRadius:6, fontSize:12, fontWeight:600, cursor:'pointer' }}>
             Modifică playlist
           </button>
           <button onClick={() => onDelete(group)}
-            className="text-xs text-red-400 hover:text-red-600 border border-red-100 hover:border-red-300 px-2 py-1.5 rounded-lg">
+            style={{ height:28, padding:'0 10px', background:'rgba(239,68,68,.07)', color:'#DC2626',
+              border:'1px solid rgba(239,68,68,.15)', borderRadius:6, fontSize:12, fontWeight:600, cursor:'pointer' }}>
             Șterge
           </button>
         </div>
       </div>
 
-      {/* Agencies in group */}
-      <div className="mb-3">
-        <p className="text-xs text-gray-500 font-medium mb-2">Agenții în grup:</p>
+      {/* Agencies */}
+      <div style={{ padding:'10px 16px', borderBottom:'1px solid var(--border)' }}>
+        <p style={{ fontSize:11.5, color:'var(--fg-3)', fontWeight:600, marginBottom:8, textTransform:'uppercase', letterSpacing:'0.05em' }}>
+          Agenții în grup
+        </p>
         {group.agencies.length === 0 && (
-          <span className="text-xs text-gray-400">Nicio agenție adăugată.</span>
+          <span style={{ fontSize:12.5, color:'var(--fg-3)' }}>Nicio agenție adăugată.</span>
         )}
-        <div className="flex flex-wrap gap-2">
+        <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
           {group.agencies.map(a => (
-            <span key={a.id}
-              className="flex items-center gap-1 text-xs bg-blue-50 border border-blue-200 text-blue-700 px-2 py-1 rounded-full">
+            <span key={a.id} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:12.5, fontWeight:500,
+              padding:'3px 10px', borderRadius:99, background:'rgba(37,99,235,.07)', color:'var(--accent)',
+              border:'1px solid rgba(37,99,235,.15)' }}>
               {a.name}
               <button onClick={() => onRemoveAgency(group.id, a.id)}
-                className="ml-1 text-blue-400 hover:text-red-500 leading-none font-bold">✕</button>
+                style={{ fontSize:11, color:'var(--fg-3)', background:'none', border:'none', cursor:'pointer', lineHeight:1 }}>✕</button>
             </span>
           ))}
-
           <button onClick={() => { setShowAddAgency(v => !v); setSelected([]) }}
-            className="text-xs text-blue-500 hover:text-blue-700 border border-dashed border-blue-300 px-2 py-1 rounded-full">
+            style={{ fontSize:12, color:'var(--accent)', background:'none', border:'1.5px dashed var(--border)',
+              padding:'3px 10px', borderRadius:99, cursor:'pointer', fontWeight:600 }}>
             + Adaugă agenții
           </button>
         </div>
 
         {showAddAgency && (
-          <div className="mt-3 border border-blue-100 rounded-lg p-3 bg-blue-50/40">
+          <div style={{ marginTop:12, border:'1px solid var(--border)', borderRadius:8,
+            padding:12, background:'var(--surface-2)' }}>
             {ungroupedAgencies.length === 0 ? (
-              <p className="text-xs text-gray-400">Toate agențiile sunt deja în grupuri.</p>
+              <p style={{ fontSize:12, color:'var(--fg-3)' }}>Toate agențiile sunt deja în grupuri.</p>
             ) : (
               <>
-                <p className="text-xs text-gray-500 mb-2">Bifează agențiile de adăugat:</p>
-                <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto mb-3">
+                <p style={{ fontSize:12, color:'var(--fg-3)', marginBottom:8 }}>Bifează agențiile de adăugat:</p>
+                <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight:180, overflowY:'auto', marginBottom:10 }}>
                   {ungroupedAgencies.map(a => (
-                    <label key={a.id} className="flex items-center gap-2 cursor-pointer group">
-                      <input
-                        type="checkbox"
-                        checked={selected.includes(a.id)}
-                        onChange={() => toggleAgency(a.id)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-400"
-                      />
-                      <span className="text-sm text-gray-700 group-hover:text-blue-700">
-                        {a.name} <span className="text-xs text-gray-400">({a.city})</span>
-                      </span>
+                    <label key={a.id} style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', fontSize:13, color:'var(--fg-2)' }}>
+                      <input type="checkbox" checked={selected.includes(a.id)} onChange={() => toggleAgency(a.id)}
+                        style={{ accentColor:'var(--accent)', width:14, height:14 }} />
+                      {a.name} <span style={{ fontSize:12, color:'var(--fg-3)' }}>({a.city})</span>
                     </label>
                   ))}
                 </div>
-                <div className="flex gap-2 items-center">
+                <div style={{ display:'flex', gap:8, alignItems:'center' }}>
                   <button onClick={handleAdd} disabled={selected.length === 0 || adding}
-                    className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 disabled:opacity-40">
-                    {adding ? 'Se adaugă...' : `Adaugă ${selected.length > 0 ? `(${selected.length})` : ''}`}
+                    style={{ height:28, padding:'0 12px', background:'var(--accent)', color:'#fff',
+                      border:'none', borderRadius:6, fontSize:12, fontWeight:600, cursor:'pointer',
+                      opacity:(selected.length === 0 || adding)?.4:1 }}>
+                    {adding ? 'Se adaugă...' : `Adaugă${selected.length > 0 ? ` (${selected.length})` : ''}`}
                   </button>
                   <button onClick={() => { setShowAddAgency(false); setSelected([]) }}
-                    className="text-xs text-gray-400 hover:text-gray-600">
+                    style={{ fontSize:12, color:'var(--fg-3)', background:'none', border:'none', cursor:'pointer' }}>
                     Anulează
                   </button>
                 </div>
@@ -356,62 +372,52 @@ function GroupCard({ group, ungroupedAgencies, onAddAgency, onRemoveAgency, onDe
         )}
       </div>
 
-      {/* Current playlist preview */}
-      <div className="mb-3">
-        {group.playlist?.length === 0 && (
-          <span className="text-xs text-gray-400">Niciun conținut asignat grupului.</span>
+      {/* Playlist preview */}
+      <div style={{ padding:'10px 16px', borderBottom:'1px solid var(--border)', display:'flex', flexWrap:'wrap', gap:5 }}>
+        {(group.playlist?.length === 0 || !group.playlist) && (
+          <span style={{ fontSize:12.5, color:'var(--fg-3)' }}>Niciun conținut asignat grupului.</span>
         )}
-        <div className="flex flex-wrap gap-2">
-          {group.playlist?.map((item, i) => (
-            <span key={i} className="text-xs bg-blue-50 border border-blue-200 text-blue-700 px-2 py-1 rounded">
-              {item.type === 'video' ? '🎬' : '🖼️'} {item.original_name}
-            </span>
-          ))}
-        </div>
+        {group.playlist?.map((item, i) => (
+          <span key={i} style={{ fontSize:12, fontWeight:500, padding:'2px 8px', borderRadius:6,
+            background:'rgba(37,99,235,.07)', color:'var(--accent)', border:'1px solid rgba(37,99,235,.12)' }}>
+            {item.type === 'video' ? '🎬' : '🖼️'} {item.original_name}
+          </span>
+        ))}
       </div>
 
       {/* Power schedule */}
-      <div className="border-t border-gray-100 pt-3 mt-1">
-        <p className="text-xs text-gray-500 font-medium mb-2">⏻ Pornire / Oprire automată</p>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-green-700 font-medium w-12">Pornire</span>
-            <input
-              type="time"
-              value={powerOn}
-              onChange={e => setPowerOn(e.target.value)}
-              className="border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-green-400 w-28"
-            />
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-red-600 font-medium w-12">Oprire</span>
-            <input
-              type="time"
-              value={powerOff}
-              onChange={e => setPowerOff(e.target.value)}
-              className="border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-red-400 w-28"
-            />
-          </div>
-          <button
-            onClick={handleSavePower}
-            disabled={powerSaving}
-            className="text-xs bg-gray-800 hover:bg-gray-900 text-white px-3 py-1.5 rounded disabled:opacity-50">
+      <div style={{ padding:'12px 16px' }}>
+        <p style={{ fontSize:11.5, color:'var(--fg-3)', fontWeight:600, marginBottom:10, textTransform:'uppercase', letterSpacing:'0.05em' }}>
+          ⏻ Pornire / Oprire automată
+        </p>
+        <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:10 }}>
+          {[
+            { label:'Pornire', color:'#059669', val:powerOn, set:setPowerOn },
+            { label:'Oprire', color:'#DC2626', val:powerOff, set:setPowerOff },
+          ].map(({ label, color, val, set }) => (
+            <div key={label} style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <span style={{ fontSize:12, fontWeight:600, color, width:52 }}>{label}</span>
+              <input type="time" value={val} onChange={e => set(e.target.value)}
+                style={{ height:30, padding:'0 8px', border:'1px solid var(--border)', borderRadius:6,
+                  background:'var(--surface)', color:'var(--fg)', fontSize:12, outline:'none', width:100 }} />
+            </div>
+          ))}
+          <button onClick={handleSavePower} disabled={powerSaving}
+            style={{ height:28, padding:'0 12px', background:'var(--fg)', color:'var(--surface)',
+              border:'none', borderRadius:6, fontSize:12, fontWeight:600, cursor:'pointer', opacity:powerSaving?.5:1 }}>
             {powerSaving ? 'Se salvează...' : 'Salvează'}
           </button>
-          <button
-            onClick={handleClearPower}
-            className={`text-xs px-3 py-1.5 rounded border font-medium transition-colors ${
-              !group.power_on_time && !group.power_off_time
-                ? 'bg-green-600 text-white border-green-600'
-                : 'text-gray-500 hover:text-red-500 border-gray-200 hover:border-red-300'
-            }`}>
+          <button onClick={handleClearPower}
+            style={{ height:28, padding:'0 12px', fontSize:12, fontWeight:600, cursor:'pointer',
+              borderRadius:6, border:'1px solid var(--border)',
+              background: (!group.power_on_time && !group.power_off_time) ? '#059669' : 'var(--surface)',
+              color: (!group.power_on_time && !group.power_off_time) ? '#fff' : 'var(--fg-3)' }}>
             24/24
           </button>
         </div>
         {powerOn && powerOff && (
-          <p className="text-xs text-gray-400 mt-1.5">
-            Ecranele vor fi active {powerOn} – {powerOff}
-            {powerOn >= powerOff ? ' (peste noapte)' : ' zilnic'}
+          <p style={{ fontSize:12, color:'var(--fg-3)', marginTop:6 }}>
+            Ecranele vor fi active {powerOn} – {powerOff}{powerOn >= powerOff ? ' (peste noapte)' : ' zilnic'}
           </p>
         )}
       </div>
@@ -431,23 +437,16 @@ function ScheduleModal({ group, onClose }) {
 
   const load = () => getSchedules(group.id).then(setSlots).catch(() => {})
 
-  useEffect(() => {
-    load()
-    getMedia().then(setAllMedia)
-  }, [])
+  useEffect(() => { load(); getMedia().then(setAllMedia) }, [])
 
   const toggleDay = (d) => setForm(f => ({
-    ...f,
-    days: f.days.includes(d) ? f.days.filter(x => x !== d) : [...f.days, d]
+    ...f, days: f.days.includes(d) ? f.days.filter(x => x !== d) : [...f.days, d]
   }))
 
   const addMedia = (m) => setForm(f => ({
-    ...f,
-    items: [...f.items, {
-      id: `${Date.now()}-${Math.random()}`,
-      media_id: m.id,
-      original_name: m.original_name,
-      type: m.type,
+    ...f, items: [...f.items, {
+      id: `${Date.now()}-${Math.random()}`, media_id: m.id,
+      original_name: m.original_name, type: m.type,
       display_duration_seconds: m.type === 'image' ? 10 : null,
     }]
   }))
@@ -463,71 +462,71 @@ function ScheduleModal({ group, onClose }) {
     try {
       await createSchedule(group.id, {
         name: form.name || `Slot ${form.start_time}-${form.end_time}`,
-        days: form.days.sort(),
-        start_time: form.start_time,
-        end_time: form.end_time,
-        items: form.items.map((i, pos) => ({ media_id: i.media_id, display_duration_seconds: i.display_duration_seconds ?? null })),
+        days: form.days.sort(), start_time: form.start_time, end_time: form.end_time,
+        items: form.items.map(i => ({ media_id: i.media_id, display_duration_seconds: i.display_duration_seconds ?? null })),
       })
       setForm({ name: '', days: [], start_time: '08:00', end_time: '18:00', items: [] })
-      setShowForm(false)
-      load()
-    } catch {
-      setError('Eroare la salvare.')
-    } finally {
-      setSaving(false)
-    }
+      setShowForm(false); load()
+    } catch { setError('Eroare la salvare.') } finally { setSaving(false) }
   }
 
   const handleDelete = async (slotId) => {
     if (!confirm('Ștergi acest slot de scheduling?')) return
-    await deleteSchedule(group.id, slotId)
-    load()
+    await deleteSchedule(group.id, slotId); load()
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-50 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.5)', display:'flex',
+      alignItems:'center', justifyContent:'center', zIndex:50, padding:16 }}>
+      <div style={{ background:'var(--surface)', borderRadius:16, boxShadow:'0 20px 60px rgba(0,0,0,.3)',
+        width:'100%', maxWidth:640, maxHeight:'90vh', display:'flex', flexDirection:'column' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
+          padding:'16px 24px', borderBottom:'1px solid var(--border)' }}>
           <div>
-            <h3 className="font-bold text-gray-800">Scheduling — {group.name}</h3>
-            <p className="text-xs text-gray-400">Playlist diferit pe intervale orare</p>
+            <p style={{ fontFamily:'Plus Jakarta Sans, sans-serif', fontWeight:800, fontSize:16, color:'var(--fg)', margin:0 }}>
+              Scheduling — {group.name}
+            </p>
+            <p style={{ fontSize:12, color:'var(--fg-3)', marginTop:2 }}>Playlist diferit pe intervale orare</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+          <button onClick={onClose} style={{ fontSize:20, color:'var(--fg-3)', background:'none', border:'none', cursor:'pointer' }}>✕</button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
-          {/* Sloturi existente */}
+        <div style={{ flex:1, overflowY:'auto', padding:24 }}>
           {slots.length === 0 && !showForm && (
-            <div className="text-center text-gray-400 text-sm py-8">
+            <div style={{ textAlign:'center', color:'var(--fg-3)', fontSize:13, padding:'40px 0' }}>
               Niciun slot configurat. Adaugă primul interval orar.
             </div>
           )}
-          <div className="flex flex-col gap-3 mb-4">
+          <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:16 }}>
             {slots.map(slot => (
-              <div key={slot.id} className="bg-white rounded-xl border border-gray-200 p-4">
-                <div className="flex items-start justify-between">
+              <div key={slot.id} style={{ background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:10, padding:14 }}>
+                <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between' }}>
                   <div>
-                    <p className="font-semibold text-gray-800 text-sm">{slot.name}</p>
-                    <p className="text-xs text-purple-700 font-medium mt-0.5">
+                    <p style={{ fontWeight:700, fontSize:13.5, color:'var(--fg)', margin:0 }}>{slot.name}</p>
+                    <p style={{ fontSize:12, color:'#7C3AED', fontWeight:600, marginTop:3 }}>
                       {slot.start_time} – {slot.end_time}
                     </p>
-                    <div className="flex gap-1 mt-1.5 flex-wrap">
+                    <div style={{ display:'flex', gap:4, marginTop:6, flexWrap:'wrap' }}>
                       {DAYS.map((d, i) => (
-                        <span key={i} className={`text-xs px-1.5 py-0.5 rounded font-medium
-                          ${slot.days.includes(i) ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-400'}`}>
-                          {d.slice(0, 2)}
+                        <span key={i} style={{ fontSize:11, padding:'2px 6px', borderRadius:5, fontWeight:600,
+                          background: slot.days.includes(i) ? 'rgba(124,58,237,.12)' : 'var(--surface)',
+                          color: slot.days.includes(i) ? '#7C3AED' : 'var(--fg-3)',
+                          border:`1px solid ${slot.days.includes(i) ? 'rgba(124,58,237,.2)' : 'var(--border)'}` }}>
+                          {d.slice(0,2)}
                         </span>
                       ))}
                     </div>
                   </div>
                   <button onClick={() => handleDelete(slot.id)}
-                    className="text-red-400 hover:text-red-600 text-xs border border-red-100 hover:border-red-300 px-2 py-1 rounded">
+                    style={{ fontSize:12, color:'#DC2626', background:'rgba(239,68,68,.07)',
+                      border:'1px solid rgba(239,68,68,.15)', borderRadius:6, padding:'4px 10px', cursor:'pointer' }}>
                     Șterge
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-1.5 mt-3">
+                <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginTop:10 }}>
                   {slot.items.map((item, i) => (
-                    <span key={i} className="text-xs bg-blue-50 border border-blue-200 text-blue-700 px-2 py-1 rounded">
+                    <span key={i} style={{ fontSize:11.5, padding:'2px 8px', borderRadius:6,
+                      background:'rgba(37,99,235,.07)', color:'var(--accent)', border:'1px solid rgba(37,99,235,.12)' }}>
                       {item.type === 'video' ? '🎬' : '🖼️'} {item.original_name}
                     </span>
                   ))}
@@ -536,97 +535,86 @@ function ScheduleModal({ group, onClose }) {
             ))}
           </div>
 
-          {/* Formular adăugare slot */}
           {showForm && (
-            <div className="bg-white rounded-xl border border-purple-200 p-4">
-              <p className="font-semibold text-gray-700 text-sm mb-4">Slot nou</p>
-
-              <div className="mb-3">
-                <label className="text-xs text-gray-500 block mb-1">Nume (opțional)</label>
+            <div style={{ background:'var(--surface-2)', border:'1px solid rgba(124,58,237,.2)', borderRadius:10, padding:16 }}>
+              <p style={{ fontWeight:700, fontSize:13, color:'var(--fg)', marginBottom:14 }}>Slot nou</p>
+              <div style={{ marginBottom:12 }}>
+                <label style={{ fontSize:11.5, color:'var(--fg-3)', display:'block', marginBottom:5 }}>Nume (opțional)</label>
                 <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="ex: Program dimineață"
-                  className="border rounded-lg px-3 py-1.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-purple-400" />
+                  style={{ width:'100%', height:34, padding:'0 10px', border:'1px solid var(--border)', borderRadius:7,
+                    background:'var(--surface)', color:'var(--fg)', fontSize:13, outline:'none', boxSizing:'border-box' }} />
               </div>
-
-              <div className="mb-3">
-                <label className="text-xs text-gray-500 block mb-1">Zile</label>
-                <div className="flex gap-1.5 flex-wrap">
+              <div style={{ marginBottom:12 }}>
+                <label style={{ fontSize:11.5, color:'var(--fg-3)', display:'block', marginBottom:5 }}>Zile</label>
+                <div style={{ display:'flex', gap:5, flexWrap:'wrap' }}>
                   {DAYS.map((d, i) => (
-                    <button key={i} type="button"
-                      onClick={() => toggleDay(i)}
-                      className={`text-xs px-2.5 py-1.5 rounded-lg font-medium border transition-colors
-                        ${form.days.includes(i)
-                          ? 'bg-purple-600 text-white border-purple-600'
-                          : 'bg-white text-gray-600 border-gray-200 hover:border-purple-300'}`}>
-                      {d.slice(0, 2)}
+                    <button key={i} type="button" onClick={() => toggleDay(i)}
+                      style={{ padding:'4px 10px', borderRadius:7, fontSize:12, fontWeight:600, cursor:'pointer', border:'1px solid',
+                        background: form.days.includes(i) ? '#7C3AED' : 'var(--surface)',
+                        color: form.days.includes(i) ? '#fff' : 'var(--fg-2)',
+                        borderColor: form.days.includes(i) ? '#7C3AED' : 'var(--border)' }}>
+                      {d.slice(0,2)}
                     </button>
                   ))}
                 </div>
               </div>
-
-              <div className="flex gap-3 mb-3">
-                <div className="flex-1">
-                  <label className="text-xs text-gray-500 block mb-1">De la</label>
-                  <input type="time" value={form.start_time}
-                    onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))}
-                    className="border rounded-lg px-3 py-1.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-purple-400" />
-                </div>
-                <div className="flex-1">
-                  <label className="text-xs text-gray-500 block mb-1">Până la</label>
-                  <input type="time" value={form.end_time}
-                    onChange={e => setForm(f => ({ ...f, end_time: e.target.value }))}
-                    className="border rounded-lg px-3 py-1.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-purple-400" />
-                </div>
+              <div style={{ display:'flex', gap:12, marginBottom:12 }}>
+                {[{label:'De la',val:form.start_time,key:'start_time'},{label:'Până la',val:form.end_time,key:'end_time'}].map(f => (
+                  <div key={f.key} style={{ flex:1 }}>
+                    <label style={{ fontSize:11.5, color:'var(--fg-3)', display:'block', marginBottom:5 }}>{f.label}</label>
+                    <input type="time" value={f.val} onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                      style={{ width:'100%', height:34, padding:'0 10px', border:'1px solid var(--border)', borderRadius:7,
+                        background:'var(--surface)', color:'var(--fg)', fontSize:13, outline:'none', boxSizing:'border-box' }} />
+                  </div>
+                ))}
               </div>
-
-              <div className="mb-3">
-                <label className="text-xs text-gray-500 block mb-1">Fișiere pentru acest interval</label>
-                <div className="flex gap-3">
-                  <div className="flex-1 border rounded-lg p-2 min-h-16 bg-gray-50">
-                    {form.items.length === 0 && <p className="text-xs text-gray-400">Adaugă din dreapta →</p>}
-                    <div className="flex flex-col gap-1">
+              <div style={{ marginBottom:12 }}>
+                <label style={{ fontSize:11.5, color:'var(--fg-3)', display:'block', marginBottom:5 }}>Fișiere pentru acest interval</label>
+                <div style={{ display:'flex', gap:10 }}>
+                  <div style={{ flex:1, border:'1px solid var(--border)', borderRadius:7, padding:8, minHeight:60, background:'var(--surface)' }}>
+                    {form.items.length === 0 && <p style={{ fontSize:12, color:'var(--fg-3)' }}>Adaugă din dreapta →</p>}
+                    <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
                       {form.items.map(item => (
-                        <div key={item.id} className="flex items-center gap-2 text-xs bg-white border rounded px-2 py-1">
+                        <div key={item.id} style={{ display:'flex', alignItems:'center', gap:8, fontSize:12,
+                          background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:5, padding:'4px 8px' }}>
                           <span>{item.type === 'video' ? '🎬' : '🖼️'}</span>
-                          <span className="flex-1 truncate">{item.original_name}</span>
+                          <span style={{ flex:1, overflow:'hidden', textOverflow:'ellipsis' }}>{item.original_name}</span>
                           {item.type === 'image' && (
-                            <input type="number" min="1" max="300"
-                              value={item.display_duration_seconds ?? 10}
-                              onChange={e => setForm(f => ({
-                                ...f,
-                                items: f.items.map(i => i.id === item.id
-                                  ? { ...i, display_duration_seconds: parseInt(e.target.value) || 10 }
-                                  : i)
-                              }))}
-                              className="w-12 border rounded px-1 py-0.5 text-center text-xs" />
+                            <input type="number" min="1" max="300" value={item.display_duration_seconds ?? 10}
+                              onChange={e => setForm(f => ({ ...f, items: f.items.map(i => i.id === item.id
+                                ? { ...i, display_duration_seconds: parseInt(e.target.value) || 10 } : i) }))}
+                              style={{ width:44, border:'1px solid var(--border)', borderRadius:4, padding:'1px 4px',
+                                textAlign:'center', fontSize:11, background:'var(--surface)', color:'var(--fg)', outline:'none' }} />
                           )}
-                          {item.type === 'image' && <span className="text-gray-400">s</span>}
-                          <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600">✕</button>
+                          {item.type === 'image' && <span style={{ fontSize:11, color:'var(--fg-3)' }}>s</span>}
+                          <button onClick={() => removeItem(item.id)} style={{ color:'#F87171', background:'none', border:'none', cursor:'pointer' }}>✕</button>
                         </div>
                       ))}
                     </div>
                   </div>
-                  <div className="w-44 border rounded-lg p-2 bg-white overflow-y-auto max-h-40">
-                    <p className="text-xs text-gray-400 mb-1">Librărie</p>
+                  <div style={{ width:160, border:'1px solid var(--border)', borderRadius:7, padding:8,
+                    overflowY:'auto', maxHeight:140, background:'var(--surface)' }}>
+                    <p style={{ fontSize:11, color:'var(--fg-3)', marginBottom:5 }}>Librărie</p>
                     {allMedia.map(m => (
                       <button key={m.id} onClick={() => addMedia(m)}
-                        className="w-full text-left text-xs px-2 py-1 rounded hover:bg-purple-50 hover:text-purple-700 truncate">
+                        style={{ width:'100%', textAlign:'left', fontSize:12, padding:'4px 8px', borderRadius:5, cursor:'pointer',
+                          background:'none', border:'none', color:'var(--fg-2)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                         {m.type === 'video' ? '🎬' : '🖼️'} {m.original_name}
                       </button>
                     ))}
                   </div>
                 </div>
               </div>
-
-              {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
-
-              <div className="flex gap-2">
+              {error && <p style={{ fontSize:12, color:'#DC2626', marginBottom:8 }}>{error}</p>}
+              <div style={{ display:'flex', gap:8 }}>
                 <button onClick={handleSave} disabled={saving}
-                  className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">
+                  style={{ height:34, padding:'0 16px', background:'#7C3AED', color:'#fff',
+                    border:'none', borderRadius:7, fontSize:13, fontWeight:600, cursor:'pointer', opacity:saving?.5:1 }}>
                   {saving ? 'Se salvează...' : 'Salvează slot'}
                 </button>
                 <button onClick={() => { setShowForm(false); setError('') }}
-                  className="text-sm text-gray-400 hover:text-gray-600">
+                  style={{ fontSize:13, color:'var(--fg-3)', background:'none', border:'none', cursor:'pointer' }}>
                   Anulează
                 </button>
               </div>
@@ -634,14 +622,15 @@ function ScheduleModal({ group, onClose }) {
           )}
         </div>
 
-        <div className="border-t px-6 py-4 flex justify-between">
+        <div style={{ borderTop:'1px solid var(--border)', padding:'14px 24px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           {!showForm && (
             <button onClick={() => setShowForm(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium px-4 py-2 rounded-lg">
+              style={{ height:34, padding:'0 16px', background:'#7C3AED', color:'#fff',
+                border:'none', borderRadius:7, fontSize:13, fontWeight:600, cursor:'pointer' }}>
               + Adaugă slot
             </button>
           )}
-          <button onClick={onClose} className="ml-auto text-gray-500 hover:text-gray-700 text-sm">
+          <button onClick={onClose} style={{ marginLeft:'auto', fontSize:13, color:'var(--fg-3)', background:'none', border:'none', cursor:'pointer' }}>
             Închide
           </button>
         </div>
@@ -661,11 +650,8 @@ function GroupPlaylistModal({ group, current, onClose, onSaved }) {
 
   const addItem = (m) => {
     setItems(prev => [...prev, {
-      id: `item-${Date.now()}-${Math.random()}`,
-      media_id: m.id,
-      filename: m.filename,
-      original_name: m.original_name,
-      type: m.type,
+      id: `item-${Date.now()}-${Math.random()}`, media_id: m.id,
+      filename: m.filename, original_name: m.original_name, type: m.type,
       display_duration_seconds: m.type === 'image' ? 10 : null,
     }])
   }
@@ -688,21 +674,12 @@ function GroupPlaylistModal({ group, current, onClose, onSaved }) {
   const handleSave = async () => {
     setSaving(true)
     try {
-      await setGroupPlaylist(group.id, items.map(i => ({
-        media_id: i.media_id,
-        display_duration_seconds: i.display_duration_seconds ?? null,
-      })))
-      await onSaved()
-      onClose()
-    } catch {
-      alert('Eroare la salvare playlist.')
-    } finally {
-      setSaving(false)
-    }
+      await setGroupPlaylist(group.id, items.map(i => ({ media_id: i.media_id, display_duration_seconds: i.display_duration_seconds ?? null })))
+      await onSaved(); onClose()
+    } catch { alert('Eroare la salvare playlist.') } finally { setSaving(false) }
   }
 
   const inPlaylistCount = items.reduce((acc, i) => { acc[i.media_id] = (acc[i.media_id] || 0) + 1; return acc }, {})
-
   const enrichedItems = items.map(item => {
     const m = allMedia.find(x => x.id === item.media_id)
     return { ...item, filename: item.filename || m?.filename }
@@ -710,87 +687,107 @@ function GroupPlaylistModal({ group, current, onClose, onSaved }) {
 
   return (
     <>
-    {previewing && enrichedItems.length > 0 && (
-      <PreviewPlayer items={enrichedItems} onClose={() => setPreviewing(false)} />
-    )}
-    {quickPreview && (
-      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[70]" onClick={() => setQuickPreview(null)}>
-        <div className="relative max-w-3xl w-full mx-4" onClick={e => e.stopPropagation()}>
-          <button onClick={() => setQuickPreview(null)} className="absolute -top-10 right-0 text-white text-2xl hover:text-gray-300">✕</button>
-          {quickPreview.type === 'video'
-            ? <video src={mediaUrl(quickPreview.filename)} controls autoPlay onLoadedMetadata={e => e.target.style.opacity=1} className="w-full rounded-lg max-h-[75vh]" style={{opacity:0,transition:'opacity 0.2s'}} />
-            : <img src={mediaUrl(quickPreview.filename)} alt={quickPreview.original_name} className="w-full rounded-lg max-h-[75vh] object-contain" />
-          }
-          <p className="text-white text-sm text-center mt-3 opacity-70">{quickPreview.original_name}</p>
-        </div>
-      </div>
-    )}
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-50 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <div>
-            <h3 className="font-bold text-gray-800">Playlist grup: {group.name}</h3>
-            <p className="text-xs text-gray-400">Se aplică tuturor agențiilor din grup</p>
+      {previewing && enrichedItems.length > 0 && (
+        <PreviewPlayer items={enrichedItems} onClose={() => setPreviewing(false)}
+          portrait={group.agencies?.some(a => a.tvs?.some(t => t.orientation === 'portrait'))} />
+      )}
+      {quickPreview && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.8)', display:'flex',
+          alignItems:'center', justifyContent:'center', zIndex:70 }} onClick={() => setQuickPreview(null)}>
+          <div style={{ position:'relative', maxWidth:800, width:'100%', padding:'0 16px' }} onClick={e => e.stopPropagation()}>
+            <button onClick={() => setQuickPreview(null)}
+              style={{ position:'absolute', top:-40, right:16, color:'#fff', fontSize:24, background:'none', border:'none', cursor:'pointer' }}>✕</button>
+            {quickPreview.type === 'video'
+              ? <video src={mediaUrl(quickPreview.filename)} controls autoPlay
+                  style={{ width:'100%', borderRadius:10, maxHeight:'75vh' }} />
+              : <img src={mediaUrl(quickPreview.filename)} alt={quickPreview.original_name}
+                  style={{ width:'100%', borderRadius:10, maxHeight:'75vh', objectFit:'contain' }} />
+            }
+            <p style={{ color:'#fff', fontSize:13, textAlign:'center', marginTop:12, opacity:.7 }}>{quickPreview.original_name}</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
         </div>
-
-        <div className="flex flex-1 overflow-hidden">
-          {/* Left: ordered playlist */}
-          <div className="flex-1 p-4 overflow-y-auto border-r">
-            <p className="text-xs text-gray-500 uppercase tracking-wide mb-3">Playlist curent (trage pentru reordonare)</p>
-            {items.length === 0 && <p className="text-gray-400 text-sm">Niciun element. Adaugă din dreapta.</p>}
-            <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
-                <div className="flex flex-col gap-2">
-                  {items.map(item => (
-                    <SortableItem key={item.id} item={item} onRemove={removeItem} onUpdateDuration={updateDuration} />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
+      )}
+      <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.5)', display:'flex',
+        alignItems:'center', justifyContent:'center', zIndex:50, padding:16 }}>
+        <div style={{ background:'var(--surface)', borderRadius:16, boxShadow:'0 20px 60px rgba(0,0,0,.3)',
+          width:'100%', maxWidth:640, maxHeight:'90vh', display:'flex', flexDirection:'column' }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
+            padding:'16px 24px', borderBottom:'1px solid var(--border)' }}>
+            <div>
+              <p style={{ fontFamily:'Plus Jakarta Sans, sans-serif', fontWeight:800, fontSize:16, color:'var(--fg)', margin:0 }}>
+                Playlist grup: {group.name}
+              </p>
+              <p style={{ fontSize:12, color:'var(--fg-3)', marginTop:2 }}>Se aplică tuturor agențiilor din grup</p>
+            </div>
+            <button onClick={onClose} style={{ fontSize:20, color:'var(--fg-3)', background:'none', border:'none', cursor:'pointer' }}>✕</button>
           </div>
 
-          {/* Right: media library */}
-          <div className="w-56 p-4 overflow-y-auto bg-white">
-            <p className="text-xs text-gray-500 uppercase tracking-wide mb-3">Librărie media</p>
-            <div className="flex flex-col gap-2">
-              {allMedia.map(m => (
-                <div key={m.id} className="rounded-lg border text-sm transition-colors bg-gray-50 hover:bg-blue-50 hover:border-blue-300 border-gray-200 flex items-center gap-2 pr-1">
-                  <button onClick={() => addItem(m)} className="text-left px-3 py-2 flex-1 flex items-center gap-2 min-w-0">
-                    <span className="truncate">{m.type === 'video' ? '🎬' : '🖼️'} {m.original_name}</span>
-                    {inPlaylistCount[m.id] > 0 && (
-                      <span className="shrink-0 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
-                        ×{inPlaylistCount[m.id]}
-                      </span>
-                    )}
-                  </button>
-                  <button onClick={() => setQuickPreview(m)}
-                    className="shrink-0 w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-slate-700 transition-colors"
-                    title="Previzualizează">
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                  </button>
-                </div>
-              ))}
+          <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
+            {/* Left: playlist */}
+            <div style={{ flex:1, padding:16, overflowY:'auto', borderRight:'1px solid var(--border)' }}>
+              <p style={{ fontSize:11, color:'var(--fg-3)', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:10 }}>
+                Playlist curent (trage pentru reordonare)
+              </p>
+              {items.length === 0 && <p style={{ fontSize:13, color:'var(--fg-3)' }}>Niciun element. Adaugă din dreapta.</p>}
+              <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                  <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
+                    {items.map(item => (
+                      <SortableItem key={item.id} item={item} onRemove={removeItem} onUpdateDuration={updateDuration} />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            </div>
+
+            {/* Right: media library */}
+            <div style={{ width:200, padding:16, overflowY:'auto', background:'var(--surface-2)' }}>
+              <p style={{ fontSize:11, color:'var(--fg-3)', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:10 }}>
+                Librărie media
+              </p>
+              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                {allMedia.map(m => (
+                  <div key={m.id} style={{ display:'flex', alignItems:'center', gap:4,
+                    border:'1px solid var(--border)', borderRadius:7, background:'var(--surface)', overflow:'hidden' }}>
+                    <button onClick={() => addItem(m)}
+                      style={{ flex:1, textAlign:'left', fontSize:12.5, padding:'6px 10px', background:'none', border:'none',
+                        cursor:'pointer', color:'var(--fg-2)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:6 }}>
+                      <span style={{ overflow:'hidden', textOverflow:'ellipsis' }}>{m.type === 'video' ? '🎬' : '🖼️'} {m.original_name}</span>
+                      {inPlaylistCount[m.id] > 0 && (
+                        <span style={{ flexShrink:0, fontSize:10.5, background:'rgba(37,99,235,.1)', color:'var(--accent)',
+                          padding:'1px 5px', borderRadius:99, fontWeight:700 }}>×{inPlaylistCount[m.id]}</span>
+                      )}
+                    </button>
+                    <button onClick={() => setQuickPreview(m)}
+                      style={{ width:26, height:'100%', display:'flex', alignItems:'center', justifyContent:'center',
+                        background:'none', border:'none', cursor:'pointer', color:'var(--fg-3)', padding:'0 4px' }}>
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ borderTop:'1px solid var(--border)', padding:'14px 24px',
+            display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <button onClick={() => setPreviewing(true)} disabled={items.length === 0}
+              style={{ display:'inline-flex', alignItems:'center', gap:6, height:34, padding:'0 14px',
+                background:'var(--fg)', color:'var(--surface)', border:'none', borderRadius:7,
+                fontSize:13, fontWeight:600, cursor:'pointer', opacity:items.length === 0?.4:1 }}>
+              ▶ Previzualizare
+            </button>
+            <div style={{ display:'flex', gap:10, alignItems:'center' }}>
+              <button onClick={onClose} style={{ fontSize:13, color:'var(--fg-3)', background:'none', border:'none', cursor:'pointer' }}>Anulează</button>
+              <button onClick={handleSave} disabled={saving}
+                style={{ height:34, padding:'0 18px', background:'var(--accent)', color:'#fff',
+                  border:'none', borderRadius:7, fontSize:13, fontWeight:600, cursor:'pointer', opacity:saving?.5:1 }}>
+                {saving ? 'Se salvează...' : 'Salvează playlist'}
+              </button>
             </div>
           </div>
         </div>
-
-        <div className="border-t px-6 py-4 flex justify-between items-center">
-          <button onClick={() => setPreviewing(true)} disabled={items.length === 0}
-            className="flex items-center gap-2 text-sm bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg disabled:opacity-40">
-            ▶ Previzualizare
-          </button>
-          <div className="flex gap-3">
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-sm">Anulează</button>
-            <button onClick={handleSave} disabled={saving}
-              className="bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold px-5 py-2 rounded-lg disabled:opacity-50">
-              {saving ? 'Se salvează...' : 'Salvează playlist'}
-            </button>
-          </div>
-        </div>
       </div>
-    </div>
     </>
   )
 }

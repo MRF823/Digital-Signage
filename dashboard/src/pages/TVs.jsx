@@ -24,43 +24,20 @@ function formatUptime(seconds) {
   return `${Math.floor(seconds / 86400)} zile`
 }
 
-const IconMonitor = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
-  </svg>
-)
-const IconFilm = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="2" width="20" height="20" rx="2.5"/>
-    <polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/>
-  </svg>
-)
-const IconGroup = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-    <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-  </svg>
-)
-const IconLocation = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-    <circle cx="12" cy="9" r="2.5"/>
-  </svg>
-)
-const IconInfo = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-  </svg>
-)
+const S = {
+  chip: (bg, color) => ({ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 8px', borderRadius:99, fontSize:11.5, fontWeight:600, background:bg, color }),
+  th: { padding:'9px 14px', textAlign:'left', fontSize:10.5, fontWeight:700, textTransform:'uppercase', letterSpacing:'.4px', color:'var(--fg-3)', background:'var(--surface-2)', borderBottom:'1px solid var(--border)', whiteSpace:'nowrap' },
+  td: { padding:'10px 14px', borderBottom:'1px solid var(--border)', color:'var(--fg-2)', verticalAlign:'middle' },
+}
 
 export default function TVs() {
   const [rows, setRows] = useState([])
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
   const [expanded, setExpanded] = useState(null)
-  const [anydeskEdit, setAnydeskEdit] = useState({}) // tvId -> string
+  const [anydeskEdit, setAnydeskEdit] = useState({})
   const [anydeskSaving, setAnydeskSaving] = useState({})
-  const [diagCache, setDiagCache] = useState({}) // `${agencyId}:${tvLabel}` -> diag data
+  const [diagCache, setDiagCache] = useState({})
 
   const load = () =>
     Promise.all([getAgencies(), getGroups()]).then(([agencies, groups]) => {
@@ -74,24 +51,14 @@ export default function TVs() {
         const group_name = groupMap[a.id] || null
         const playlist_count = a.playlist?.length ?? 0
         const has_content = group_name ? (groupHasPlaylist[group_name] ?? false) : playlist_count > 0
-        return a.tvs.map(tv => ({
-          ...tv,
-          agency_id: a.id,
-          agency_name: a.name,
-          city: a.city,
-          group_name,
-          playlist_count,
-          has_content,
-        }))
+        return a.tvs.map(tv => ({ ...tv, agency_id: a.id, agency_name: a.name, city: a.city, group_name, playlist_count, has_content }))
       })
+      const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+      all.sort((a, b) => norm(a.agency_name).localeCompare(norm(b.agency_name)) || norm(a.label).localeCompare(norm(b.label)))
       setRows(all)
     })
 
-  useEffect(() => {
-    load()
-    const i = setInterval(load, 15_000)
-    return () => clearInterval(i)
-  }, [])
+  useEffect(() => { load(); const i = setInterval(load, 15_000); return () => clearInterval(i) }, [])
 
   const online = rows.filter(isOnline).length
   const offline = rows.length - online
@@ -105,13 +72,7 @@ export default function TVs() {
       if (filter === 'no_content') return !tv.has_content
       return true
     })
-    .filter(tv =>
-      !q ||
-      tv.label.toLowerCase().includes(q) ||
-      tv.agency_name.toLowerCase().includes(q) ||
-      (tv.city || '').toLowerCase().includes(q) ||
-      (tv.group_name || '').toLowerCase().includes(q)
-    )
+    .filter(tv => !q || tv.label.toLowerCase().includes(q) || tv.agency_name.toLowerCase().includes(q) || (tv.city || '').toLowerCase().includes(q) || (tv.group_name || '').toLowerCase().includes(q))
 
   async function saveAnydesk(tv) {
     const val = anydeskEdit[tv.id] ?? tv.anydesk_id ?? ''
@@ -119,178 +80,123 @@ export default function TVs() {
     try {
       await updateTvAnydesk(tv.id, val)
       setRows(prev => prev.map(r => r.id === tv.id ? { ...r, anydesk_id: val || null } : r))
-    } catch {
-      alert('Eroare la salvare.')
-    } finally {
-      setAnydeskSaving(s => ({ ...s, [tv.id]: false }))
-    }
+    } catch { alert('Eroare la salvare.') }
+    finally { setAnydeskSaving(s => ({ ...s, [tv.id]: false })) }
   }
 
+  const filters = [
+    { key: 'all',        label: `Toate (${rows.length})`,         accent: 'var(--fg-3)' },
+    { key: 'online',     label: `Online (${online})`,             accent: '#10B981' },
+    { key: 'offline',    label: `Offline (${offline})`,           accent: '#EF4444' },
+    { key: 'no_content', label: `Fără conținut (${noContent})`,   accent: '#F59E0B' },
+  ]
+
   return (
-    <div>
+    <div style={{ padding: 24 }}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
+      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, marginBottom:20, flexWrap:'wrap' }}>
         <div>
-          <h2 className="text-xl font-bold text-gray-800">TV-uri</h2>
-          <p className="text-sm text-gray-400 mt-0.5">Toate ecranele înregistrate · actualizat la 15s</p>
+          <h2 style={{ fontFamily:'Plus Jakarta Sans, system-ui, sans-serif', fontSize:20, fontWeight:800, color:'var(--fg)', letterSpacing:'-.3px' }}>TV-uri</h2>
+          <p style={{ fontSize:12, color:'var(--fg-3)', marginTop:3 }}>Toate ecranele înregistrate · actualizat la 15s</p>
         </div>
       </div>
 
-      {/* Stat chips */}
-      <div className="flex gap-3 mb-5 flex-wrap">
-        {[
-          { key: 'all', label: `Toate (${rows.length})`, color: 'bg-gray-100 text-gray-600 hover:bg-gray-200' },
-          { key: 'online', label: `Online (${online})`, dot: 'bg-green-500', color: 'bg-green-50 text-green-700 hover:bg-green-100' },
-          { key: 'offline', label: `Offline (${offline})`, dot: 'bg-red-400', color: 'bg-red-50 text-red-600 hover:bg-red-100' },
-          { key: 'no_content', label: `Fără conținut (${noContent})`, dot: 'bg-amber-400', color: 'bg-amber-50 text-amber-700 hover:bg-amber-100' },
-        ].map(f => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors border
-              ${filter === f.key ? 'ring-2 ring-offset-1 ring-blue-400 border-blue-200' : 'border-transparent'}
-              ${f.color}`}
-          >
-            {f.dot && <span className={`w-2 h-2 rounded-full ${f.dot}`} />}
+      {/* Filter chips + search */}
+      <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:16, alignItems:'center' }}>
+        {filters.map(f => (
+          <button key={f.key} onClick={() => setFilter(f.key)}
+            style={{
+              display:'inline-flex', alignItems:'center', gap:6, padding:'5px 14px', borderRadius:99,
+              fontSize:12.5, fontWeight:600, border: filter === f.key ? `1.5px solid ${f.accent}` : '1.5px solid var(--border)',
+              background: filter === f.key ? `${f.accent}15` : 'var(--surface)',
+              color: filter === f.key ? f.accent : 'var(--fg-3)', cursor:'pointer', transition:'all .15s'
+            }}>
+            {f.key !== 'all' && <span style={{ width:7, height:7, borderRadius:'50%', background:f.accent, flexShrink:0 }} />}
             {f.label}
           </button>
         ))}
-
-        <input
-          type="text"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Caută TV, agenție, grup..."
-          className="ml-auto px-4 py-2 border border-gray-200 rounded-full text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-64"
-        />
+          style={{ marginLeft:'auto', height:34, padding:'0 14px', border:'1px solid var(--border)', borderRadius:8,
+            background:'var(--surface)', color:'var(--fg)', fontSize:13, outline:'none', minWidth:220 }} />
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-100">
-              <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-widest">Agenție</th>
-              <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-widest">Denumire</th>
-              <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-widest">Grup</th>
-              <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-widest">Conținut</th>
-              <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-widest">Status</th>
-              <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-widest">Ultima activitate</th>
-              <th className="px-5 py-3.5" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {filtered.length === 0 && (
+      <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, overflow:'hidden', boxShadow:'var(--shadow-sm)' }}>
+        <div style={{ overflowX:'auto' }}>
+          <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+            <thead>
               <tr>
-                <td colSpan={7} className="px-5 py-12 text-center text-gray-400">
-                  <div className="flex flex-col items-center gap-2">
-                    <IconMonitor />
-                    <span>Niciun TV găsit</span>
-                  </div>
-                </td>
+                {['Status','TV / Agenție','Grup','Conținut','Orientare','Ultima activitate',''].map(h => (
+                  <th key={h} style={S.th}>{h}</th>
+                ))}
               </tr>
-            )}
-            {(() => {
-              // grupare pe agenție cu rowspan
-              const groups = []
-              filtered.forEach(tv => {
-                const last = groups[groups.length - 1]
-                if (last && last.agency_id === tv.agency_id) {
-                  last.tvs.push(tv)
-                } else {
-                  groups.push({ agency_id: tv.agency_id, agency_name: tv.agency_name, city: tv.city, tvs: [tv] })
-                }
-              })
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr><td colSpan={7} style={{ padding:'48px 14px', textAlign:'center', color:'var(--fg-3)', fontSize:13 }}>Niciun TV găsit</td></tr>
+              )}
+              {(() => {
+                const grps = []
+                filtered.forEach(tv => {
+                  const last = grps[grps.length - 1]
+                  if (last && last.agency_id === tv.agency_id) last.tvs.push(tv)
+                  else grps.push({ agency_id: tv.agency_id, agency_name: tv.agency_name, city: tv.city, tvs: [tv] })
+                })
+                return grps.flatMap(g =>
+                  g.tvs.flatMap((tv, tvIdx) => {
+                    const on = isOnline(tv)
+                    const { line1, line2 } = formatLastSeen(tv.last_seen_at)
+                    const isExp = expanded === tv.id
+                    const anydeskVal = anydeskEdit[tv.id] !== undefined ? anydeskEdit[tv.id] : (tv.anydesk_id ?? '')
+                    const diag = diagCache[`${tv.agency_id}:${tv.label}`] || null
 
-              return groups.flatMap(g =>
-                g.tvs.flatMap((tv, tvIdx) => {
-                  const on = isOnline(tv)
-                  const { line1, line2 } = formatLastSeen(tv.last_seen_at)
-                  const isExp = expanded === tv.id
-                  const isFirst = tvIdx === 0
-
-                  const anydeskVal = anydeskEdit[tv.id] !== undefined ? anydeskEdit[tv.id] : (tv.anydesk_id ?? '')
-
-                  const mainRow = (
-                    <tr
-                      key={tv.id}
-                      className={`transition-colors ${on ? 'hover:bg-gray-50' : 'bg-red-50/30 hover:bg-red-50/60'}`}
-                    >
-                      {/* Agenție — afișat pe fiecare rând, fără rowspan */}
-                      <td className="px-5 py-4 border-r border-gray-100">
-                        {isFirst ? (
-                          <div className="flex items-start gap-1.5">
-                            <span className="text-gray-400 mt-0.5 flex-shrink-0"><IconLocation /></span>
-                            <div>
-                              <p className="font-medium text-gray-700">{g.agency_name}</p>
-                              <span className="text-xs font-mono bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded self-start">ID:{g.agency_id}</span>
-                              {g.city && <p className="text-xs text-gray-400">{g.city}</p>}
-                            </div>
+                    const mainRow = (
+                      <tr key={tv.id} style={{ background: isExp ? 'var(--surface-2)' : 'var(--surface)' }}>
+                        {/* Status */}
+                        <td style={S.td}>
+                          <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'3px 9px', borderRadius:99, fontSize:11.5, fontWeight:600,
+                            background: on ? 'var(--chip-on-bg)' : 'var(--chip-off-bg)',
+                            color: on ? 'var(--chip-on-fg)' : 'var(--chip-off-fg)' }}>
+                            <span style={{ width:6, height:6, borderRadius:'50%', background: on ? '#10B981' : '#EF4444', flexShrink:0 }} />
+                            {on ? 'Online' : 'Offline'}
+                          </span>
+                        </td>
+                        {/* TV / Agenție */}
+                        <td style={S.td}>
+                          <div style={{ fontWeight:700, fontSize:13, color:'var(--fg)' }}>{g.agency_name}{g.city ? ` · ${g.city}` : ''}</div>
+                          <div style={{ fontSize:11.5, color:'var(--fg-3)', marginTop:2 }}>
+                            {tv.label}
                           </div>
-                        ) : null}
-                      </td>
-
-                      {/* Denumire */}
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-2.5">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
-                            ${on ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-400'}`}>
-                            <IconMonitor />
-                          </div>
-                          <span className="font-semibold text-gray-800">{tv.label}</span>
-                        </div>
-                      </td>
-
-                      {/* Grup */}
-                      <td className="px-5 py-4">
-                        {tv.group_name ? (
-                          <span className="inline-flex items-center gap-1.5 bg-purple-50 text-purple-700 border border-purple-100 px-2.5 py-1 rounded-full text-xs font-medium">
-                            <IconGroup />
-                            {tv.group_name}
+                        </td>
+                        {/* Grup */}
+                        <td style={S.td}>
+                          {tv.group_name
+                            ? <span style={S.chip('rgba(124,58,237,.1)','#7C3AED')}>{tv.group_name}</span>
+                            : <span style={{ color:'var(--fg-3)', fontSize:12 }}>—</span>}
+                        </td>
+                        {/* Conținut */}
+                        <td style={S.td}>
+                          {!tv.has_content
+                            ? <span style={S.chip('rgba(245,158,11,.12)','#B45309')}>Fără conținut</span>
+                            : tv.group_name
+                              ? <span style={S.chip('rgba(124,58,237,.1)','#7C3AED')}>Din grup</span>
+                              : <span style={S.chip('rgba(37,99,235,.1)','#2563EB')}>{tv.playlist_count} fișiere</span>}
+                        </td>
+                        {/* Orientare */}
+                        <td style={S.td}>
+                          <span style={S.chip(tv.orientation === 'portrait' ? 'rgba(124,58,237,.1)' : 'rgba(37,99,235,.1)', tv.orientation === 'portrait' ? '#7C3AED' : '#2563EB')}>
+                            {tv.orientation === 'portrait' ? 'Portrait' : 'Landscape'}
                           </span>
-                        ) : (
-                          <span className="text-gray-300 text-xs">—</span>
-                        )}
-                      </td>
-
-                      {/* Conținut */}
-                      <td className="px-5 py-4">
-                        {!tv.has_content ? (
-                          <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-600 border border-amber-100 px-2.5 py-1 rounded-full text-xs font-medium">
-                            Fără conținut
-                          </span>
-                        ) : tv.group_name ? (
-                          <span className="inline-flex items-center gap-1.5 bg-purple-50 text-purple-600 border border-purple-100 px-2.5 py-1 rounded-full text-xs font-medium">
-                            <IconFilm />
-                            Din grup
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 border border-blue-100 px-2.5 py-1 rounded-full text-xs font-medium">
-                            <IconFilm />
-                            {tv.playlist_count} fișier{tv.playlist_count !== 1 ? 'e' : ''}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Status */}
-                      <td className="px-5 py-4">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold
-                          ${on ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${on ? 'bg-green-500 animate-pulse' : 'bg-red-400'}`} />
-                          {on ? 'Online' : 'Offline'}
-                        </span>
-                      </td>
-
-                      {/* Ultima activitate */}
-                      <td className="px-5 py-4">
-                        <p className="font-medium text-gray-700">{line1}</p>
-                        {line2 && <p className="text-xs text-gray-400">{line2}</p>}
-                      </td>
-
-                      {/* Acțiuni */}
-                      <td className="px-5 py-4">
-                        <button
-                          onClick={() => {
+                        </td>
+                        {/* Ultima activitate */}
+                        <td style={S.td}>
+                          <div style={{ fontWeight:600, color:'var(--fg)', fontSize:13 }}>{line1}</div>
+                          {line2 && <div style={{ fontSize:11, color:'var(--fg-3)', marginTop:1 }}>{line2}</div>}
+                        </td>
+                        {/* Acțiuni */}
+                        <td style={{ ...S.td, whiteSpace:'nowrap' }}>
+                          <button onClick={() => {
                             const next = isExp ? null : tv.id
                             setExpanded(next)
                             const diagKey = `${tv.agency_id}:${tv.label}`
@@ -300,103 +206,93 @@ export default function TVs() {
                               }).catch(() => {})
                             }
                           }}
-                          className={`transition-colors ${isExp ? 'text-blue-500' : 'text-gray-300 hover:text-blue-500'}`}
-                          title="Detalii"
-                        >
-                          <IconInfo />
-                        </button>
-                      </td>
-                    </tr>
-                  )
+                          style={{ display:'inline-flex', alignItems:'center', gap:5, height:28, padding:'0 10px', borderRadius:6, fontSize:12, fontWeight:600,
+                            border:`1px solid ${isExp ? 'var(--accent)' : 'var(--border)'}`,
+                            background: isExp ? 'rgba(37,99,235,.08)' : 'var(--surface-2)',
+                            color: isExp ? 'var(--accent)' : 'var(--fg-3)', cursor:'pointer' }}>
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                              style={{ transform: isExp ? 'rotate(180deg)' : 'rotate(0)', transition:'transform .2s' }}>
+                              <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="8"/><line x1="12" y1="12" x2="12" y2="16"/>
+                            </svg>
+                          </button>
+                        </td>
+                      </tr>
+                    )
 
-                  const diag = diagCache[`${tv.agency_id}:${tv.label}`] || null
-                  const detailRow = isExp ? (
-                    <tr key={`detail-${tv.id}`} className="bg-blue-50/40 border-b border-blue-100">
-                      <td colSpan={7} className="px-8 py-4 space-y-3">
-                        {/* Linia 1: TV ID, Agenție ID, AnyDesk */}
-                        <div className="flex flex-wrap items-center gap-6 text-sm">
-                          <div>
-                            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">TV ID</span>
-                            <p className="font-mono text-gray-700 mt-0.5">{tv.id}</p>
-                          </div>
-                          <div>
-                            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Agenție ID</span>
-                            <p className="font-mono text-gray-700 mt-0.5">{tv.agency_id}</p>
-                          </div>
-                          <div className="flex items-end gap-2">
+                    const diagRow = isExp ? (
+                      <tr key={`diag-${tv.id}`}>
+                        <td colSpan={7} style={{ padding:'14px 18px 14px 48px', background:'var(--surface-2)', borderBottom:'1px solid var(--border)' }}>
+                          {/* AnyDesk + IDs */}
+                          <div style={{ display:'flex', flexWrap:'wrap', gap:20, marginBottom:12, fontSize:12 }}>
                             <div>
-                              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide block">AnyDesk ID</label>
-                              <input
-                                type="text"
-                                value={anydeskVal}
-                                onChange={e => setAnydeskEdit(s => ({ ...s, [tv.id]: e.target.value }))}
-                                placeholder="ex: 1 081 912 898"
-                                className="mt-0.5 border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400 w-44"
-                              />
+                              <div style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'.4px', color:'var(--fg-3)', marginBottom:3 }}>TV ID</div>
+                              <span style={{ fontFamily:'monospace', fontSize:12, color:'var(--fg-2)' }}>{tv.id}</span>
                             </div>
-                            <button
-                              onClick={() => saveAnydesk(tv)}
-                              disabled={anydeskSaving[tv.id]}
-                              className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                            >
-                              {anydeskSaving[tv.id] ? '...' : 'Salvează'}
-                            </button>
+                            <div>
+                              <div style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'.4px', color:'var(--fg-3)', marginBottom:3 }}>Agenție ID</div>
+                              <span style={{ fontFamily:'monospace', fontSize:12, color:'var(--fg-2)' }}>{tv.agency_id}</span>
+                            </div>
+                            <div style={{ display:'flex', alignItems:'flex-end', gap:8 }}>
+                              <div>
+                                <div style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'.4px', color:'var(--fg-3)', marginBottom:3 }}>AnyDesk ID</div>
+                                <input type="text" value={anydeskVal}
+                                  onChange={e => setAnydeskEdit(s => ({ ...s, [tv.id]: e.target.value }))}
+                                  placeholder="ex: 1 081 912 898"
+                                  style={{ height:30, padding:'0 10px', border:'1px solid var(--border)', borderRadius:6, background:'var(--surface)', color:'var(--fg)', fontSize:12, fontFamily:'monospace', outline:'none', width:160 }} />
+                              </div>
+                              <button onClick={() => saveAnydesk(tv)} disabled={anydeskSaving[tv.id]}
+                                style={{ height:30, padding:'0 12px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:6, fontSize:12, fontWeight:600, cursor:'pointer', opacity: anydeskSaving[tv.id] ? .6 : 1 }}>
+                                {anydeskSaving[tv.id] ? '...' : 'Salvează'}
+                              </button>
+                            </div>
                           </div>
-                        </div>
+                          {/* Diagnostice */}
+                          <div style={{ borderTop:'1px solid var(--border)', paddingTop:10 }}>
+                            <div style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'.4px', color:'var(--fg-3)', marginBottom:8 }}>Diagnostice Mini PC</div>
+                            {diag ? (
+                              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))', gap:10 }}>
+                                {[
+                                  { label:'CPU', val: diag.cpu != null ? `${diag.cpu}%` : '—' },
+                                  { label:'RAM liber', val: diag.ramFreeGB != null ? `${diag.ramFreeGB} GB${diag.ramTotalGB ? ` / ${diag.ramTotalGB} GB` : ''}` : '—' },
+                                  { label:'WiFi', val: diag.wifiSsid ? `${diag.wifiSsid}${diag.wifiSignal != null ? ` (${diag.wifiSignal}%)` : ''}` : '—' },
+                                  { label:'Edge', val: diag.edgeRunning == null ? '—' : diag.edgeRunning ? 'Rulează' : 'Oprit' },
+                                  { label:'Uptime', val: diag.uptimeSeconds != null ? formatUptime(diag.uptimeSeconds) : '—' },
+                                ].map(({ label, val }) => (
+                                  <div key={label}>
+                                    <div style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'.4px', color:'var(--fg-3)', marginBottom:2 }}>{label}</div>
+                                    <div style={{ fontSize:13, fontWeight:600, color:'var(--fg)' }}>{val}</div>
+                                  </div>
+                                ))}
+                                {diag.receivedAt && (
+                                  <div style={{ fontSize:11, color:'var(--fg-3)', alignSelf:'flex-end' }}>
+                                    Actualizat: {new Date(diag.receivedAt).toLocaleTimeString('ro-RO', { hour:'2-digit', minute:'2-digit' })}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <p style={{ fontSize:12, color:'var(--fg-3)', fontStyle:'italic' }}>Date indisponibile — mini PC-ul nu a trimis diagnostice încă.</p>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ) : null
 
-                        {/* Linia 2: Diagnostice mini PC */}
-                        <div className="border-t border-blue-100 pt-3">
-                          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-2">Diagnostice Mini PC</span>
-                          {diag ? (
-                            <div className="flex flex-wrap gap-4 text-sm">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-gray-400">🖥</span>
-                                <span className="text-gray-500">CPU:</span>
-                                <span className="font-medium text-gray-700">{diag.cpu != null ? `${diag.cpu}%` : '—'}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-gray-400">💾</span>
-                                <span className="text-gray-500">RAM liber:</span>
-                                <span className="font-medium text-gray-700">{diag.ramFreeGB != null ? `${diag.ramFreeGB} GB` : '—'}{diag.ramTotalGB ? ` / ${diag.ramTotalGB} GB` : ''}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-gray-400">📶</span>
-                                <span className="text-gray-500">WiFi:</span>
-                                <span className="font-medium text-gray-700">{diag.wifiSsid || '—'}{diag.wifiSignal != null ? ` (${diag.wifiSignal}%)` : ''}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-gray-400">🌐</span>
-                                <span className="text-gray-500">Edge:</span>
-                                <span className={`font-medium ${diag.edgeRunning ? 'text-green-600' : 'text-red-500'}`}>{diag.edgeRunning == null ? '—' : diag.edgeRunning ? 'Rulează' : 'Oprit'}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-gray-400">⏱</span>
-                                <span className="text-gray-500">Uptime:</span>
-                                <span className="font-medium text-gray-700">{diag.uptimeSeconds != null ? formatUptime(diag.uptimeSeconds) : '—'}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5 ml-auto">
-                                <span className="text-xs text-gray-400">Actualizat: {diag.receivedAt ? new Date(diag.receivedAt).toLocaleTimeString('ro-RO', {hour:'2-digit',minute:'2-digit'}) : '—'}</span>
-                              </div>
-                            </div>
-                          ) : (
-                            <p className="text-xs text-gray-400 italic">Date indisponibile — mini PC-ul nu a trimis diagnostice încă.</p>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ) : null
-
-                  return [mainRow, detailRow].filter(Boolean)
-                })
-              )
-            })()}
-          </tbody>
-        </table>
+                    return [mainRow, diagRow].filter(Boolean)
+                  })
+                )
+              })()}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Total */}
       {filtered.length > 0 && (
-        <p className="text-xs text-gray-400 text-right mt-3">{filtered.length} TV{filtered.length !== 1 ? '-uri' : ''} afișate</p>
+        <p style={{ fontSize:11.5, color:'var(--fg-3)', textAlign:'right', marginTop:10 }}>
+          {filtered.length} TV{filtered.length !== 1 ? '-uri' : ''} afișate
+        </p>
       )}
     </div>
   )

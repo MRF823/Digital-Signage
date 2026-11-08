@@ -4,45 +4,81 @@ import { mediaUrl } from '../api'
 function PreviewModal({ item, onClose }) {
   const url = mediaUrl(item.filename)
   const [loading, setLoading] = useState(true)
+  const [portrait, setPortrait] = useState(false)
+
+  const handleVideoMeta = (e) => {
+    setLoading(false)
+    const { videoWidth, videoHeight } = e.target
+    if (videoWidth && videoHeight) setPortrait(videoHeight > videoWidth)
+  }
+
+  const handleImageLoad = (e) => {
+    setLoading(false)
+    const { naturalWidth, naturalHeight } = e.target
+    if (naturalWidth && naturalHeight) setPortrait(naturalHeight > naturalWidth)
+  }
+
+  const frameStyle = portrait ? {
+    height: 'min(70vh, 580px)',
+    aspectRatio: '9/16',
+    padding: '12px 12px 36px',
+    borderRadius: 24,
+  } : {
+    width: 'min(80vw, 800px)',
+    aspectRatio: '16/9',
+    padding: '12px 12px 44px',
+    borderRadius: 16,
+  }
+
   return (
     <div
-      className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}
       onClick={onClose}
     >
-      <div
-        className="relative max-w-4xl w-full mx-4"
-        onClick={e => e.stopPropagation()}
-      >
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
         <button
           onClick={onClose}
-          className="absolute -top-10 right-0 text-white text-2xl hover:text-gray-300"
-        >
-          ✕
-        </button>
-        {loading && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+          style={{ position: 'absolute', top: -36, right: 0, color: 'rgba(255,255,255,0.7)', fontSize: 22, background: 'none', border: 'none', cursor: 'pointer', lineHeight: 1 }}
+        >✕</button>
+
+        {/* TV shell */}
+        <div style={{
+          ...frameStyle,
+          background: '#242424',
+          boxShadow: '0 32px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.07), inset 0 1px 0 rgba(255,255,255,0.11)',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative',
+          flexShrink: 0,
+        }}>
+          {loading && (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20 }}>
+              <div className="w-9 h-9 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+            </div>
+          )}
+
+          {/* Screen */}
+          <div style={{ flex: 1, background: '#000', borderRadius: portrait ? 12 : 6, overflow: 'hidden', position: 'relative', minHeight: 0 }}>
+            {item.type === 'video' ? (
+              <video
+                src={url}
+                controls
+                autoPlay
+                onLoadedMetadata={handleVideoMeta}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', opacity: loading ? 0 : 1 }}
+              />
+            ) : (
+              <img
+                src={url}
+                alt={item.original_name}
+                onLoad={handleImageLoad}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', opacity: loading ? 0 : 1 }}
+              />
+            )}
           </div>
-        )}
-        {item.type === 'video' ? (
-          <video
-            src={url}
-            controls
-            autoPlay
-            onCanPlay={() => setLoading(false)}
-            className="w-full rounded-lg max-h-[80vh]"
-            style={{ opacity: loading ? 0 : 1 }}
-          />
-        ) : (
-          <img
-            src={url}
-            alt={item.original_name}
-            onLoad={() => setLoading(false)}
-            className="w-full rounded-lg max-h-[80vh] object-contain"
-            style={{ opacity: loading ? 0 : 1 }}
-          />
-        )}
-        <p className="text-white text-sm text-center mt-3 opacity-70">{item.original_name}</p>
+        </div>
+
+        <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 12, maxWidth: 400, textAlign: 'center', wordBreak: 'break-all' }}>{item.original_name}</p>
       </div>
     </div>
   )
@@ -85,7 +121,7 @@ export default function MediaCard({ item, onDelete }) {
         </div>
 
         <div className="p-3">
-          <p className="text-sm font-medium text-gray-800 truncate" title={item.original_name}>
+          <p className="text-sm font-medium text-gray-800 break-all" title={item.original_name}>
             {item.original_name}
           </p>
           <p className="text-xs text-gray-400 mt-1">

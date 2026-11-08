@@ -70,6 +70,26 @@ export function sendReconnectedAlert(tvLabel, agencyName) {
   )
 }
 
+export async function sendDailyReport(reportText, emails) {
+  const nm = await getNodemailer()
+  const transport = createTransport(nm)
+  if (!transport) return
+  const validEmails = (emails || []).filter(e => e && e.includes('@'))
+  if (!validEmails.length) return
+  const date = new Date().toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest', day: '2-digit', month: 'long', year: 'numeric' })
+  try {
+    await transport.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: validEmails.join(', '),
+      subject: `[DisplayIQ] Raport zilnic — ${date}`,
+      text: reportText,
+    })
+    console.log(`[raport-zilnic] Email trimis către: ${validEmails.join(', ')}`)
+  } catch (err) {
+    console.error('[raport-zilnic] Eroare email:', err.message)
+  }
+}
+
 export async function sendPasswordReset(email, token) {
   const appUrl = process.env.APP_URL || 'https://displayiq.funkymedia.ro'
   const link = `${appUrl}/reset-password?token=${token}`

@@ -2,6 +2,7 @@ import { Router } from 'express'
 import multer from 'multer'
 import path from 'path'
 import { createReadStream, statSync } from 'fs'
+import { fileTypeFromFile } from 'file-type'
 import { getDb } from '../db.js'
 import { UPLOADS_DIR, ensureUploadsDir, deleteFile } from '../storage.js'
 
@@ -30,11 +31,18 @@ router.get('/', (req, res) => {
 
 router.post('/upload', (req, res) => {
   ensureUploadsDir()
-  upload.single('file')(req, res, (err) => {
+  upload.single('file')(req, res, async (err) => {
     if (err) return res.status(400).json({ error: err.message })
     if (!req.file) return res.status(400).json({ error: 'No file provided' })
 
-    const type = ALLOWED_TYPES[req.file.mimetype]
+    // Verifică magic bytes — nu ne bazăm pe Content-Type trimis de client
+    const detected = await fileTypeFromFile(req.file.path).catch(() => null)
+    const detectedMime = detected?.mime || req.file.mimetype
+    if (!ALLOWED_TYPES[detectedMime]) {
+      deleteFile(req.file.filename)
+      return res.status(400).json({ error: 'Tipul fișierului nu este permis.' })
+    }
+    const type = ALLOWED_TYPES[detectedMime]
     const db = getDb()
 
     const existing = db.prepare('SELECT id FROM media WHERE original_name = ?').get(req.file.originalname)

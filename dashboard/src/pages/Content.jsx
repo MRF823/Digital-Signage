@@ -22,7 +22,7 @@ export default function Content() {
       URL.revokeObjectURL(img.src)
       const ratio = img.width / img.height
       const is16x9 = Math.abs(ratio - 16 / 9) < 0.05
-      resolve(is16x9 ? null : `⚠️ Imaginea are rezoluția ${img.width}×${img.height}. Pentru afișare optimă pe TV, folosește 1920×1080 (16:9).`)
+      resolve(is16x9 ? null : `Imaginea are rezoluția ${img.width}×${img.height}. Pentru afișare optimă pe TV, folosește 1920×1080 (16:9).`)
     }
     img.src = URL.createObjectURL(file)
   })
@@ -66,51 +66,76 @@ export default function Content() {
   }
 
   return (
-    <div>
+    <div style={{ padding:24 }}>
       {previewing && <PreviewPlayer items={media} onClose={() => setPreviewing(false)} />}
 
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-800">Librărie Media</h2>
+      {/* Header */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+        <div>
+          <h1 style={{ fontFamily:'Plus Jakarta Sans, sans-serif', fontWeight:800, fontSize:22, color:'var(--fg)', margin:0 }}>
+            Librărie Media
+          </h1>
+          <p style={{ fontSize:13, color:'var(--fg-3)', marginTop:3 }}>{media.length} fișiere încărcate</p>
+        </div>
         {media.length > 0 && (
           <button onClick={() => setPreviewing(true)}
-            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-4 py-2 rounded-lg">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            style={{ display:'inline-flex', alignItems:'center', gap:6, height:36, padding:'0 16px',
+              background:'var(--fg)', color:'var(--surface)', border:'none', borderRadius:8,
+              fontSize:13, fontWeight:600, cursor:'pointer' }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             Previzualizare
           </button>
         )}
       </div>
 
+      {/* Drop zone */}
       <div {...getRootProps()}
-        className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer mb-6 transition-colors
-          ${isDragActive ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-blue-300'}`}>
+        style={{ border:`2px dashed ${isDragActive ? 'var(--accent)' : 'var(--border)'}`,
+          background: isDragActive ? 'rgba(37,99,235,.04)' : 'var(--surface)',
+          borderRadius:12, padding:'36px 24px', textAlign:'center', cursor:'pointer',
+          marginBottom:20, transition:'all .15s' }}>
         <input {...getInputProps()} />
-        <p className="text-3xl mb-2">⬆️</p>
-        <p className="text-gray-500">Trage fișierele aici sau <span className="text-blue-600 underline">alege fișier</span></p>
-        <p className="text-xs text-gray-400 mt-1">MP4, JPG, PNG — max 500MB</p>
+        <div style={{ fontSize:32, marginBottom:8 }}>⬆️</div>
+        <p style={{ fontSize:14, color:'var(--fg-2)', margin:0 }}>
+          Trage fișierele aici sau <span style={{ color:'var(--accent)', textDecoration:'underline' }}>alege fișier</span>
+        </p>
+        <p style={{ fontSize:12, color:'var(--fg-3)', marginTop:6 }}>MP4, JPG, PNG — max 500MB</p>
       </div>
 
+      {/* Progress bar */}
       {progress !== null && (
-        <div className="mb-4">
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div className="h-2 bg-blue-600 transition-all" style={{ width: `${progress}%` }} />
+        <div style={{ marginBottom:16 }}>
+          <div style={{ height:6, background:'var(--border)', borderRadius:99, overflow:'hidden' }}>
+            <div style={{ height:6, background:'var(--accent)', width:`${progress}%`, transition:'width .2s', borderRadius:99 }} />
           </div>
-          <p className="text-xs text-gray-500 mt-1">{progress}% uploadat...</p>
+          <p style={{ fontSize:12, color:'var(--fg-3)', marginTop:5 }}>{progress}% uploadat...</p>
         </div>
       )}
 
+      {/* Warning toast */}
       {warning && (
-        <div className="fixed bottom-6 right-6 z-50 max-w-sm bg-amber-50 border border-amber-300 text-amber-800 text-sm rounded-xl px-4 py-3 shadow-lg flex items-start gap-3">
-          <span className="text-lg leading-none mt-0.5">⚠️</span>
-          <span>{warning.replace('⚠️ ', '')}</span>
-          <button onClick={() => setWarning('')} className="ml-auto text-amber-400 hover:text-amber-600 text-lg leading-none">×</button>
+        <div style={{ position:'fixed', bottom:24, right:24, zIndex:50, maxWidth:340,
+          background:'rgba(251,191,36,.12)', border:'1px solid rgba(251,191,36,.4)',
+          color:'#B45309', fontSize:13, borderRadius:10, padding:'12px 16px',
+          boxShadow:'var(--shadow-md)', display:'flex', alignItems:'flex-start', gap:10 }}>
+          <span style={{ fontSize:16 }}>⚠️</span>
+          <span style={{ flex:1 }}>{warning}</span>
+          <button onClick={() => setWarning('')}
+            style={{ fontSize:16, color:'#D97706', background:'none', border:'none', cursor:'pointer', lineHeight:1 }}>×</button>
         </div>
       )}
-      {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
 
+      {error && (
+        <p style={{ fontSize:13, color:'#DC2626', marginBottom:14 }}>{error}</p>
+      )}
+
+      {/* Media grid */}
       {media.length === 0 ? (
-        <p className="text-gray-400 text-center py-10">Nicio înregistrare media. Încarcă primul fișier!</p>
+        <div style={{ textAlign:'center', padding:'60px 0', color:'var(--fg-3)', fontSize:14 }}>
+          Nicio înregistrare media. Încarcă primul fișier!
+        </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(160px, 1fr))', gap:14 }}>
           {media.map(item => (
             <MediaCard key={item.id} item={item} onDelete={handleDelete} />
           ))}

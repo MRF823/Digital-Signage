@@ -129,6 +129,11 @@ export const updateSettings = (data) => api.put('/api/settings', data).then(r =>
 export const aiChat = (message, history = []) => api.post('/api/ai/chat', { message, history }).then(r => r.data)
 export const aiAnomalies = () => api.get('/api/ai/anomalies').then(r => r.data)
 
+export const getUptime7d = () => api.get('/api/stats/uptime-7d').then(r => r.data)
+
+export const getActivityLog = (limit = 200) => api.get(`/api/activity-log?limit=${limit}`).then(r => r.data)
+export const testDailyReport = () => api.post('/api/test-daily-report').then(r => r.data)
+
 export const mediaUrl = (filename) => `${BASE}/api/media/${filename}`
 
 export default api

@@ -38,7 +38,7 @@ export function getAgentDiagnostics(agencyId, tvLabel) {
 const updateAgents = new Set()
 
 export function initWebSocket(httpServer) {
-  const wss = new WebSocketServer({ server: httpServer })
+  const wss = new WebSocketServer({ server: httpServer, maxPayload: 64 * 1024 })
 
   // Heartbeat: detectează conexiuni moarte (mini PC scos din priză) în max 60s
   const heartbeatInterval = setInterval(() => {
@@ -70,11 +70,13 @@ export function initWebSocket(httpServer) {
       try { msg = JSON.parse(raw) } catch { return }
 
       if (msg.type === 'register_update_agent') {
+        const expectedToken = process.env.UPDATE_AGENT_TOKEN
+        if (expectedToken && msg.token !== expectedToken) return
         updateAgents.add(ws)
         return
       }
 
-      if (msg.type === 'agent_diagnostics' && msg.agencyId && msg.data) {
+      if (msg.type === 'agent_diagnostics' && msg.agencyId && msg.data && agencyId) {
         const key = msg.tvLabel ? `${msg.agencyId}:${msg.tvLabel}` : String(msg.agencyId)
         agentDiagnostics.set(key, { ...msg.data, receivedAt: new Date().toISOString() })
         return
@@ -90,6 +92,18 @@ export function initWebSocket(httpServer) {
           tvId = tvId.slice('__preview__'.length)
         }
         console.log(`[WS] register agencyId=${agencyId} tvId=${tvId} msg.preview=${msg.preview} isPreview=${isPreview}`)
+
+        // Validare DB — TV-ul trebuie să existe în baza de date
+        if (!isPreview) {
+          try {
+            const tvCheck = getDb().prepare('SELECT id FROM tvs WHERE agency_id = ? AND label = ?').get(agencyId, tvId)
+            if (!tvCheck) {
+              console.warn(`[WS] TV necunoscut agencyId=${agencyId} tvId=${tvId} — conexiune refuzată`)
+              ws.close(4403, 'Unknown TV')
+              return
+            }
+          } catch {}
+        }
 
         if (!clients.has(agencyId)) clients.set(agencyId, new Set())
         clients.get(agencyId).add(ws)

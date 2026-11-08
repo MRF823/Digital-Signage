@@ -34,7 +34,10 @@ function UploadButton({ agencyId, side, onUploaded }) {
       <button
         onClick={() => inputRef.current?.click()}
         disabled={uploading}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-dashed border-blue-400 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50"
+        className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors disabled:opacity-50"
+        style={{ border: '1px dashed var(--accent)', color: 'var(--accent)', background: 'transparent' }}
+        onMouseEnter={e => e.currentTarget.style.background = 'rgba(37,99,235,0.08)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
       >
         {uploading ? (
           <span>{progress}%</span>
@@ -59,19 +62,21 @@ function DocList({ docs, agencyId, onDelete, onReorder }) {
     try {
       await reorderInfoDocs(agencyId, newDocs.map(d => d.id))
     } catch {
-      onReorder(docs) // rollback
+      onReorder(docs)
     }
   }
 
   return (
     <div className="space-y-1.5">
       {docs.map((doc, idx) => (
-        <div key={doc.id} className="flex items-center gap-1 px-3 py-2 bg-slate-50 rounded-lg border border-slate-200">
+        <div key={doc.id} className="flex items-center gap-1 px-3 py-2 rounded-lg"
+          style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
           <div className="flex flex-col gap-0.5 flex-shrink-0">
             <button
               onClick={() => move(idx, -1)}
               disabled={idx === 0}
-              className="text-slate-400 hover:text-slate-700 disabled:opacity-20 leading-none"
+              className="disabled:opacity-20 leading-none transition-colors"
+              style={{ color: 'var(--fg-3)' }}
               title="Mută sus"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="18 15 12 9 6 15"/></svg>
@@ -79,7 +84,8 @@ function DocList({ docs, agencyId, onDelete, onReorder }) {
             <button
               onClick={() => move(idx, 1)}
               disabled={idx === docs.length - 1}
-              className="text-slate-400 hover:text-slate-700 disabled:opacity-20 leading-none"
+              className="disabled:opacity-20 leading-none transition-colors"
+              style={{ color: 'var(--fg-3)' }}
               title="Mută jos"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
@@ -89,13 +95,14 @@ function DocList({ docs, agencyId, onDelete, onReorder }) {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" className="flex-shrink-0">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
             </svg>
-            <span className="text-sm text-slate-700 truncate">{doc.original_name}</span>
+            <span className="text-sm truncate" style={{ color: 'var(--fg-2)' }}>{doc.original_name}</span>
           </div>
           <a
             href={`/api/info/file/${doc.filename}`}
             target="_blank"
             rel="noreferrer"
-            className="text-slate-400 hover:text-blue-500 transition-colors flex-shrink-0"
+            className="transition-colors flex-shrink-0"
+            style={{ color: 'var(--fg-3)' }}
             title="Vizualizează PDF"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -104,7 +111,8 @@ function DocList({ docs, agencyId, onDelete, onReorder }) {
           </a>
           <button
             onClick={() => onDelete(doc.id)}
-            className="text-slate-400 hover:text-red-500 transition-colors flex-shrink-0"
+            className="transition-colors flex-shrink-0"
+            style={{ color: 'var(--fg-3)' }}
             title="Șterge"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -170,14 +178,15 @@ function AgencyCard({ agency, tv, initialData }) {
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+    <div className="rounded-xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
       {/* Header agenție */}
-      <div className="px-5 py-4 flex items-center justify-between border-b border-slate-100">
+      <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
         <div className="flex items-center gap-3">
-          <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${tv ? (online ? 'bg-green-500' : 'bg-slate-300') : 'bg-slate-200'}`} />
+          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+            style={{ background: tv ? (online ? '#10B981' : 'var(--fg-3)') : 'var(--border)' }} />
           <div>
-            <p className="font-medium text-slate-800">{agency.name}</p>
-            <p className="text-xs text-slate-400">
+            <p className="font-medium" style={{ color: 'var(--fg)' }}>{agency.name}</p>
+            <p className="text-xs" style={{ color: 'var(--fg-3)' }}>
               {tv
                 ? online
                   ? 'TV Info Obligatorii — Online'
@@ -192,11 +201,11 @@ function AgencyCard({ agency, tv, initialData }) {
           <button
             onClick={handleToggle}
             disabled={toggling || !online}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-              tvMode
-                ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
+            className="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            style={tvMode
+              ? { background: 'var(--chip-on-bg)', color: 'var(--chip-on-fg)' }
+              : { background: 'var(--surface-2)', color: 'var(--fg-2)' }
+            }
           >
             {toggling ? '...' : tvMode ? 'Info activ' : 'Info inactiv'}
           </button>
@@ -206,12 +215,11 @@ function AgencyCard({ agency, tv, initialData }) {
       {/* Body — documente */}
       <div className="p-5 grid grid-cols-2 gap-6">
 
-        {/* Stânga — documente statice */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <div>
-              <p className="text-sm font-semibold text-slate-700">Documente statice</p>
-              <p className="text-xs text-slate-400 mt-0.5">Afișate simultan pe jumătatea stângă</p>
+              <p className="text-sm font-semibold" style={{ color: 'var(--fg-2)' }}>Documente statice</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--fg-3)' }}>Afișate simultan pe jumătatea stângă</p>
             </div>
           </div>
           {staticDocs.length > 0
@@ -221,19 +229,18 @@ function AgencyCard({ agency, tv, initialData }) {
                 onDelete={handleDelete}
                 onReorder={newStatic => setDocs(prev => [...newStatic, ...prev.filter(d => d.side === 'rotativ')])}
               />
-            : <p className="text-xs text-slate-400 italic mb-2">Niciun document</p>
+            : <p className="text-xs italic mb-2" style={{ color: 'var(--fg-3)' }}>Niciun document</p>
           }
           <div className="mt-2">
             <UploadButton agencyId={agency.id} side="static" onUploaded={handleUploaded} />
           </div>
         </div>
 
-        {/* Dreapta — documente rotative */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <div>
-              <p className="text-sm font-semibold text-slate-700">Documente rotative</p>
-              <p className="text-xs text-slate-400 mt-0.5">Rotație pagină cu pagină pe dreapta</p>
+              <p className="text-sm font-semibold" style={{ color: 'var(--fg-2)' }}>Documente rotative</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--fg-3)' }}>Rotație pagină cu pagină pe dreapta</p>
             </div>
           </div>
           {rotativDocs.length > 0
@@ -243,7 +250,7 @@ function AgencyCard({ agency, tv, initialData }) {
                 onDelete={handleDelete}
                 onReorder={newRotativ => setDocs(prev => [...prev.filter(d => d.side === 'static'), ...newRotativ])}
               />
-            : <p className="text-xs text-slate-400 italic mb-2">Niciun document</p>
+            : <p className="text-xs italic mb-2" style={{ color: 'var(--fg-3)' }}>Niciun document</p>
           }
           <div className="mt-2">
             <UploadButton agencyId={agency.id} side="rotativ" onUploaded={handleUploaded} />
@@ -252,32 +259,35 @@ function AgencyCard({ agency, tv, initialData }) {
       </div>
 
       {/* Footer — setări */}
-      <div className="px-5 py-4 bg-slate-50 border-t border-slate-100 flex flex-wrap items-end gap-4">
+      <div className="px-5 py-4 flex flex-wrap items-end gap-4" style={{ background: 'var(--surface-2)', borderTop: '1px solid var(--border)' }}>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Interval rotație (secunde)</label>
+          <label className="block text-xs font-medium mb-1" style={{ color: 'var(--fg-2)' }}>Interval rotație (secunde)</label>
           <input
             type="number" min="1" max="300"
             value={rotationSec}
             onChange={e => setRotationSec(Number(e.target.value))}
-            className="w-24 border border-slate-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-24 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            style={{ background: 'var(--surface)', color: 'var(--fg)', border: '1px solid var(--border)' }}
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Ora pornire</label>
+          <label className="block text-xs font-medium mb-1" style={{ color: 'var(--fg-2)' }}>Ora pornire</label>
           <input
             type="time"
             value={onTime}
             onChange={e => setOnTime(e.target.value)}
-            className="border border-slate-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            style={{ background: 'var(--surface)', color: 'var(--fg)', border: '1px solid var(--border)' }}
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Ora oprire</label>
+          <label className="block text-xs font-medium mb-1" style={{ color: 'var(--fg-2)' }}>Ora oprire</label>
           <input
             type="time"
             value={offTime}
             onChange={e => setOffTime(e.target.value)}
-            className="border border-slate-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            style={{ background: 'var(--surface)', color: 'var(--fg)', border: '1px solid var(--border)' }}
           />
         </div>
         <button
@@ -295,7 +305,7 @@ function AgencyCard({ agency, tv, initialData }) {
 export default function InfoObligatorii() {
   const [agencies, setAgencies] = useState([])
   const [infoTVs, setInfoTVs] = useState([])
-  const [docsMap, setDocsMap] = useState({}) // agencyId -> { docs, rotation_seconds, on_time, off_time }
+  const [docsMap, setDocsMap] = useState({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -305,7 +315,6 @@ export default function InfoObligatorii() {
       const infoOnly = tvsData.filter(t => t.label.toLowerCase() === 'tv info obligatorii')
       setInfoTVs(infoOnly)
 
-      // Încarcă doc-urile pentru fiecare agenție
       const map = {}
       await Promise.all(
         agenciesData.map(async agency => {
@@ -324,15 +333,15 @@ export default function InfoObligatorii() {
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
-      <p className="text-slate-500">Se încarcă...</p>
+      <p style={{ color: 'var(--fg-3)' }}>Se încarcă...</p>
     </div>
   )
 
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-slate-900">Info Obligatorii</h1>
-        <p className="text-slate-500 text-sm mt-1">
+        <h1 className="text-2xl font-semibold" style={{ color: 'var(--fg)' }}>Info Obligatorii</h1>
+        <p className="text-sm mt-1" style={{ color: 'var(--fg-3)' }}>
           Documente afișate pe TV-urile Info Obligatorii din agenții
         </p>
       </div>

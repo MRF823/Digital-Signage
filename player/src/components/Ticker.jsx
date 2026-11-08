@@ -3,10 +3,15 @@ const MONTHS = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie',
 
 function formatLastUpdate(dateStr) {
   if (!dateStr) return null
-  const d = new Date(dateStr)
+  // Format "DD.MM.YYYY HH:MM" de pe CEC
+  const ro = dateStr.match(/^(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}):(\d{2})$/)
+  const d = ro ? new Date(`${ro[3]}-${ro[2]}-${ro[1]}T${ro[4]}:${ro[5]}:00`) : new Date(dateStr)
+  if (isNaN(d.getTime())) return dateStr
   const hh = String(d.getHours()).padStart(2, '0')
   const mm = String(d.getMinutes()).padStart(2, '0')
-  return `${hh}:${mm} ▪ ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mo = String(d.getMonth() + 1).padStart(2, '0')
+  return `${hh}:${mm} ▪ ${dd}.${mo}.${d.getFullYear()}`
 }
 
 export default function Ticker({ rates, updatedAt, cecUpdatedAt, bnrUpdatedAt }) {

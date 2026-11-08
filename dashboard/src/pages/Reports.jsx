@@ -32,7 +32,7 @@ function fmtDurationLong(sec) {
   return `${s}s`
 }
 
-const RO_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+const RO_MONTHS = ['Ian','Feb','Mar','Apr','Mai','Iun','Iul','Aug','Sep','Oct','Nov','Dec']
 function fmtDateDisplay(val) {
   if (!val) return '—'
   const [y, m, d] = val.split('-')
@@ -49,15 +49,10 @@ function playlistDuration(items, avgDurations = {}) {
   }, 0)
 }
 
-function hasUnknownDuration(items, avgDurations = {}) {
-  return items.some(item => item.type === 'video' && !item.duration_seconds && !avgDurations[item.filename])
-}
-
 function downloadExcel(summary, logs, agencies, playlists, avgDurations = {}) {
   const agencyMap = {}
   agencies.forEach(a => { agencyMap[a.id] = { name: a.name, city: a.city } })
 
-  // Sheet 1: Sumar per agenție (date complete din summary)
   const summaryRows = [['Agenție', 'Oraș', 'Total redări', 'Durată totală', 'Durată playlist', 'Cicluri complete']]
   ;(summary?.byAgency ?? []).forEach(r => {
     const ag = agencyMap[r.agency_id] ?? { name: `#${r.agency_id}`, city: '' }
@@ -66,18 +61,10 @@ function downloadExcel(summary, logs, agencies, playlists, avgDurations = {}) {
     summaryRows.push([ag.name, ag.city, r.plays, fmtDurationLong(r.total_seconds), fmtDurationLong(pd), cycles])
   })
 
-  // Sheet 2: Detaliat (ultimele 200 din log-uri)
   const detailRows = [['Data / Ora', 'Agenție', 'TV', 'Fișier', 'Tip', 'Durată']]
   logs.forEach(r => {
     const ag = agencyMap[r.agency_id]
-    detailRows.push([
-      fmt(r.played_at),
-      ag?.name ?? `#${r.agency_id}`,
-      r.tv_label,
-      r.original_name,
-      r.media_type,
-      fmtDuration(r.duration_seconds),
-    ])
+    detailRows.push([fmt(r.played_at), ag?.name ?? `#${r.agency_id}`, r.tv_label, r.original_name, r.media_type, fmtDuration(r.duration_seconds)])
   })
 
   const wb = XLSX.utils.book_new()
@@ -88,9 +75,9 @@ function downloadExcel(summary, logs, agencies, playlists, avgDurations = {}) {
 
 export default function Reports() {
   const [logs, setLogs] = useState([])
-  const [summary, setSummary] = useState(null) // { global, byAgency, byFile, byAgencyFile }
+  const [summary, setSummary] = useState(null)
   const [agencies, setAgencies] = useState([])
-  const [playlists, setPlaylists] = useState({}) // agencyId -> items[]
+  const [playlists, setPlaylists] = useState({})
   const [agencyId, setAgencyId] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
@@ -99,34 +86,24 @@ export default function Reports() {
   const [hasFiltered, setHasFiltered] = useState(false)
   const fromRef = useRef()
   const toRef = useRef()
+  const [uptimeData, setUptimeData] = useState({})
+  const [uptimeLoading, setUptimeLoading] = useState(false)
+  const [nextRefresh, setNextRefresh] = useState(60)
 
   useEffect(() => {
     Promise.all([getAgencies(), getGroups()]).then(async ([ag, groups]) => {
       setAgencies(ag)
-
-      // map agencyId -> groupId
       const agencyGroupId = {}
       groups.forEach(g => g.agencies.forEach(a => { agencyGroupId[a.id] = g.id }))
-
-      // fetch playlist direct per agenție
       const directResults = await Promise.all(
         ag.map(a => getPlaylist(a.id).then(items => ({ id: a.id, items })).catch(() => ({ id: a.id, items: [] })))
       )
-
-      // fetch playlist de grup (o singură dată per grup)
       const groupPlaylistMap = {}
-      await Promise.all(
-        groups.map(g => getGroupPlaylist(g.id).then(items => { groupPlaylistMap[g.id] = items }).catch(() => {}))
-      )
-
+      await Promise.all(groups.map(g => getGroupPlaylist(g.id).then(items => { groupPlaylistMap[g.id] = items }).catch(() => {})))
       const map = {}
       directResults.forEach(r => {
-        // dacă playlist direct e gol și agenția e în grup → folosește playlist-ul grupului
-        if (r.items.length === 0 && agencyGroupId[r.id]) {
-          map[r.id] = groupPlaylistMap[agencyGroupId[r.id]] || []
-        } else {
-          map[r.id] = r.items
-        }
+        if (r.items.length === 0 && agencyGroupId[r.id]) map[r.id] = groupPlaylistMap[agencyGroupId[r.id]] || []
+        else map[r.id] = r.items
       })
       setPlaylists(map)
     }).catch(() => {})
@@ -136,31 +113,24 @@ export default function Reports() {
     const aid = opts.agencyId !== undefined ? opts.agencyId : agencyId
     const f = opts.from !== undefined ? opts.from : from
     const t = opts.to !== undefined ? opts.to : to
-    setLoading(true)
-    setError('')
+    setLoading(true); setError('')
     const params = {}
     if (aid) params.agency_id = aid
     if (f) params.from = f + 'T00:00:00'
     if (t) params.to = t + 'T23:59:59'
-    Promise.all([
-      getReportsSummary(params),
-      getPlayLog(params),
-    ])
+    Promise.all([getReportsSummary(params), getPlayLog(params)])
       .then(([sumData, logData]) => {
-        setSummary(sumData)
-        setLogs(logData)
+        setSummary(sumData); setLogs(logData)
         if (sumData.global.total_plays === 0) setError('Niciun rezultat pentru filtrele selectate.')
       })
       .catch(e => { setSummary(null); setLogs([]); setError('Eroare la încărcare: ' + (e?.message || 'unknown')) })
       .finally(() => setLoading(false))
 
-    // Uptime per TV — doar dacă e o singură zi
     const _dn = new Date()
     const _todayLocal = `${_dn.getFullYear()}-${String(_dn.getMonth()+1).padStart(2,'0')}-${String(_dn.getDate()).padStart(2,'0')}`
     const singleDay = f && t && f === t ? f : (!f && !t ? _todayLocal : null)
     if (singleDay) {
       setUptimeLoading(true)
-      // Obține TV-urile din agenția selectată sau toate
       const targetAgencies = aid ? agencies.filter(a => String(a.id) === String(aid)) : agencies
       Promise.all(
         targetAgencies.flatMap(a =>
@@ -175,15 +145,8 @@ export default function Reports() {
         results.filter(Boolean).forEach(r => { map[r.key] = r.data })
         setUptimeData(map)
       }).finally(() => setUptimeLoading(false))
-    } else {
-      setUptimeData({})
-    }
+    } else { setUptimeData({}) }
   }
-
-  const [uptimeData, setUptimeData] = useState({}) // { "agencyId:tvLabel": data }
-  const [uptimeLoading, setUptimeLoading] = useState(false)
-
-  const [nextRefresh, setNextRefresh] = useState(60)
 
   useEffect(() => {
     if (!hasFiltered) return
@@ -196,21 +159,15 @@ export default function Reports() {
   const _d = new Date()
   const today = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`
 
-  // Perioada selectată în secunde
   const periodStart = from ? new Date(from + 'T00:00:00') : null
   const periodEnd = to ? new Date(to + 'T23:59:59') : null
-  const periodSeconds = (periodStart && periodEnd)
-    ? Math.round((periodEnd - periodStart) / 1000)
-    : null
+  const periodSeconds = (periodStart && periodEnd) ? Math.round((periodEnd - periodStart) / 1000) : null
 
-  // Stats globale — din summary (date complete, fără limita de 200)
   const totalDuration = summary?.global?.total_seconds ?? 0
   const totalPlays = summary?.global?.total_plays ?? 0
   const uniqueFiles = summary?.global?.unique_files ?? 0
 
-  // Durata medie per fișier din log-uri (pentru calcul cicluri playlist)
-  const fileDurationSums = {}
-  const fileDurationCounts = {}
+  const fileDurationSums = {}, fileDurationCounts = {}
   logs.forEach(r => {
     if (r.duration_seconds > 0) {
       fileDurationSums[r.filename] = (fileDurationSums[r.filename] || 0) + r.duration_seconds
@@ -218,182 +175,162 @@ export default function Reports() {
     }
   })
   const avgDurations = {}
-  Object.keys(fileDurationSums).forEach(f => {
-    avgDurations[f] = Math.round(fileDurationSums[f] / fileDurationCounts[f])
-  })
+  Object.keys(fileDurationSums).forEach(f => { avgDurations[f] = Math.round(fileDurationSums[f] / fileDurationCounts[f]) })
 
-  // Per agenție — din summary
   const agencyMap = {}
   agencies.forEach(a => { agencyMap[a.id] = a })
 
   const byAgency = {}
-  ;(summary?.byAgency ?? []).forEach(r => {
-    byAgency[r.agency_id] = { plays: r.plays, total: r.total_seconds }
-  })
+  ;(summary?.byAgency ?? []).forEach(r => { byAgency[r.agency_id] = { plays: r.plays, total: r.total_seconds } })
 
-  // Per file breakdown — din summary
   const fileStats = (summary?.byFile ?? []).map(r => ({
-    name: r.original_name,
-    filename: r.filename,
-    type: r.media_type,
-    plays: r.plays,
-    total: r.total_seconds,
+    name: r.original_name, filename: r.filename, type: r.media_type, plays: r.plays, total: r.total_seconds,
   }))
   const maxTotal = fileStats[0]?.total || 1
 
+  const card = { background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, boxShadow:'var(--shadow-sm)' }
+  const inp = { height:36, padding:'0 12px', border:'1px solid var(--border)', borderRadius:8,
+    background:'var(--surface)', color:'var(--fg)', fontSize:13, outline:'none' }
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div style={{ padding:24 }}>
+      {/* Header */}
+      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:20 }}>
         <div>
-          <h2 className="text-xl font-bold text-gray-800">Proof of Play</h2>
-          <p className="text-sm text-gray-400 mt-0.5">
+          <h1 style={{ fontFamily:'Plus Jakarta Sans, sans-serif', fontWeight:800, fontSize:22, color:'var(--fg)', margin:0 }}>
+            Proof of Play
+          </h1>
+          <p style={{ fontSize:13, color:'var(--fg-3)', marginTop:3 }}>
             Istoric redare pe fiecare ecran
-            {hasFiltered && <span className="ml-2 text-gray-300">· actualizare în {nextRefresh}s</span>}
+            {hasFiltered && <span style={{ marginLeft:8, color:'var(--fg-3)' }}>· actualizare în {nextRefresh}s</span>}
           </p>
         </div>
         <button onClick={() => downloadExcel(summary, logs, agencies, playlists, avgDurations)} disabled={!summary}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 shadow-sm">
+          style={{ display:'inline-flex', alignItems:'center', gap:6, height:36, padding:'0 14px',
+            background:'var(--surface)', border:'1px solid var(--border)', borderRadius:8,
+            fontSize:13, fontWeight:500, color:'var(--fg-2)', cursor:'pointer', boxShadow:'var(--shadow-sm)',
+            opacity:!summary?.4:1 }}>
           ↓ Export Excel
         </button>
       </div>
 
-      {/* Filtre */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-6 flex items-end gap-4 flex-wrap">
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-400 font-medium uppercase tracking-wide">Agenție</label>
+      {/* Filters */}
+      <div style={{ ...card, padding:'14px 16px', marginBottom:20, display:'flex', alignItems:'flex-end', gap:14, flexWrap:'wrap' }}>
+        <div>
+          <label style={{ fontSize:11, color:'var(--fg-3)', fontWeight:600, display:'block', marginBottom:5, textTransform:'uppercase', letterSpacing:'.05em' }}>Agenție</label>
           <select value={agencyId} onChange={e => setAgencyId(e.target.value)}
-            className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            style={{ ...inp, minWidth:180 }}>
             <option value="">Toate agențiile</option>
             {agencies.map(a => <option key={a.id} value={a.id}>{a.name} · {a.city}</option>)}
           </select>
         </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-400 font-medium uppercase tracking-wide">De la</label>
-          <div className="relative cursor-pointer" onClick={() => fromRef.current?.showPicker?.() ?? fromRef.current?.click()}>
-            <input ref={fromRef} type="date" value={from} max={today} onChange={e => setFrom(e.target.value)}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-            <div className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 min-w-[170px] select-none">
-              {fmtDateDisplay(from)}
+        {[{label:'De la', ref:fromRef, val:from, set:setFrom},{label:'Până la', ref:toRef, val:to, set:setTo}].map(f => (
+          <div key={f.label}>
+            <label style={{ fontSize:11, color:'var(--fg-3)', fontWeight:600, display:'block', marginBottom:5, textTransform:'uppercase', letterSpacing:'.05em' }}>{f.label}</label>
+            <div style={{ position:'relative', cursor:'pointer' }} onClick={() => f.ref.current?.showPicker?.() ?? f.ref.current?.click()}>
+              <input ref={f.ref} type="date" value={f.val} max={today} onChange={e => f.set(e.target.value)}
+                style={{ position:'absolute', inset:0, width:'100%', height:'100%', opacity:0, cursor:'pointer' }} />
+              <div style={{ ...inp, minWidth:160, display:'flex', alignItems:'center', userSelect:'none' }}>
+                {fmtDateDisplay(f.val)}
+              </div>
             </div>
           </div>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-400 font-medium uppercase tracking-wide">Până la</label>
-          <div className="relative cursor-pointer" onClick={() => toRef.current?.showPicker?.() ?? toRef.current?.click()}>
-            <input ref={toRef} type="date" value={to} max={today} onChange={e => setTo(e.target.value)}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-            <div className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 min-w-[170px] select-none">
-              {fmtDateDisplay(to)}
-            </div>
-          </div>
-        </div>
+        ))}
         <button onClick={() => { setHasFiltered(true); load() }} disabled={loading}
-          className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60">
+          style={{ height:36, padding:'0 18px', background:'var(--accent)', color:'#fff',
+            border:'none', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer', opacity:loading?.6:1 }}>
           {loading ? 'Se încarcă...' : 'Filtrează'}
         </button>
         {(agencyId || from || to) && (
-          <button onClick={() => {
-            setAgencyId(''); setFrom(''); setTo(''); setHasFiltered(false); setSummary(null); setLogs([])
-          }} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-600">
+          <button onClick={() => { setAgencyId(''); setFrom(''); setTo(''); setHasFiltered(false); setSummary(null); setLogs([]) }}
+            style={{ fontSize:13, color:'var(--fg-3)', background:'none', border:'none', cursor:'pointer' }}>
             Resetează
           </button>
         )}
       </div>
 
       {error && hasFiltered && (
-        <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
+        <div style={{ marginBottom:16, padding:'10px 14px', background:'rgba(251,191,36,.1)',
+          border:'1px solid rgba(251,191,36,.3)', borderRadius:8, fontSize:13, color:'#B45309' }}>
           {error}
         </div>
       )}
 
-      {/* Carduri sumar */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-5">
-          <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1">Total redări</p>
-          <p className="text-3xl font-bold text-gray-800">{summary ? totalPlays : '—'}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-5">
-          <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1">Durată totală rulată</p>
-          <p className="text-3xl font-bold text-blue-600">{summary ? fmtDurationLong(totalDuration) : '—'}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-5">
-          <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1">Fișiere unice</p>
-          <p className="text-3xl font-bold text-gray-800">{summary ? uniqueFiles : '—'}</p>
-        </div>
+      {/* Summary tiles */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:14, marginBottom:20 }}>
+        {[
+          { label:'Total redări', val: summary ? String(totalPlays) : '—', color:'var(--fg)' },
+          { label:'Durată totală rulată', val: summary ? fmtDurationLong(totalDuration) : '—', color:'var(--accent)' },
+          { label:'Fișiere unice', val: summary ? String(uniqueFiles) : '—', color:'var(--fg)' },
+        ].map(t => (
+          <div key={t.label} style={{ ...card, padding:'18px 22px' }}>
+            <p style={{ fontSize:11, color:'var(--fg-3)', fontWeight:600, textTransform:'uppercase', letterSpacing:'.06em', margin:0 }}>{t.label}</p>
+            <p style={{ fontFamily:'Plus Jakarta Sans, sans-serif', fontWeight:800, fontSize:30, color:t.color, margin:'6px 0 0' }}>{t.val}</p>
+          </div>
+        ))}
       </div>
 
-      {/* Uptime / Downtime per TV */}
+      {/* Uptime per TV */}
       {(Object.keys(uptimeData).length > 0 || uptimeLoading) && (
-        <div className="mb-6">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">
+        <div style={{ marginBottom:20 }}>
+          <h3 style={{ fontSize:13.5, fontWeight:700, color:'var(--fg)', marginBottom:12 }}>
             Funcționare TV pe zi
-            {uptimeLoading && <span className="ml-2 text-gray-400 font-normal">Se încarcă...</span>}
+            {uptimeLoading && <span style={{ marginLeft:8, fontWeight:400, color:'var(--fg-3)' }}>Se încarcă...</span>}
           </h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:12 }}>
             {Object.entries(uptimeData).map(([key, d]) => {
               const [agId, ...tvParts] = key.split(':')
               const tvLabel = tvParts.join(':')
               const agency = agencyMap[agId]
+              const total = d.total_online_seconds + d.total_offline_seconds
+              const pct = total > 0 ? Math.round((d.total_online_seconds / total) * 100) : 0
               return (
-                <div key={key} className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                  <div className="flex items-start justify-between mb-4">
+                <div key={key} style={{ ...card, padding:18 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:14 }}>
                     <div>
-                      <p className="font-semibold text-gray-800">{agency?.name ?? `#${agId}`}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{tvLabel}</p>
+                      <p style={{ fontWeight:700, fontSize:14, color:'var(--fg)', margin:0 }}>{agency?.name ?? `#${agId}`}</p>
+                      <p style={{ fontSize:12, color:'var(--fg-3)', marginTop:2 }}>{tvLabel}</p>
                     </div>
-                    <div className="text-right">
+                    <div style={{ textAlign:'right' }}>
                       {d.no_data
-                        ? <p className="text-xs text-red-500 font-semibold">❌ offline</p>
+                        ? <p style={{ fontSize:12, color:'#DC2626', fontWeight:600 }}>❌ offline</p>
                         : <>
-                          <p className="text-xs text-green-600 font-semibold">✅ {d.total_online_formatted} online</p>
-                          {d.total_offline_seconds > 0 && (
-                            <p className="text-xs text-red-500 font-semibold">❌ {d.total_offline_formatted} offline</p>
-                          )}
+                          <p style={{ fontSize:12, color:'#059669', fontWeight:600 }}>✅ {d.total_online_formatted} online</p>
+                          {d.total_offline_seconds > 0 && <p style={{ fontSize:12, color:'#DC2626', fontWeight:600 }}>❌ {d.total_offline_formatted} offline</p>}
                         </>
                       }
                     </div>
                   </div>
-
-                  {/* Bara uptime vizuală */}
-                  {!d.no_data && (() => {
-                    const total = d.total_online_seconds + d.total_offline_seconds
-                    const pct = total > 0 ? Math.round((d.total_online_seconds / total) * 100) : 0
-                    return (
-                      <div className="mb-4">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs text-gray-400">Uptime</span>
-                          <span className={`text-xs font-bold ${pct >= 90 ? 'text-green-600' : pct >= 50 ? 'text-amber-600' : 'text-red-500'}`}>{pct}%</span>
-                        </div>
-                        <div className="h-2 bg-red-100 rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full ${pct >= 90 ? 'bg-green-500' : pct >= 50 ? 'bg-amber-400' : 'bg-red-400'}`}
-                            style={{ width: `${pct}%` }} />
-                        </div>
+                  {!d.no_data && (
+                    <div style={{ marginBottom:14 }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
+                        <span style={{ fontSize:11.5, color:'var(--fg-3)' }}>Uptime</span>
+                        <span style={{ fontSize:12, fontWeight:700, color: pct>=90?'#059669':pct>=50?'#D97706':'#DC2626' }}>{pct}%</span>
                       </div>
-                    )
-                  })()}
-
-                  {d.no_data && (
-                    <p className="text-xs text-red-500 font-semibold">❌ Offline toată ziua</p>
-                  )}
-
-                  {/* Perioade offline */}
-                  {!d.no_data && d.offline_periods.length === 0 ? (
-                    <p className="text-xs text-green-600">✓ Nicio perioadă de nefuncționare înregistrată.</p>
-                  ) : !d.no_data && (
-                    <div>
-                      <p className="text-xs text-gray-400 font-medium mb-2">Perioade nefuncționare:</p>
-                      <div className="space-y-1">
-                        {d.offline_periods.map((p, i) => (
-                          <div key={i} className="flex items-center justify-between text-xs bg-red-50 rounded px-3 py-1.5">
-                            <span className="text-red-600 font-medium">
-                              {p.from} – {p.to}
-                            </span>
-                            <span className="text-red-400">{p.duration_formatted}</span>
-                          </div>
-                        ))}
+                      <div style={{ height:6, background:'rgba(239,68,68,.12)', borderRadius:99, overflow:'hidden' }}>
+                        <div style={{ height:6, borderRadius:99, width:`${pct}%`,
+                          background: pct>=90?'#10B981':pct>=50?'#F59E0B':'#EF4444' }} />
                       </div>
                     </div>
                   )}
+                  {d.no_data && <p style={{ fontSize:12, color:'#DC2626', fontWeight:600 }}>❌ Offline toată ziua</p>}
+                  {!d.no_data && d.offline_periods.length === 0
+                    ? <p style={{ fontSize:12, color:'#059669' }}>✓ Nicio perioadă de nefuncționare înregistrată.</p>
+                    : !d.no_data && (
+                      <div>
+                        <p style={{ fontSize:11.5, color:'var(--fg-3)', fontWeight:600, marginBottom:6 }}>Perioade nefuncționare:</p>
+                        <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+                          {d.offline_periods.map((p, i) => (
+                            <div key={i} style={{ display:'flex', justifyContent:'space-between', fontSize:12,
+                              background:'rgba(239,68,68,.06)', border:'1px solid rgba(239,68,68,.12)', borderRadius:6, padding:'4px 10px' }}>
+                              <span style={{ color:'#DC2626', fontWeight:600 }}>{p.from} – {p.to}</span>
+                              <span style={{ color:'#F87171' }}>{p.duration_formatted}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  }
                 </div>
               )
             })}
@@ -401,11 +338,11 @@ export default function Reports() {
         </div>
       )}
 
-      {/* Statistici playlist per agenție */}
+      {/* Playlist cycles per agency */}
       {Object.keys(byAgency).length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Cicluri playlist per agenție</h3>
-          <div className="grid grid-cols-2 gap-4">
+        <div style={{ marginBottom:20 }}>
+          <h3 style={{ fontSize:13.5, fontWeight:700, color:'var(--fg)', marginBottom:12 }}>Cicluri playlist per agenție</h3>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:12 }}>
             {Object.entries(byAgency).map(([agId, data]) => {
               const agency = agencyMap[agId]
               const items = playlists[agId] || []
@@ -414,63 +351,51 @@ export default function Reports() {
               const remainder = pd > 0 ? data.total % pd : 0
               const expectedCycles = (pd > 0 && periodSeconds) ? Math.floor(periodSeconds / pd) : null
               const uptime = expectedCycles ? Math.min(100, Math.round((cycles / expectedCycles) * 100)) : null
-
               return (
-                <div key={agId} className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                  <div className="flex items-start justify-between mb-4">
+                <div key={agId} style={{ ...card, padding:18 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:14 }}>
                     <div>
-                      <p className="font-semibold text-gray-800">{agency?.name ?? `Agenție #${agId}`}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{agency?.city}</p>
+                      <p style={{ fontWeight:700, fontSize:14, color:'var(--fg)', margin:0 }}>{agency?.name ?? `Agenție #${agId}`}</p>
+                      <p style={{ fontSize:12, color:'var(--fg-3)', marginTop:2 }}>{agency?.city}</p>
                     </div>
                     {pd > 0 && (
-                      <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded font-mono">
+                      <span style={{ fontSize:11.5, background:'var(--surface-2)', color:'var(--fg-3)',
+                        padding:'3px 8px', borderRadius:6, fontFamily:'monospace', border:'1px solid var(--border)' }}>
                         playlist {fmtDurationLong(pd)}
                       </span>
                     )}
                   </div>
-
-                  <div className="grid grid-cols-3 gap-3 mb-4">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-blue-600">{cycles ?? '—'}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">cicluri complete</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-gray-700">{fmtDurationLong(data.total)}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">timp rulat</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-gray-700">{data.plays}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">redări fișiere</p>
-                    </div>
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginBottom:12 }}>
+                    {[
+                      { val: cycles ?? '—', label:'cicluri complete', color:'var(--accent)' },
+                      { val: fmtDurationLong(data.total), label:'timp rulat', color:'var(--fg)' },
+                      { val: data.plays, label:'redări fișiere', color:'var(--fg)' },
+                    ].map(s => (
+                      <div key={s.label} style={{ textAlign:'center' }}>
+                        <p style={{ fontFamily:'Plus Jakarta Sans, sans-serif', fontWeight:800, fontSize:22,
+                          color:s.color, margin:0 }}>{s.val}</p>
+                        <p style={{ fontSize:11, color:'var(--fg-3)', marginTop:3 }}>{s.label}</p>
+                      </div>
+                    ))}
                   </div>
-
                   {remainder > 0 && (
-                    <p className="text-xs text-gray-400 mb-3">
+                    <p style={{ fontSize:12, color:'var(--fg-3)', marginBottom:10 }}>
                       + {fmtDurationLong(remainder)} din ciclul curent (nefinalizat)
                     </p>
                   )}
-
                   {uptime !== null && (
                     <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-gray-400">Uptime față de așteptat ({expectedCycles} cicluri)</span>
-                        <span className={`text-xs font-semibold ${uptime >= 90 ? 'text-green-600' : uptime >= 50 ? 'text-amber-600' : 'text-red-500'}`}>
-                          {uptime}%
-                        </span>
+                      <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
+                        <span style={{ fontSize:11.5, color:'var(--fg-3)' }}>Uptime față de așteptat ({expectedCycles} cicluri)</span>
+                        <span style={{ fontSize:12, fontWeight:700, color: uptime>=90?'#059669':uptime>=50?'#D97706':'#DC2626' }}>{uptime}%</span>
                       </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full transition-all ${uptime >= 90 ? 'bg-green-500' : uptime >= 50 ? 'bg-amber-400' : 'bg-red-400'}`}
-                          style={{ width: `${uptime}%` }} />
+                      <div style={{ height:6, background:'var(--border)', borderRadius:99, overflow:'hidden' }}>
+                        <div style={{ height:6, borderRadius:99, transition:'width .3s', width:`${uptime}%`,
+                          background: uptime>=90?'#10B981':uptime>=50?'#F59E0B':'#EF4444' }} />
                       </div>
                     </div>
                   )}
-
-                  {items.length === 0 && (
-                    <p className="text-xs text-amber-600">Playlist gol — nu se poate calcula cicluri</p>
-                  )}
-                  {items.length > 0 && pd === 0 && (
-                    <p className="text-xs text-amber-600">Durată video necunoscută — nu se poate calcula cicluri</p>
-                  )}
+                  {items.length === 0 && <p style={{ fontSize:12, color:'#D97706' }}>Playlist gol — nu se poate calcula cicluri</p>}
                 </div>
               )
             })}
@@ -478,92 +403,104 @@ export default function Reports() {
         </div>
       )}
 
-      {/* Grafic per fișier */}
-      <div className="grid grid-cols-3 gap-6 mb-6">
-        <div className="col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-800 text-sm">Timp de rulare per fișier</h3>
+      {/* Charts */}
+      <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:16, marginBottom:20 }}>
+        <div style={{ ...card, overflow:'hidden' }}>
+          <div style={{ padding:'14px 20px', borderBottom:'1px solid var(--border)' }}>
+            <h3 style={{ fontSize:13.5, fontWeight:700, color:'var(--fg)', margin:0 }}>Timp de rulare per fișier</h3>
           </div>
-          <div className="px-5 py-4 space-y-3">
-            {fileStats.length === 0 && <p className="text-sm text-gray-400 text-center py-4">Nicio înregistrare</p>}
+          <div style={{ padding:'14px 20px', display:'flex', flexDirection:'column', gap:12 }}>
+            {fileStats.length === 0 && <p style={{ fontSize:13, color:'var(--fg-3)', textAlign:'center', padding:'20px 0' }}>Nicio înregistrare</p>}
             {fileStats.map(f => (
               <div key={f.name}>
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium shrink-0
-                      ${f.type === 'video' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:7, minWidth:0 }}>
+                    <span style={{ fontSize:11, fontWeight:700, padding:'1px 6px', borderRadius:5, flexShrink:0,
+                      background: f.type==='video' ? 'rgba(124,58,237,.1)' : 'rgba(37,99,235,.08)',
+                      color: f.type==='video' ? '#7C3AED' : 'var(--accent)' }}>
                       {f.type === 'video' ? '▶' : '🖼'}
                     </span>
-                    <span className="text-sm text-gray-700 truncate">{f.name}</span>
+                    <span style={{ fontSize:13, color:'var(--fg-2)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{f.name}</span>
                   </div>
-                  <div className="flex items-center gap-3 shrink-0 ml-3">
-                    <span className="text-xs text-gray-400">{f.plays}×</span>
-                    <span className="text-sm font-semibold text-gray-700 tabular-nums w-16 text-right">{fmtDurationLong(f.total)}</span>
+                  <div style={{ display:'flex', alignItems:'center', gap:12, flexShrink:0, marginLeft:12 }}>
+                    <span style={{ fontSize:12, color:'var(--fg-3)' }}>{f.plays}×</span>
+                    <span style={{ fontSize:13, fontWeight:700, color:'var(--fg)', fontVariantNumeric:'tabular-nums', width:64, textAlign:'right' }}>{fmtDurationLong(f.total)}</span>
                   </div>
                 </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full ${f.type === 'video' ? 'bg-purple-400' : 'bg-blue-400'}`}
-                    style={{ width: `${Math.round((f.total / maxTotal) * 100)}%` }} />
+                <div style={{ height:5, background:'var(--border)', borderRadius:99, overflow:'hidden' }}>
+                  <div style={{ height:5, borderRadius:99,
+                    background: f.type==='video' ? '#A78BFA' : '#93C5FD',
+                    width:`${Math.round((f.total/maxTotal)*100)}%` }} />
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-800 text-sm">Per agenție</h3>
+        <div style={{ ...card, overflow:'hidden' }}>
+          <div style={{ padding:'14px 20px', borderBottom:'1px solid var(--border)' }}>
+            <h3 style={{ fontSize:13.5, fontWeight:700, color:'var(--fg)', margin:0 }}>Per agenție</h3>
           </div>
-          <div className="divide-y divide-gray-50">
-            {Object.entries(byAgency).length === 0 && <p className="text-sm text-gray-400 text-center py-6">Nicio înregistrare</p>}
-            {Object.entries(byAgency).sort((a, b) => b[1].total - a[1].total).map(([id, data]) => (
-              <div key={id} className="px-5 py-3 flex items-center justify-between">
+          <div>
+            {Object.entries(byAgency).length === 0 && (
+              <p style={{ fontSize:13, color:'var(--fg-3)', textAlign:'center', padding:'28px 0' }}>Nicio înregistrare</p>
+            )}
+            {Object.entries(byAgency).sort((a,b) => b[1].total - a[1].total).map(([id, data]) => (
+              <div key={id} style={{ padding:'10px 20px', borderBottom:'1px solid var(--border)',
+                display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                 <div>
-                  <p className="text-sm font-medium text-gray-700">{agencyMap[id]?.name ?? `#${id}`}</p>
-                  <p className="text-xs text-gray-400">{data.plays} redări</p>
+                  <p style={{ fontSize:13, fontWeight:600, color:'var(--fg)', margin:0 }}>{agencyMap[id]?.name ?? `#${id}`}</p>
+                  <p style={{ fontSize:11.5, color:'var(--fg-3)', marginTop:1 }}>{data.plays} redări</p>
                 </div>
-                <span className="text-sm font-bold text-blue-600 tabular-nums">{fmtDurationLong(data.total)}</span>
+                <span style={{ fontSize:13.5, fontWeight:800, color:'var(--accent)', fontFamily:'Plus Jakarta Sans, sans-serif', fontVariantNumeric:'tabular-nums' }}>
+                  {fmtDurationLong(data.total)}
+                </span>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Tabel detaliat */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-700">
+      {/* Table */}
+      <div style={{ ...card, overflow:'hidden' }}>
+        <div style={{ padding:'12px 20px', borderBottom:'1px solid var(--border)' }}>
+          <h3 style={{ fontSize:13, fontWeight:700, color:'var(--fg)', margin:0 }}>
             {loading ? 'Se încarcă...' : `${logs.length} înregistrări recente${totalPlays > logs.length ? ` (din ${totalPlays} total)` : ''}`}
           </h3>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-400 text-xs uppercase">
-              <tr>
+        <div style={{ overflowX:'auto' }}>
+          <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+            <thead>
+              <tr style={{ background:'var(--surface-2)' }}>
                 {['Data / Ora', 'Agenție', 'TV', 'Fișier', 'Tip', 'Durată'].map(h => (
-                  <th key={h} className="text-left px-5 py-3">{h}</th>
+                  <th key={h} style={{ textAlign:'left', padding:'10px 20px', fontSize:11, fontWeight:700,
+                    color:'var(--fg-3)', textTransform:'uppercase', letterSpacing:'.05em', whiteSpace:'nowrap' }}>
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {logs.length === 0 && !loading && (
-                <tr><td colSpan={6} className="px-5 py-10 text-center text-gray-400 text-sm">
+                <tr><td colSpan={6} style={{ padding:'40px 20px', textAlign:'center', color:'var(--fg-3)', fontSize:13 }}>
                   Nicio înregistrare. Playerul raportează automat după ce fiecare fișier se termină.
                 </td></tr>
               )}
-              {logs.map(r => (
-                <tr key={r.id} className="border-t hover:bg-gray-50/60">
-                  <td className="px-5 py-3 text-gray-500 whitespace-nowrap">{fmt(r.played_at)}</td>
-                  <td className="px-5 py-3 text-gray-600">{agencyMap[r.agency_id]?.name ?? `#${r.agency_id}`}</td>
-                  <td className="px-5 py-3 font-medium text-gray-700">{r.tv_label}</td>
-                  <td className="px-5 py-3 text-gray-600 max-w-xs truncate" title={r.original_name}>{r.original_name}</td>
-                  <td className="px-5 py-3">
-                    <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full
-                      ${r.media_type === 'video' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+              {logs.map((r, i) => (
+                <tr key={r.id} style={{ borderTop:'1px solid var(--border)', background: i%2===0 ? 'transparent' : 'var(--surface-2)' }}>
+                  <td style={{ padding:'10px 20px', color:'var(--fg-3)', whiteSpace:'nowrap' }}>{fmt(r.played_at)}</td>
+                  <td style={{ padding:'10px 20px', color:'var(--fg-2)' }}>{agencyMap[r.agency_id]?.name ?? `#${r.agency_id}`}</td>
+                  <td style={{ padding:'10px 20px', fontWeight:600, color:'var(--fg)' }}>{r.tv_label}</td>
+                  <td style={{ padding:'10px 20px', color:'var(--fg-2)', maxWidth:260, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={r.original_name}>{r.original_name}</td>
+                  <td style={{ padding:'10px 20px' }}>
+                    <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11.5, fontWeight:600,
+                      padding:'2px 8px', borderRadius:99,
+                      background: r.media_type==='video' ? 'rgba(124,58,237,.1)' : 'rgba(37,99,235,.08)',
+                      color: r.media_type==='video' ? '#7C3AED' : 'var(--accent)' }}>
                       {r.media_type === 'video' ? '▶ video' : '🖼 imagine'}
                     </span>
                   </td>
-                  <td className="px-5 py-3 text-gray-500 tabular-nums">{fmtDuration(r.duration_seconds)}</td>
+                  <td style={{ padding:'10px 20px', color:'var(--fg-3)', fontVariantNumeric:'tabular-nums' }}>{fmtDuration(r.duration_seconds)}</td>
                 </tr>
               ))}
             </tbody>

@@ -2,7 +2,10 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { getDb } from './db.js'
 
-const SECRET = process.env.JWT_SECRET || 'changeme-in-production'
+const SECRET = process.env.JWT_SECRET
+if (!SECRET || SECRET === 'changeme-in-production') {
+  throw new Error('JWT_SECRET lipsește sau are valoarea implicită. Setează JWT_SECRET în .env înainte de pornire.')
+}
 
 export function loginHandler(req, res) {
   const { email, password } = req.body

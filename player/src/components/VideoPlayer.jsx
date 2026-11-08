@@ -32,7 +32,7 @@ export default function VideoPlayer({ src, onEnded, seamless, onLoop }) {
       muted
       playsInline
       onEnded={handleEnded}
-      style={{ width: '100%', height: '100%', objectFit: 'cover', background: 'black' }}
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', background: 'black' }}
     />
   )
 }

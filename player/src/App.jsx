@@ -20,7 +20,9 @@ function toLocalISO(date) {
 
 const _urlParams = new URLSearchParams(window.location.search)
 const IS_PORTRAIT = _urlParams.get('portrait') === '1'
-const portraitStyle = IS_PORTRAIT ? {
+const IS_PREVIEW = _urlParams.get('preview') === '1'
+// In preview mode the window is already portrait-sized — no rotation needed
+const portraitStyle = (IS_PORTRAIT && !IS_PREVIEW) ? {
   position: 'fixed',
   width: '100vh',
   height: '100vw',
@@ -32,7 +34,7 @@ const portraitStyle = IS_PORTRAIT ? {
 } : null
 
 function wrap(el) {
-  return IS_PORTRAIT ? <div style={portraitStyle}>{el}</div> : el
+  return portraitStyle ? <div style={portraitStyle}>{el}</div> : el
 }
 
 export default function App() {
@@ -259,6 +261,73 @@ export default function App() {
     return <ForexDisplay rates={forexRates?.rates} updatedAt={forexRates?.updatedAt} />
   }
 
+  // Preview mode: show TV device frame mockup
+  if (IS_PREVIEW) {
+    const shellStyle = IS_PORTRAIT ? {
+      height: 'min(calc(100vh - 80px), 900px)',
+      aspectRatio: '9/16',
+      borderRadius: 28,
+      padding: '14px 14px 48px',
+    } : {
+      width: 'min(calc(100vw - 40px), 1060px)',
+      aspectRatio: '16/9',
+      borderRadius: 18,
+      padding: '14px 14px 56px',
+    }
+    const labelText = agencyName || 'DisplayIQ Player'
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: '#0f0f0f', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+        {/* Label above TV — like Spectro:o */}
+        <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, fontFamily: 'system-ui, sans-serif', letterSpacing: '0.04em', userSelect: 'none' }}>
+          {labelText}
+        </div>
+        {/* TV shell */}
+        <div style={{
+          ...shellStyle,
+          background: '#242424',
+          boxShadow: '0 40px 100px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.07), inset 0 1px 0 rgba(255,255,255,0.11)',
+          flexShrink: 0,
+          position: 'relative',
+        }}>
+          {/* Screen */}
+          <div style={{
+            position: 'absolute',
+            top: 14, left: 14, right: 14, bottom: IS_PORTRAIT ? 48 : 56,
+            background: '#000',
+            borderRadius: IS_PORTRAIT ? 14 : 8,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
+            {/* Agency name badge */}
+            {showAgencyName && agencyName && (
+              <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 10, background: 'rgba(0,0,0,0.55)', borderRadius: 6, padding: '4px 10px', fontSize: 12, color: 'rgba(255,255,255,0.85)', fontFamily: 'sans-serif' }}>
+                {agencyName}
+              </div>
+            )}
+            {/* Content */}
+            {!ready || playlist.length === 0 ? (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12 }}>
+                  {connected ? 'Se încarcă...' : 'Conectare...'}
+                </p>
+              </div>
+            ) : (
+              <div className={animClass} style={{ flex: 1, overflow: 'hidden', minHeight: 0, position: 'relative' }}>
+                {src && current.type === 'video' && (
+                  seamless
+                    ? <VideoPlayer key={src} src={src} seamless onLoop={logCurrentPlay} />
+                    : <VideoPlayer key={playCount} src={src} onEnded={next} />
+                )}
+                {src && current.type === 'image' && <ImageDisplay key={playCount} src={src} duration={current.display_duration_seconds} onEnded={next} />}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (!ready || playlist.length === 0) {
     return wrap(
       <div style={{ width: '100vh', height: '100vw', background: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -268,8 +337,6 @@ export default function App() {
       </div>
     )
   }
-  const tickerHeight = ratesData ? 88 : 0
-
   return wrap(
     <div style={{ position: 'fixed', inset: 0, background: 'black', display: 'flex', flexDirection: 'column' }}>
       <div style={{ position: 'fixed', top: 12, left: 12, zIndex: 200, display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -312,7 +379,6 @@ export default function App() {
         )}
         {src && current.type === 'image' && <ImageDisplay key={playCount} src={src} duration={current.display_duration_seconds} onEnded={next} />}
       </div>
-      {ratesData && <Ticker rates={ratesData?.rates} updatedAt={ratesData?.updatedAt} />}
       {!screenOn && (
         <div style={{
           position: 'fixed', inset: 0, background: 'black', zIndex: 9999,

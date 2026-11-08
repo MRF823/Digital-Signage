@@ -19,13 +19,15 @@ import settingsRoutes from './routes/settings.js'
 import userRoutes from './routes/users.js'
 import { loginHandler, requireAuth, requireOperator, requireAdmin } from './auth.js'
 import rateLimit from 'express-rate-limit'
-import { initScheduler } from './scheduler.js'
+import { initScheduler, generateAndSendDailyReport } from './scheduler.js'
 import aiRoutes from './routes/ai.js'
 import { initRates, getCurrentRates } from './rates.js'
 import { todayRo, futureDateRo } from './dateRo.js'
 import { initForex, getCurrentForexRates } from './forex.js'
+import { logActivity } from './activityLog.js'
 
 const loginRateLimit = rateLimit({ windowMs: 15 * 60_000, max: 10 })
+const aiLimiter = rateLimit({ windowMs: 60_000, max: 10, message: { error: 'Prea multe cereri AI. Încearcă în câteva secunde.' } })
 const writeLimiter = rateLimit({
   windowMs: 60_000,
   max: 30,
@@ -37,7 +39,10 @@ const app = express()
 const httpServer = createServer(app)
 
 app.set('trust proxy', 1)
-app.use(cors({ origin: true }))
+app.use(cors({
+  origin: ['https://displayiq.funkymedia.ro', 'http://localhost:5173', 'http://localhost:4173'],
+  credentials: true,
+}))
 app.use(express.json())
 app.use(rateLimit({ windowMs: 60_000, max: 200 }))
 app.use(writeLimiter)
@@ -48,7 +53,14 @@ initScheduler()
 initRates()
 initForex()
 
-app.post('/api/login', loginRateLimit, loginHandler)
+app.post('/api/login', loginRateLimit, (req, res, next) => {
+  const origJson = res.json.bind(res)
+  res.json = (body) => {
+    if (body?.token) logActivity(body.email || req.body?.email, body.name || '', 'Login')
+    return origJson(body)
+  }
+  loginHandler(req, res, next)
+})
 app.get('/api/rates', (req, res) => res.json(getCurrentRates() || {}))
 app.get('/api/forex/rates', (req, res) => res.json(getCurrentForexRates() || {}))
 app.get('/api/stats', requireAuth, (req, res) => {
@@ -58,6 +70,85 @@ app.get('/api/stats', requireAuth, (req, res) => {
     const { count } = db.prepare('SELECT COUNT(*) as count FROM play_log WHERE played_at >= ?').get(since)
     const { active_files } = db.prepare('SELECT COUNT(DISTINCT media_id) as active_files FROM playlist_items').get()
     res.json({ plays_24h: count, active_files })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Uptime % per zi pentru ultimele 7 zile (toate TV-urile combinate)
+app.get('/api/stats/uptime-7d', requireAuth, (req, res) => {
+  try {
+    const db = getDb()
+    const TZ_OFFSET_MS = 2 * 3600 * 1000 // EET Romania (UTC+2, oct-mar)
+    const { tv_count } = db.prepare(`SELECT COUNT(*) as tv_count FROM tvs`).get()
+    const DAY_SECONDS = 86400
+
+    // Ziua curentă în ora României (0=Lu ... 6=Du)
+    const nowLocalMs = Date.now() + TZ_OFFSET_MS
+    const dowUtc = new Date(nowLocalMs).getUTCDay() // 0=Sun
+    const todayIndex = dowUtc === 0 ? 6 : dowUtc - 1 // 0=Lu, 6=Du
+
+    // Luni din săptămâna curentă (ora România)
+    const todayLocalMidnightMs = Math.floor(nowLocalMs / (DAY_SECONDS * 1000)) * DAY_SECONDS * 1000
+    const mondayLocalMidnightMs = todayLocalMidnightMs - todayIndex * DAY_SECONDS * 1000
+
+    const result = []
+    for (let i = 0; i < 7; i++) {
+      // Lu-Sâ (i=0..5): săptămâna curentă; zilele viitoare = null
+      // Du (i=6): mereu duminica precedentă (sau azi dacă azi e duminică)
+      let dayStartMs
+      if (i < 6) {
+        if (i > todayIndex) { result.push(null); continue }
+        dayStartMs = mondayLocalMidnightMs + i * DAY_SECONDS * 1000
+      } else {
+        // Du: azi (todayIndex=6) → azi; Lu-Vi (0-4) → duminica trecută; Sâ (5) → reset (null)
+        if (todayIndex === 6) {
+          dayStartMs = mondayLocalMidnightMs + 6 * DAY_SECONDS * 1000
+        } else if (todayIndex === 5) {
+          result.push(null); continue
+        } else {
+          dayStartMs = mondayLocalMidnightMs - DAY_SECONDS * 1000
+        }
+      }
+      const dayEndMs = dayStartMs + DAY_SECONDS * 1000 - 1
+      const dayStart   = new Date(dayStartMs - TZ_OFFSET_MS).toISOString().replace('T', ' ').slice(0, 19)
+      const dayEnd     = new Date(dayEndMs   - TZ_OFFSET_MS).toISOString().replace('T', ' ').slice(0, 19)
+
+      const sessions = db.prepare(`
+        SELECT agency_id, tv_label, connected_at, disconnected_at FROM tv_uptime
+        WHERE connected_at <= ? AND (disconnected_at >= ? OR disconnected_at IS NULL)
+      `).all(dayEnd, dayStart)
+
+      const dayStartSec = new Date(dayStart.replace(' ', 'T') + 'Z').getTime() / 1000
+      const dayEndSec   = new Date(dayEnd.replace(' ', 'T') + 'Z').getTime() / 1000
+      const toSec = t => new Date(t.replace(' ', 'T') + 'Z').getTime() / 1000
+      const clamp = (v, a, b) => Math.max(a, Math.min(b, v))
+
+      // Grupăm sesiunile pe TV (agency_id + tv_label)
+      const tvMap = {}
+      for (const s of sessions) {
+        const key = `${s.agency_id}::${s.tv_label}`
+        if (!tvMap[key]) tvMap[key] = []
+        tvMap[key].push(s)
+      }
+      const tvKeys = Object.keys(tvMap)
+      if (tvKeys.length === 0) { result.push(0); continue }
+
+      // Calculăm uptime % pentru fiecare TV care s-a conectat, apoi facem media
+      let totalPct = 0
+      for (const key of tvKeys) {
+        let onlineSec = 0
+        for (const s of tvMap[key]) {
+          const start = clamp(toSec(s.connected_at), dayStartSec, dayEndSec)
+          const end   = s.disconnected_at ? clamp(toSec(s.disconnected_at), dayStartSec, dayEndSec) : dayEndSec
+          if (end > start) onlineSec += end - start
+        }
+        totalPct += Math.min(100, (onlineSec / DAY_SECONDS) * 100)
+      }
+      result.push(Math.round(totalPct / tvKeys.length))
+    }
+
+    res.json({ days: result, todayIndex })
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
@@ -213,8 +304,8 @@ app.get('/api/info/public/:agencyId', (req, res) => {
   }
 })
 
-// Upcoming campaign media — public, returnează filenames pentru campaniile care incep in urmatoarele `days` zile
-app.get('/api/upcoming-media', (req, res) => {
+// Upcoming campaign media — necesită autentificare
+app.get('/api/upcoming-media', requireAuth, (req, res) => {
   try {
     const db = getDb()
     const agencyId = req.query.agencyId
@@ -253,9 +344,30 @@ app.use('/api/groups/:id/schedules', requireOperator, scheduleRoutes)
 app.use('/api/campaigns', requireOperator, campaignRoutes)
 app.use('/api/info', requireOperator, infoRoutes)
 app.use('/api/settings', requireAdmin, settingsRoutes)
-app.use('/api/ai', requireAuth, aiRoutes)
+app.use('/api/ai', requireAuth, aiLimiter, aiRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/auth', userRoutes)
+
+app.post('/api/test-daily-report', requireAdmin, async (req, res) => {
+  try {
+    await generateAndSendDailyReport()
+    res.json({ ok: true })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.get('/api/activity-log', requireAdmin, (req, res) => {
+  try {
+    const { limit = 200, offset = 0 } = req.query
+    const rows = getDb().prepare(
+      'SELECT * FROM activity_log ORDER BY created_at DESC LIMIT ? OFFSET ?'
+    ).all(Number(limit), Number(offset))
+    res.json(rows)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
 
 app.get('/api/diagnostics/:agencyId', requireAuth, (req, res) => {
   const { tvLabel } = req.query
@@ -265,21 +377,25 @@ app.get('/api/diagnostics/:agencyId', requireAuth, (req, res) => {
 
 app.post('/api/players/reload', requireOperator, (req, res) => {
   pushReloadToAll()
+  logActivity(req.user.email, req.user.name, 'Push reload playere')
   res.json({ ok: true })
 })
 
 app.post('/api/players/sync-media', requireOperator, (req, res) => {
   pushSyncMediaToAll()
+  logActivity(req.user.email, req.user.name, 'Sincronizare media')
   res.json({ ok: true })
 })
 
 app.post('/api/players/trigger-update', requireOperator, (req, res) => {
   const count = pushTriggerUpdate()
+  logActivity(req.user.email, req.user.name, 'Trigger update agenți', { agents: count })
   res.json({ ok: true, agents: count })
 })
 
 app.post('/api/players/reload-all', requireOperator, (req, res) => {
   pushReloadToAll()
+  logActivity(req.user.email, req.user.name, 'Push reload playere (toți)')
   res.json({ ok: true })
 })
 

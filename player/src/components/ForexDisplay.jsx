@@ -45,9 +45,6 @@ export default function ForexDisplay({ rates, updatedAt }) {
             CURSURI DE SCHIMB VALUTAR
           </span>
         </div>
-        <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13, textAlign: 'right' }}>
-          {updatedAt ? `Ultima actualizare: ${formatUpdated(updatedAt)}` : ''}
-        </div>
       </div>
 
       {/* Main content */}
@@ -143,6 +140,11 @@ export default function ForexDisplay({ rates, updatedAt }) {
         background: 'rgba(0,0,0,0.25)',
         flexShrink: 0,
       }}>
+        {updatedAt && (
+          <div style={{ color: '#fff', fontSize: 16, fontWeight: 700, textAlign: 'center', marginBottom: 8 }}>
+            Ultima actualizare: {formatUpdated(updatedAt)}
+          </div>
+        )}
         <div style={{ color: 'rgba(255,255,255,0.22)', fontSize: 15, lineHeight: 1.6 }}>
           <div>Cursurile CEC Bank se pot modifica de mai multe ori pe parcursul unei zile, în funcție de mișcările pieței valutare interbancare.</div>
           <div>În cazul schimburilor valutare inițiate online, de persoane fizice, se aplică cursul valutar mai avantajos, valabil pe Internet și Mobile Banking.</div>

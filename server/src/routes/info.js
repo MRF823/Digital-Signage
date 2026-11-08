@@ -1,10 +1,11 @@
 import { Router } from 'express'
 import multer from 'multer'
 import path from 'path'
-import { existsSync } from 'fs'
+import { fileTypeFromFile } from 'file-type'
 import { getDb } from '../db.js'
 import { UPLOADS_DIR, ensureUploadsDir, deleteFile } from '../storage.js'
 import { pushInfoDocs, pushInfoPower, pushInfoMode } from '../websocket.js'
+import { logActivity } from '../activityLog.js'
 
 const router = Router()
 
@@ -42,9 +43,17 @@ router.post('/:agencyId/upload', (req, res) => {
   const agencyId = parseInt(req.params.agencyId, 10)
   if (isNaN(agencyId)) return res.status(400).json({ error: 'Invalid agencyId' })
   ensureUploadsDir()
-  upload.single('file')(req, res, (err) => {
+  upload.single('file')(req, res, async (err) => {
     if (err) return res.status(400).json({ error: err.message })
     if (!req.file) return res.status(400).json({ error: 'No file provided' })
+
+    const detected = await fileTypeFromFile(req.file.path).catch(() => null)
+    const detectedMime = detected?.mime || req.file.mimetype
+    if (detectedMime !== 'application/pdf') {
+      deleteFile(req.file.filename)
+      return res.status(400).json({ error: 'Doar fișiere PDF sunt permise.' })
+    }
+
     const side = req.body.side === 'rotativ' ? 'rotativ' : 'static'
     const db = getDb()
     if (!db.prepare('SELECT id FROM agencies WHERE id = ?').get(agencyId)) {
@@ -153,6 +162,7 @@ router.post('/tv/:tvId/toggle', (req, res) => {
     const newMode = tv.info_mode ? 0 : 1
     db.prepare('UPDATE tvs SET info_mode = ? WHERE id = ?').run(newMode, tvId)
     pushInfoMode(tv.agency_id, tv.label, newMode === 1)
+    logActivity(req.user?.email || 'sistem', req.user?.name || '', `Info Obligatorii ${newMode ? 'activat' : 'dezactivat'}`, { tv_id: tvId, tv_label: tv.label })
     res.json({ ok: true, info_mode: newMode })
   } catch {
     res.status(500).json({ error: 'Internal server error' })
@@ -163,6 +173,8 @@ export function serveInfoFile(req, res) {
   const filename = path.basename(req.params.filename)
   const filePath = path.join(UPLOADS_DIR, filename)
   if (!existsSync(filePath)) return res.status(404).end()
+  res.set('Content-Type', 'application/pdf')
+  res.set('Content-Disposition', 'inline')
   res.sendFile(path.resolve(filePath))
 }
 

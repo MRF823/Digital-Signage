@@ -4,7 +4,7 @@ import { getDb } from './db.js'
 import { pushPlaylist, pushScreenPower, pushInfoPower, pushPlaylistForAgency } from './websocket.js'
 import { getActivePlaylist } from './playlist.js'
 import { todayRo } from './dateRo.js'
-import { sendOfflineAlert, sendReconnectedAlert } from './mailer.js'
+import { sendOfflineAlert, sendReconnectedAlert, sendDailyReport } from './mailer.js'
 
 // 0=Luni, 1=Marti, ..., 6=Duminica
 function getCurrentDayAndTime() {
@@ -186,6 +186,71 @@ function backupDb() {
   }
 }
 
+export async function generateAndSendDailyReport() {
+  try {
+    const db = getDb()
+    const enabledRow = db.prepare("SELECT value FROM settings WHERE key = 'daily_report_enabled'").get()
+    if (!enabledRow || enabledRow.value !== '1') return
+
+    const emailsRow = db.prepare("SELECT value FROM settings WHERE key = 'daily_report_emails'").get()
+    let emails = []
+    try { emails = JSON.parse(emailsRow?.value || '[]') } catch {}
+    if (!emails.length) return
+
+    // Date sistem pentru raport
+    const tvs = db.prepare(`
+      SELECT t.id, t.label, t.last_seen_at, a.name as agency_name
+      FROM tvs t JOIN agencies a ON a.id = t.agency_id
+    `).all()
+    const agencies = db.prepare('SELECT id, name FROM agencies').all()
+    const now = Date.now()
+    const OFFLINE_MS = 10 * 60 * 1000
+    const onlineTvs = tvs.filter(t => t.last_seen_at && (now - new Date(t.last_seen_at + 'Z').getTime()) < OFFLINE_MS)
+    const offlineTvs = tvs.filter(t => !t.last_seen_at || (now - new Date(t.last_seen_at + 'Z').getTime()) >= OFFLINE_MS)
+
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    const yesterdayStr = yesterday.toISOString().slice(0, 10)
+    const activityRows = db.prepare(
+      "SELECT user_email, action, details, created_at FROM activity_log WHERE created_at >= ? ORDER BY created_at"
+    ).all(yesterdayStr + ' 00:00:00')
+
+    const systemData = {
+      date: yesterday.toLocaleDateString('ro-RO', { day: '2-digit', month: 'long', year: 'numeric' }),
+      total_tvs: tvs.length,
+      online: onlineTvs.length,
+      offline: offlineTvs.length,
+      offline_list: offlineTvs.map(t => `${t.label} (${t.agency_name})`),
+      agencies: agencies.length,
+      activity_count: activityRows.length,
+      recent_actions: activityRows.slice(-10).map(r => `${r.user_email}: ${r.action}`)
+    }
+
+    let reportText
+    try {
+      const Anthropic = (await import('@anthropic-ai/sdk')).default
+      const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+      const msg = await client.messages.create({
+        model: 'claude-haiku-4-5',
+        max_tokens: 600,
+        messages: [{
+          role: 'user',
+          content: `Ești asistentul sistemului DisplayIQ de digital signage pentru agenții bancare. Generează un raport zilnic concis în română, pe baza acestor date:\n\n${JSON.stringify(systemData, null, 2)}\n\nRaportul trebuie să conțină:\n1. Rezumat stare sistem (TV-uri online/offline)\n2. Activitate utilizatori în ultimele 24h\n3. Observații sau recomandări dacă există probleme\n\nFii concis și profesional. Maximum 300 de cuvinte.`
+        }]
+      })
+      reportText = msg.content[0].text
+    } catch (aiErr) {
+      console.error('[raport-zilnic] Eroare AI:', aiErr.message)
+      // Fallback fără AI
+      reportText = `Raport zilnic DisplayIQ — ${systemData.date}\n\nStare sistem:\n- TV-uri online: ${systemData.online}/${systemData.total_tvs}\n- TV-uri offline: ${systemData.offline}${systemData.offline_list.length ? '\n  ' + systemData.offline_list.join('\n  ') : ''}\n\nActivitate: ${systemData.activity_count} acțiuni înregistrate ieri.\n${systemData.recent_actions.length ? '\nUltimele acțiuni:\n' + systemData.recent_actions.join('\n') : ''}\n\nAcest raport a fost generat automat de DisplayIQ.`
+    }
+
+    await sendDailyReport(reportText, emails)
+  } catch (err) {
+    console.error('[raport-zilnic] Eroare generare:', err.message)
+  }
+}
+
 export function initScheduler() {
   // Verifică schedule-uri și power la fiecare minut
   setInterval(() => { checkSchedules(); checkPower(); checkInfoPower() }, 60_000)
@@ -215,6 +280,15 @@ export function initScheduler() {
     backupDb()
     setInterval(backupDb, 24 * 60 * 60 * 1000)
   }, next2am - now)
+
+  // Raport zilnic la 07:00
+  const next7am = new Date(now)
+  if (now.getHours() >= 7) next7am.setDate(now.getDate() + 1)
+  next7am.setHours(7, 0, 0, 0)
+  setTimeout(() => {
+    generateAndSendDailyReport()
+    setInterval(generateAndSendDailyReport, 24 * 60 * 60 * 1000)
+  }, next7am - now)
 
   console.log('Scheduler pornit')
 }

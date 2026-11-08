@@ -339,8 +339,17 @@ export default function Campaigns() {
   const groupedAgencyIds = new Set(groups.flatMap(g => g.agencies.map(a => a.id)))
   const ungroupedAgencies = agencies.filter(a => !groupedAgencyIds.has(a.id))
 
+  const chipStatus = (c) => {
+    if (c.end_date <= today) return { label:'Expirată', bg:'var(--chip-off-bg)', color:'var(--chip-off-fg)' }
+    if (c.start_date > today) return { label:'Programată', bg:'rgba(245,158,11,.12)', color:'#B45309' }
+    return { label:'Activă', bg:'var(--chip-on-bg)', color:'var(--chip-on-fg)' }
+  }
+
+  const inp = { height:34, padding:'0 12px', border:'1px solid var(--border)', borderRadius:8, background:'var(--surface)', color:'var(--fg)', fontSize:13, outline:'none', width:'100%' }
+  const lbl = { fontSize:11.5, fontWeight:600, color:'var(--fg-2)', marginBottom:5, display:'block' }
+
   return (
-    <div>
+    <div style={{ padding:24 }}>
       {previewItems && <PreviewPlayer items={previewItems} onClose={() => setPreviewItems(null)} />}
 
       {showPlaylistModal && (
@@ -352,181 +361,170 @@ export default function Campaigns() {
         />
       )}
 
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-800">Campanii</h2>
+      {/* Header */}
+      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, marginBottom:20, flexWrap:'wrap' }}>
+        <div>
+          <h2 style={{ fontFamily:'Plus Jakarta Sans, system-ui, sans-serif', fontSize:20, fontWeight:800, color:'var(--fg)', letterSpacing:'-.3px' }}>Campanii</h2>
+          <p style={{ fontSize:12, color:'var(--fg-3)', marginTop:3 }}>{groupedCampaigns.length} campanii totale</p>
+        </div>
         <button onClick={() => { setEditingCampaign(null); setShowForm(true); setError(''); setSuccess('') }}
-          className="bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800 text-sm">
-          + Campanie nouă
+          style={{ display:'inline-flex', alignItems:'center', gap:6, height:34, padding:'0 16px', borderRadius:8, background:'var(--accent)', color:'#fff', border:'none', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Campanie nouă
         </button>
       </div>
 
-      {success && <p className="text-green-600 text-sm mb-4 bg-green-50 p-3 rounded-lg">{success}</p>}
-      {error && <p className="text-red-600 text-sm mb-4 bg-red-50 p-3 rounded-lg">{error}</p>}
+      {success && <div style={{ padding:'10px 14px', borderRadius:8, background:'rgba(16,185,129,.1)', color:'#059669', fontSize:13, marginBottom:14 }}>{success}</div>}
+      {error && <div style={{ padding:'10px 14px', borderRadius:8, background:'rgba(239,68,68,.08)', color:'#DC2626', fontSize:13, marginBottom:14 }}>{error}</div>}
 
+      {/* Form */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <h3 className="font-semibold text-gray-700 mb-4">{editingCampaign ? `Editează: ${editingCampaign.name}` : 'Campanie nouă'}</h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
-            <div className="md:col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nume campanie *</label>
+        <form onSubmit={handleSubmit} style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:20, marginBottom:20, boxShadow:'var(--shadow-sm)' }}>
+          <h3 style={{ fontFamily:'Plus Jakarta Sans, sans-serif', fontWeight:700, fontSize:14, color:'var(--fg)', marginBottom:16 }}>
+            {editingCampaign ? `Editează: ${editingCampaign.name}` : 'Campanie nouă'}
+          </h3>
+          <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr', gap:12, marginBottom:16 }}>
+            <div><label style={lbl}>Nume campanie *</label>
               <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="ex: Credit Ipotecar - TV Vitrina"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Data start *</label>
-              <DateInput value={form.start_date} onChange={v => setForm(f => ({ ...f, start_date: v }))} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Data final *</label>
+                placeholder="ex: Credit Ipotecar - TV Vitrina" style={inp} /></div>
+            <div><label style={lbl}>Data start *</label>
+              <DateInput value={form.start_date} onChange={v => setForm(f => ({ ...f, start_date: v }))} /></div>
+            <div><label style={lbl}>Data final *</label>
               <DateInput value={form.end_date}
                 min={form.start_date ? (() => { const d = new Date(form.start_date + 'T12:00:00'); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` })() : undefined}
-                onChange={v => setForm(f => ({ ...f, end_date: v }))} />
-            </div>
+                onChange={v => setForm(f => ({ ...f, end_date: v }))} /></div>
           </div>
 
-          {/* Selectare agenții — doar la creare */}
-          {!editingCampaign && <div className="mb-5">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Regiuni / Agenții *
-              {form.selectedAgencyIds.size > 0 && (
-                <span className="ml-2 text-blue-600 font-normal text-xs">{form.selectedAgencyIds.size} selectate</span>
-              )}
-            </label>
-            <div className="border border-gray-200 rounded-lg overflow-hidden divide-y divide-gray-100">
-              {groups.map(group => {
-                const groupAgencyIds = group.agencies.map(a => a.id)
-                const allSelected = groupAgencyIds.length > 0 && groupAgencyIds.every(id => form.selectedAgencyIds.has(id))
-                const someSelected = groupAgencyIds.some(id => form.selectedAgencyIds.has(id))
-                return (
-                  <div key={group.id}>
-                    <label className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 cursor-pointer hover:bg-gray-100">
-                      <input type="checkbox" checked={allSelected}
-                        ref={el => { if (el) el.indeterminate = someSelected && !allSelected }}
-                        onChange={() => toggleGroup(group)} className="accent-blue-600 w-4 h-4" />
-                      <span className="text-sm font-semibold text-gray-700">{group.name}</span>
-                      <span className="text-xs text-gray-400">{group.agencies.length} agenții</span>
-                    </label>
-                    <div className="divide-y divide-gray-50">
+          {!editingCampaign && (
+            <div style={{ marginBottom:16 }}>
+              <label style={lbl}>Regiuni / Agenții * {form.selectedAgencyIds.size > 0 && <span style={{ color:'var(--accent)' }}>· {form.selectedAgencyIds.size} selectate</span>}</label>
+              <div style={{ border:'1px solid var(--border)', borderRadius:8, overflow:'hidden' }}>
+                {groups.map(group => {
+                  const groupAgencyIds = group.agencies.map(a => a.id)
+                  const allSelected = groupAgencyIds.length > 0 && groupAgencyIds.every(id => form.selectedAgencyIds.has(id))
+                  const someSelected = groupAgencyIds.some(id => form.selectedAgencyIds.has(id))
+                  return (
+                    <div key={group.id}>
+                      <label style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 14px', background:'var(--surface-2)', cursor:'pointer', borderBottom:'1px solid var(--border)' }}>
+                        <input type="checkbox" checked={allSelected}
+                          ref={el => { if (el) el.indeterminate = someSelected && !allSelected }}
+                          onChange={() => toggleGroup(group)} style={{ accentColor:'var(--accent)', width:14, height:14 }} />
+                        <span style={{ fontWeight:700, fontSize:13, color:'var(--fg)' }}>{group.name}</span>
+                        <span style={{ fontSize:11.5, color:'var(--fg-3)' }}>{group.agencies.length} agenții</span>
+                      </label>
                       {group.agencies.map(ga => {
                         const agency = agencies.find(a => a.id === ga.id)
                         return (
-                          <label key={ga.id} className="flex items-center gap-3 px-8 py-2 cursor-pointer hover:bg-blue-50">
+                          <label key={ga.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 28px', cursor:'pointer', borderBottom:'1px solid var(--border)' }}>
                             <input type="checkbox" checked={form.selectedAgencyIds.has(ga.id)}
-                              onChange={() => toggleAgency(ga.id)} className="accent-blue-600 w-3.5 h-3.5" />
-                            <span className="text-sm text-gray-600">{ga.name}</span>
-                            {agency?.city && <span className="text-xs text-gray-400">{agency.city}</span>}
+                              onChange={() => toggleAgency(ga.id)} style={{ accentColor:'var(--accent)', width:13, height:13 }} />
+                            <span style={{ fontSize:13, color:'var(--fg-2)' }}>{ga.name}</span>
+                            {agency?.city && <span style={{ fontSize:11.5, color:'var(--fg-3)' }}>{agency.city}</span>}
                           </label>
                         )
                       })}
                     </div>
-                  </div>
-                )
-              })}
-              {ungroupedAgencies.map(a => (
-                <label key={a.id} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-blue-50">
-                  <input type="checkbox" checked={form.selectedAgencyIds.has(a.id)}
-                    onChange={() => toggleAgency(a.id)} className="accent-blue-600 w-4 h-4" />
-                  <span className="text-sm text-gray-600">{a.name}</span>
-                  <span className="text-xs text-gray-400">{a.city}</span>
-                </label>
-              ))}
+                  )
+                })}
+                {ungroupedAgencies.map(a => (
+                  <label key={a.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 14px', cursor:'pointer', borderBottom:'1px solid var(--border)' }}>
+                    <input type="checkbox" checked={form.selectedAgencyIds.has(a.id)}
+                      onChange={() => toggleAgency(a.id)} style={{ accentColor:'var(--accent)', width:14, height:14 }} />
+                    <span style={{ fontSize:13, color:'var(--fg-2)' }}>{a.name}</span>
+                    <span style={{ fontSize:11.5, color:'var(--fg-3)' }}>{a.city}</span>
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>}
+          )}
 
           {/* Playlist */}
-          <div className="mb-5">
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Playlist *
-                {form.items.length > 0 && (
-                  <span className="ml-2 text-blue-600 font-normal text-xs">{form.items.length} elemente</span>
-                )}
-              </label>
+          <div style={{ marginBottom:16 }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+              <label style={{ ...lbl, marginBottom:0 }}>Playlist * {form.items.length > 0 && <span style={{ color:'var(--accent)' }}>· {form.items.length} elemente</span>}</label>
               <button type="button" onClick={() => setShowPlaylistModal(true)}
-                className="text-sm bg-gray-800 hover:bg-gray-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-2">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                style={{ display:'inline-flex', alignItems:'center', gap:6, height:28, padding:'0 10px', borderRadius:6, background:'var(--fg)', color:'#fff', border:'none', fontSize:12, fontWeight:600, cursor:'pointer' }}>
                 Modifică playlist
               </button>
             </div>
             {form.items.length === 0 ? (
-              <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center">
-                <p className="text-gray-400 text-sm">Niciun element în playlist.</p>
+              <div style={{ border:'2px dashed var(--border)', borderRadius:8, padding:'20px', textAlign:'center' }}>
+                <p style={{ fontSize:13, color:'var(--fg-3)' }}>Niciun element în playlist.</p>
                 <button type="button" onClick={() => setShowPlaylistModal(true)}
-                  className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium">
+                  style={{ marginTop:6, color:'var(--accent)', fontSize:13, fontWeight:600, background:'none', border:'none', cursor:'pointer' }}>
                   + Adaugă fișiere media
                 </button>
               </div>
             ) : (
-              <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50 divide-y divide-gray-100">
+              <div style={{ border:'1px solid var(--border)', borderRadius:8, overflow:'hidden' }}>
                 {form.items.map((item, i) => (
-                  <div key={item.id} className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700">
-                    <span className="text-gray-400 text-xs w-5 text-right shrink-0">{i + 1}.</span>
-                    <span className="text-base leading-none">{item.type === 'video' ? '🎬' : '🖼️'}</span>
-                    <span className="truncate flex-1">{item.original_name}</span>
-                    {item.type === 'image' && (
-                      <span className="text-xs text-gray-400 shrink-0">{item.display_duration_seconds}s</span>
-                    )}
+                  <div key={item.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 12px', borderBottom:'1px solid var(--border)', fontSize:13, color:'var(--fg-2)' }}>
+                    <span style={{ color:'var(--fg-3)', fontSize:11, width:18, textAlign:'right', flexShrink:0 }}>{i+1}.</span>
+                    <span>{item.type === 'video' ? '🎬' : '🖼️'}</span>
+                    <span style={{ flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.original_name}</span>
+                    {item.type === 'image' && <span style={{ fontSize:11.5, color:'var(--fg-3)', flexShrink:0 }}>{item.display_duration_seconds}s</span>}
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="flex gap-3">
+          <div style={{ display:'flex', gap:10 }}>
             <button type="submit" disabled={saving}
-              className="bg-blue-700 text-white px-6 py-2 rounded-lg hover:bg-blue-800 text-sm disabled:opacity-60">
+              style={{ height:36, padding:'0 20px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer', opacity:saving?.6:1 }}>
               {saving ? 'Se salvează...' : 'Salvează campania'}
             </button>
             <button type="button" onClick={closeForm}
-              className="bg-gray-100 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-200 text-sm">
+              style={{ height:36, padding:'0 16px', background:'var(--surface-2)', color:'var(--fg-2)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, cursor:'pointer' }}>
               Anulează
             </button>
           </div>
         </form>
       )}
 
+      {/* Campaign list */}
       {groupedCampaigns.length === 0 ? (
-        <p className="text-gray-400 text-center py-16">Nicio campanie. Creează prima campanie!</p>
+        <div style={{ textAlign:'center', padding:'64px 0', color:'var(--fg-3)', fontSize:14 }}>Nicio campanie. Creează prima campanie!</div>
       ) : (
-        <div className="space-y-3">
-          {groupedCampaigns.map(c => (
-            <div key={c.ids[0]} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-semibold text-gray-800">{c.name}</span>
-                  {statusBadge(c)}
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          {groupedCampaigns.map(c => {
+            const st = chipStatus(c)
+            return (
+              <div key={c.ids[0]} style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:'14px 16px', display:'flex', alignItems:'center', gap:14, flexWrap:'wrap', boxShadow:'var(--shadow-sm)' }}>
+                <div style={{ flex:1, minWidth:200 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }}>
+                    <span style={{ fontFamily:'Plus Jakarta Sans, sans-serif', fontWeight:700, fontSize:14, color:'var(--fg)' }}>{c.name}</span>
+                    <span style={{ display:'inline-flex', alignItems:'center', padding:'2px 8px', borderRadius:99, fontSize:11.5, fontWeight:600, background:st.bg, color:st.color }}>{st.label}</span>
+                  </div>
+                  <p style={{ fontSize:12, color:'var(--fg-3)', marginBottom:6 }}>
+                    {c.start_date} 00:01 → {c.end_date} 00:00 · {c.items.length} elemente
+                  </p>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
+                    {c.agencies.map((name, i) => (
+                      <span key={i} style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:99, background:'rgba(37,99,235,.08)', color:'var(--accent)' }}>{name}</span>
+                    ))}
+                  </div>
                 </div>
-                <p className="text-sm text-gray-500">
-                  {c.start_date} <span className="text-gray-400 text-xs">00:01</span> → {c.end_date} <span className="text-gray-400 text-xs">00:00</span> · {c.items.length} elemente în playlist
-                </p>
-                <div className="flex flex-wrap gap-1 mt-1.5">
-                  {c.agencies.map((name, i) => (
-                    <span key={i} className="text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full">{name}</span>
-                  ))}
-                </div>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {c.items?.length > 0 && (
-                  <button onClick={() => setPreviewItems(c.items)}
-                    className="text-xs bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                    Preview
+                <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+                  {c.items?.length > 0 && (
+                    <button onClick={() => setPreviewItems(c.items)}
+                      style={{ display:'inline-flex', alignItems:'center', gap:5, height:30, padding:'0 12px', borderRadius:7, background:'#2563EB', color:'#fff', border:'none', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                      Preview
+                    </button>
+                  )}
+                  <button onClick={() => openEdit(c)}
+                    style={{ height:30, padding:'0 12px', borderRadius:7, border:'1px solid var(--border)', background:'var(--surface-2)', color:'var(--fg-2)', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                    Editează
                   </button>
-                )}
-                <button onClick={() => openEdit(c)}
-                  className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                  Editează
-                </button>
-                <button onClick={() => handleDelete(c.ids)}
-                  className="text-red-500 hover:text-red-700 text-sm px-3 py-1 rounded-lg hover:bg-red-50">
-                  Șterge
-                </button>
+                  <button onClick={() => handleDelete(c.ids)}
+                    style={{ height:30, padding:'0 12px', borderRadius:7, border:'none', background:'rgba(239,68,68,.08)', color:'#DC2626', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                    Șterge
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

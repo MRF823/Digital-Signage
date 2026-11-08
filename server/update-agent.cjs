@@ -118,7 +118,7 @@ function connect() {
 
   ws.on('open', () => {
     log('Conectat la VPS')
-    ws.send(JSON.stringify({ type: 'register_update_agent' }))
+    ws.send(JSON.stringify({ type: 'register_update_agent', token: process.env.UPDATE_AGENT_TOKEN || '' }))
     // Trimite diagnostice imediat la conectare, apoi la fiecare 5 minute
     sendDiagnostics()
   })

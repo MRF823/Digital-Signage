@@ -34,7 +34,7 @@ function SortableItem({ item, onRemove, onUpdateDuration }) {
       className="flex items-center gap-3 bg-white border rounded-lg px-3 py-2 shadow-sm">
       <span {...attributes} {...listeners} className="cursor-grab text-gray-400">⠿</span>
       <span className="text-lg">{item.type === 'video' ? '🎬' : '🖼️'}</span>
-      <span className="text-sm flex-1 truncate">{item.original_name}</span>
+      <span className="text-sm flex-1 break-all">{item.original_name}</span>
       {item.type === 'image' && (
         <div className="flex items-center gap-1 shrink-0">
           <input
@@ -114,7 +114,8 @@ export default function PlaylistModal({ agency, current, onClose, onSaved }) {
   return (
     <>
       {previewing && enrichedItems.length > 0 && (
-        <PreviewPlayer items={enrichedItems} onClose={() => setPreviewing(false)} />
+        <PreviewPlayer items={enrichedItems} onClose={() => setPreviewing(false)}
+          portrait={agency.tvs?.some(t => t.orientation === 'portrait')} />
       )}
       {quickPreview && <MediaQuickPreview item={quickPreview} onClose={() => setQuickPreview(null)} />}
 
@@ -143,7 +144,7 @@ export default function PlaylistModal({ agency, current, onClose, onSaved }) {
                   <div key={m.id}
                     className="rounded-lg border text-sm transition-colors bg-gray-50 hover:bg-blue-50 hover:border-blue-300 border-gray-200 flex items-center gap-2 pr-1">
                     <button onClick={() => addItem(m)} className="text-left px-3 py-2 flex-1 flex items-center gap-2 min-w-0">
-                      <span className="truncate">{m.type === 'video' ? '🎬' : '🖼️'} {m.original_name}</span>
+                      <span className="break-all">{m.type === 'video' ? '🎬' : '🖼️'} {m.original_name}</span>
                       {inPlaylistCount[m.id] > 0 && (
                         <span className="shrink-0 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
                           ×{inPlaylistCount[m.id]}
