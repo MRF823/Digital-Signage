@@ -190,7 +190,7 @@ export function initDb(path = './signage.db') {
   if (usersCount.c === 0) {
     const admin = db.prepare('SELECT * FROM admin LIMIT 1').get()
     if (admin) {
-      const adminEmail = process.env.ADMIN_EMAIL || 'admin@displayiq.ro'
+      const adminEmail = process.env.ADMIN_EMAIL || 'contact@funkymedia.ro'
       db.prepare('INSERT INTO users (email, password_hash, role, name) VALUES (?, ?, ?, ?)').run(adminEmail, admin.password_hash, 'admin', 'Administrator')
       console.log(`[users] Admin migrat cu email: ${adminEmail}`)
     }
