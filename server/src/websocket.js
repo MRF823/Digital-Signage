@@ -68,6 +68,9 @@ export function initWebSocket(httpServer) {
     ws.on('message', (raw) => {
       let msg
       try { msg = JSON.parse(raw) } catch { return }
+      if (!msg || typeof msg !== 'object' || Array.isArray(msg)) return
+
+      try {
 
       if (msg.type === 'register_update_agent') {
         const expectedToken = process.env.UPDATE_AGENT_TOKEN
@@ -252,6 +255,10 @@ export function initWebSocket(httpServer) {
         if (ws.readyState === 1) {
           ws.send(JSON.stringify({ type: 'pong' }))
         }
+      }
+
+      } catch (e) {
+        console.error('[WS] eroare la procesarea mesajului:', e.message)
       }
     })
 
