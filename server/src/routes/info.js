@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import multer from 'multer'
 import path from 'path'
+import { existsSync } from 'fs'
 import { fileTypeFromFile } from 'file-type'
 import { getDb } from '../db.js'
 import { UPLOADS_DIR, ensureUploadsDir, deleteFile } from '../storage.js'
