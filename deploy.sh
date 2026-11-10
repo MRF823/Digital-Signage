@@ -11,6 +11,7 @@ rsync -avz \
   --exclude 'server/signage.db' \
   --exclude 'server/signage.db-shm' \
   --exclude 'server/signage.db-wal' \
+  --exclude 'server/.env' \
   /Users/floricamarius/digital-signage/ \
   ubuntu@92.5.28.167:/home/ubuntu/digital-signage/
 
