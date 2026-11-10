@@ -38,6 +38,7 @@ const writeLimiter = rateLimit({
 const app = express()
 const httpServer = createServer(app)
 
+app.disable('x-powered-by')
 app.set('trust proxy', 1)
 app.use(cors({
   origin: ['https://displayiq.funkymedia.ro', 'http://localhost:5173', 'http://localhost:4173'],
