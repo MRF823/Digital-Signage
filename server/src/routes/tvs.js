@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { getDb } from '../db.js'
 import { pushForexMode } from '../websocket.js'
+import { logActivity } from '../activityLog.js'
 
 const router = Router()
 
@@ -53,11 +54,12 @@ router.patch('/:tvId/anydesk', (req, res) => {
 
 router.patch('/:tvId/forex', (req, res) => {
   const db = getDb()
-  const tv = db.prepare('SELECT * FROM tvs t JOIN agencies a ON a.id = t.agency_id WHERE t.id = ?').get(req.params.tvId)
+  const tv = db.prepare('SELECT t.*, a.name as agency_name FROM tvs t JOIN agencies a ON a.id = t.agency_id WHERE t.id = ?').get(req.params.tvId)
   if (!tv) return res.status(404).json({ error: 'TV not found' })
   const forex_mode = req.body.forex_mode ? 1 : 0
   db.prepare('UPDATE tvs SET forex_mode = ? WHERE id = ?').run(forex_mode, tv.id)
   pushForexMode(tv.agency_id, tv.label, forex_mode === 1)
+  logActivity(req.user.email, req.user.name, `Forex ${forex_mode ? 'activat' : 'dezactivat'}`, { agency: tv.agency_name, tv: tv.label })
   res.json({ ok: true, forex_mode })
 })
 

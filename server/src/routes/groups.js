@@ -12,7 +12,10 @@ function getGroupWithMembers(db, groupId) {
     JOIN group_members gm ON gm.agency_id = a.id
     WHERE gm.group_id = ?
     ORDER BY a.name
-  `).all(groupId)
+  `).all(groupId).map(a => ({
+    ...a,
+    tvs: db.prepare('SELECT * FROM tvs WHERE agency_id = ?').all(a.id),
+  }))
   const playlist = db.prepare(`
     SELECT pi.*, m.filename, m.original_name, m.type, m.duration_seconds
     FROM playlist_items pi

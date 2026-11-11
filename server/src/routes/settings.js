@@ -14,7 +14,7 @@ router.get('/', (req, res) => {
 })
 
 router.put('/', (req, res) => {
-  const allowed = ['alert_email']
+  const allowed = ['alert_email', 'daily_report_enabled', 'daily_report_emails']
   const updates = Object.entries(req.body).filter(([k]) => allowed.includes(k))
   if (!updates.length) return res.status(400).json({ error: 'No valid keys' })
   try {
